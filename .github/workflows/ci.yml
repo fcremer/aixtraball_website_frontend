@@ -30,7 +30,7 @@ jobs:
           pip install pytest flask-testing
 
       - name: Run unit tests
-        run: pytest ${{ env.WEBSITE_DIR }}/tests
+        run: pytest /tests
 
   docker:
     needs: test
