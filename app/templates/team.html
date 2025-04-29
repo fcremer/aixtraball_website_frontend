@@ -1,0 +1,83 @@
+{#  app/templates/team.html  #}
+{% extends "base.html" %}
+
+{% block head_extra %}
+  <!-- Swiper CSS -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
+
+  <style>
+    /* Slide-Breite (je nach Breakpoint) */
+    .teamSwiper .swiper-slide { width: 220px; }
+    @media (min-width: 768px) { .teamSwiper .swiper-slide { width: 240px; } }
+    @media (min-width: 992px) { .teamSwiper .swiper-slide { width: 260px; } }
+
+    /* Pfeile in Akzentfarbe, über den Slides */
+    .teamSwiper .swiper-button-prev,
+    .teamSwiper .swiper-button-next {
+      color: var(--bs-primary);
+      width: 44px; height: 44px;
+      z-index: 10;
+    }
+    .teamSwiper .swiper-button-prev::after,
+    .teamSwiper .swiper-button-next::after {
+      font-size: 28px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5 bg-light">
+  <div class="container">
+
+    <h1 class="mb-4 text-center">Unser Team</h1>
+
+    <div class="swiper teamSwiper">
+      <div class="swiper-wrapper">
+        {% for member in members %}
+          <div class="swiper-slide">
+            <div class="card h-100 shadow-sm">
+              <img src="{{ member.image | asset }}"
+                   class="card-img-top"
+                   alt="{{ member.name }}">
+              <div class="card-body text-center">
+                <h5 class="card-title mb-1">{{ member.name }}</h5>
+                <p class="card-subtitle text-muted">{{ member.role }}</p>
+                {% if member.bio %}
+                  <p class="card-text small mt-2">{{ member.bio }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Navigation für Desktop -->
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <!-- Swiper JS -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new Swiper('.teamSwiper', {
+        slidesPerView : 'auto',
+        spaceBetween  : 16,
+        grabCursor    : true,      // Hand-Cursor + besseres Touch-Gefühl
+        navigation    : {
+          nextEl: '.teamSwiper .swiper-button-next',
+          prevEl: '.teamSwiper .swiper-button-prev'
+        }
+        /* touchGestures sind per Default aktiv –
+           kein weiterer Code nötig. */
+      });
+    });
+  </script>
+{% endblock %}

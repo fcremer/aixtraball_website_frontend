@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+  {% for p in pages %}
+  <url>
+    <loc>{{ p.loc }}</loc>
+    {% if p.lastmod %}<lastmod>{{ p.lastmod }}</lastmod>{% endif %}
+  </url>
+  {% endfor %}
+</urlset>

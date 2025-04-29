@@ -1,0 +1,140 @@
+/* --------------------------------------------------
+   Grundfarben / Bootstrap-Overrides
+-------------------------------------------------- */
+:root {
+  --bs-primary: #D23729;
+  --bs-primary-rgb: 210,55,41;
+  --bs-link-color: var(--bs-primary);
+  --bs-link-hover-color: #A52317;
+}
+
+/* --------------------------------------------------
+   Basis-Layout
+-------------------------------------------------- */
+html, body { height: 100%; }
+body {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  color: #212529;
+  padding-top: 70px;        /* Platz für fixe Navbar */
+}
+main { flex: 1 0 auto; }    /* Sticky-Footer-Hack */
+
+/* --------------------------------------------------
+   Navbar
+-------------------------------------------------- */
+.navbar {
+  background-color: #ffffff !important;
+}
+.navbar .nav-link,
+.navbar-brand {
+  color: #212529 !important;
+}
+.navbar .nav-link:hover {
+  color: var(--bs-primary) !important;
+}
+
+/* --------------------------------------------------
+   Buttons und Links
+-------------------------------------------------- */
+.btn-primary   { background-color: var(--bs-primary); border-color: var(--bs-primary); }
+.btn-primary:hover,
+.btn-primary:focus { background-color: #A52317; border-color: #A52317; }
+
+/* --------------------------------------------------
+   Hero-Carousel (Startseite)
+-------------------------------------------------- */
+#heroCarousel .carousel-item {
+  height: 60vh;          /* 60 % des Viewports */
+  min-height: 320px;
+  overflow: hidden;      /* Bildbeschnitt (Maskierung) */
+}
+#heroCarousel .carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;     /* Füllt Container, wird beschnitten */
+  object-position: center;
+}
+@media (max-width: 767.98px) {
+  #heroCarousel .carousel-item { height: 40vh; min-height: 200px; }
+}
+
+/* --------------------------------------------------
+   Karten-Generics
+-------------------------------------------------- */
+.card-img-top {
+  object-fit: cover;
+  height: 300px;
+}
+.card-body p:last-child { margin-bottom: 0; } /* Bio-Absatz bündig */
+
+/* --------------------------------------------------
+   Pfeil-Button (Startseiten-Flipper)
+-------------------------------------------------- */
+.arrow-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* --------------------------------------------------
+   Footer
+-------------------------------------------------- */
+footer {
+  flex-shrink: 0;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  font-size: .9rem;
+  color: #6c757d;
+}
+footer a { color: inherit; }
+footer a:hover { color: var(--bs-primary); }
+
+/* --------------------------------------------------
+   Team-Carousel (Swiper)
+-------------------------------------------------- */
+
+/* 1. Jede Slide/Karte bekommt feste Breite – Swiper zeigt
+      automatisch „so viele, wie reinpassen“. */
+.teamSwiper .swiper-slide {
+  width: 220px;          /* Smartphones */
+  display: flex;         /* sorgt für Stretch der Karte */
+}
+
+@media (min-width: 768px) {   /* Tablets */
+  .teamSwiper .swiper-slide { width: 240px; }
+}
+@media (min-width: 992px) {   /* Desktop */
+  .teamSwiper .swiper-slide { width: 260px; }
+}
+
+/* 2. Dezenter Abstand zwischen den Slides
+      (Swiper fügt `spaceBetween` im JS hinzu, aber Margin
+      ist als Fallback/Optik klarer) */
+.teamSwiper .swiper-slide { margin-right: 16px; }
+
+/* 3. Navigation-Pfeile unaufdringlich einfärben */
+.teamSwiper .swiper-button-prev,
+.teamSwiper .swiper-button-next {
+  color: var(--bs-primary);
+  width: 40px;
+  height: 40px;
+}
+.teamSwiper .swiper-button-prev::after,
+.teamSwiper .swiper-button-next::after {
+  font-size: 28px;
+}
+
+/* --------------------------------------------------
+   (Optionale) Swiper-Bullet-Dots – falls später benötigt
+.teamSwiper .swiper-pagination-bullet-active {
+  background: var(--bs-primary);
+}
+-------------------------------------------------- */
+
+
+.letter-heading {
+  color: var(--bs-primary);
+}

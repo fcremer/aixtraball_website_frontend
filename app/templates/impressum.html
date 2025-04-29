@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+  <style>
+    /* Akzent-Rot auch hier für Headings und Links */
+    .heading-primary { color: var(--bs-primary); }
+    a { color: var(--bs-primary); }
+    a:hover { color: #A52317; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container">
+
+    <h1 class="heading-primary mb-4 text-center">Impressum &amp; Datenschutz</h1>
+
+    <!-- Vereinsdaten --------------------------------------------------- -->
+    <div class="card shadow-sm mb-5">
+      <div class="card-body">
+        <h2 class="h4 heading-primary">Anbieter</h2>
+        <address class="mb-0">
+          <strong>Aixtraball&nbsp;e.V.</strong><br>
+          Merzbrück&nbsp;210<br>
+          52146&nbsp;Würselen<br>
+          Telefon: <a href="tel:+491774913456">+49&nbsp;(177)&nbsp;491&nbsp;34&nbsp;56</a><br>
+          E-Mail: <a href="mailto:info@aixtraball.de">info@aixtraball.de</a>
+        </address>
+
+        <hr>
+
+        <h2 class="h5">Vertreten durch</h2>
+        <p class="mb-1"><strong>1. Vorsitzender:</strong> Michael&nbsp;Melder</p>
+        <p class="mb-1"><strong>2. Vorsitzender:</strong> Thomas&nbsp;Ferocino</p>
+        <p class="mb-3"><strong>Schatzmeister:</strong> Björn&nbsp;Mühlenberg</p>
+
+        <h2 class="h5">Registereintrag</h2>
+        <p class="mb-1">Vereinsregister Aachen&nbsp;· VR&nbsp;5385</p>
+
+        <h2 class="h5">Steuer­informationen</h2>
+        <p class="mb-1">Steuernummer: 202/5701/3655</p>
+        <p class="mb-0">Wirtschafts-ID: 7898946</p>
+
+        <hr>
+
+        <h2 class="h5">Inhaltlich verantwortlich<br><small class="text-muted">(§ 55 Abs. 2 RStV)</small></h2>
+        <p class="mb-0">Frank&nbsp;Laschet, Anschrift wie oben</p>
+      </div>
+    </div>
+
+    <!-- Disclaimer / Datenschutz als Accordion ------------------------- -->
+    <div class="accordion" id="legalAcc">
+
+      {% set sections = [
+        ('Haftungs­beschränkung (§1)',            '
+          Die Inhalte dieser Website werden mit größtmöglicher Sorgfalt erstellt …
+        '),
+        ('Externe Links (§2)',                    '
+          Diese Website enthält Verknüpfungen zu Websites Dritter. …
+        '),
+        ('Urheber- &amp; Leistungs­schutz­recht (§3)', '
+          Die auf dieser Website veröffentlichten Inhalte unterliegen dem deutschen …
+        '),
+        ('Besondere Nutzungs­bedingungen (§4)',   '
+          Soweit besondere Bedingungen … ausdrücklich darauf hingewiesen. …
+        '),
+        ('Datenschutz­erklärung (DSGVO)',         '
+          <p>Diese Datenschutzerklärung klärt Sie über Art, Umfang und Zweck der
+          Verarbeitung personenbezogener Daten innerhalb unseres Onlineangebotes auf.</p>
+
+          <h6>Arten der verarbeiteten Daten</h6>
+          <ul>
+            <li>Bestands- &amp; Kontaktdaten</li>
+            <li>Inhalts- &amp; Nutzungsdaten</li>
+            <li>Meta- / Kommunikations­daten (z.&nbsp;B. IP-Adresse)</li>
+          </ul>
+
+          <h6>Rechte der betroffenen Personen</h6>
+          <p>Sie haben jederzeit das Recht auf Auskunft, Berichtigung, Löschung,
+             Einschränkung der Verarbeitung und Daten­übertragbarkeit
+             (Art.&nbsp;15 ff. DSGVO). …</p>
+
+          <p>Ausführliche Informationen finden Sie in unserer
+             <a href="{{ url_for(\'static\', filename=\'docs/datenschutz.pdf\') }}"
+                target="_blank">ausführlichen DSGVO-Erklärung&nbsp;(PDF)</a>.</p>
+        ')
+      ] %}
+
+      {% for sec in sections %}
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="h{{ loop.index0 }}">
+          <button class="accordion-button {{ '' if loop.first else 'collapsed' }}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#c{{ loop.index0 }}"
+                  aria-expanded="{{ 'true' if loop.first else 'false' }}">
+            {{ sec[0]|safe }}
+          </button>
+        </h2>
+        <div id="c{{ loop.index0 }}"
+             class="accordion-collapse collapse {{ 'show' if loop.first else '' }}"
+             data-bs-parent="#legalAcc">
+          <div class="accordion-body small">
+            {{ sec[1]|safe }}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Bildnachweis ---------------------------------------------------- -->
+    <p class="mt-4 small">
+      <strong>Bildnachweise:</strong> ipdb.org
+    </p>
+
+  </div>
+</section>
+{% endblock %}

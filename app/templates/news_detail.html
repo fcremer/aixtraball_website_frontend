@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="py-5">
+  <div class="container">
+    <h1 class="mb-3">{{ article.title }}</h1>
+    <p class="text-muted">{{ article.date }}</p>
+    {% if article.images %}
+      {% for img in article.images %}
+        <img src="{{ img | asset }}" class="img-fluid rounded mb-3" alt="{{ article.title }}">
+      {% endfor %}
+    {% endif %}
+    {{ article.content | safe }}
+    {% if article.youtube_links %}
+      <div class="ratio ratio-16x9 my-4">
+        <iframe src="{{ article.youtube_links[0] | replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+      </div>
+    {% endif %}
+    <a href="{{ url_for('news_list') }}">&larr; Zurück zu allen News</a>
+  </div>
+</section>
+{% endblock %}
