@@ -2,12 +2,13 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flipperverein Aixtraball e.V.</title>
   <link rel="canonical" href="{{ request.url }}"/>
 
   <meta name="description"
-        content="AixtraBall – Die Flipperhalle in Aachen. Öffnungstage, Vermietung, über 50 Flipperautomaten & aktuelle Turniere."/>
+        content="Aixtraball – Die Flipperhalle in Aachen. Öffnungstage, Vermietung, über 50 Flipperautomaten & aktuelle Turniere."/>
   
   <meta property="og:title"       content="{% block og_title %}AixtraBall – Flipperverein{% endblock %}">
   <meta property="og:description" content="Flippern, Events, Turniere – alles unter einem Dach.">
@@ -68,21 +69,30 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="py-4 bg-light">
+  <footer class="py-4 bg-light border-top">
     <div class="container">
-      <div class="row">
+      <div class="row align-items-center">
         <div class="col-md-6">
           <p class="mb-1"><strong>Aixtraball e.V.</strong></p>
           <p class="mb-1">Merzbrück 210<br>52146 Würselen</p>
           <p class="mb-0">E-Mail: <a href="mailto:info@aixtraball.de">info@aixtraball.de</a></p>
         </div>
         <div class="col-md-6 text-md-end">
-          <a href="{{ url_for('impressum') }}">Impressum &amp; Datenschutz</a>
+          <div class="d-flex justify-content-md-end align-items-center gap-3 mt-3 mt-md-0">
+            <a href="{{ url_for('impressum') }}" class="text-decoration-none text-muted">
+              Impressum &amp; Datenschutz
+            </a>
+            <a href="https://www.facebook.com/Aixtraball-eV-100063739775945" target="_blank" class="text-muted" aria-label="Facebook">
+              <i class="bi bi-facebook fs-5"></i>
+            </a>
+            <a href="https://www.youtube.com/@aixtraballflippervereinaac2208" target="_blank" class="text-muted" aria-label="YouTube">
+              <i class="bi bi-youtube fs-5"></i>
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </footer>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   {# *** Platz für Seitenspezifische SCRIPTS *** #}

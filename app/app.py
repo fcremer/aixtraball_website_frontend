@@ -1,9 +1,9 @@
 """
-app/app.py  –  Haupt-Backend der Vereins-Website
+app/app.py  –  Haupt-Backend der Vereins‑Website
 ------------------------------------------------
-• Frontend-Routen (Startseite, Verein, Team, Flipper, News …)
-• YAML-basierte Inhalte werden bei jeder Request live eingelesen
-• Hilfsfilter:  asset()   → lokale/remote-Bilder
+• Frontend‑Routen (Startseite, Verein, Team, Flipper, News …)
+• YAML‑basierte Inhalte werden bei jeder Request live eingelesen
+• Hilfsfilter:  asset()   → lokale/remote‑Bilder
                 datetimeformat() → Datumsausgabe
 """
 
@@ -24,8 +24,6 @@ from flask import (
 # --------------------------------------------------
 # Grundkonfiguration
 # --------------------------------------------------
-
-
 app = Flask(__name__)
 
 BASE_DIR   = Path(__file__).resolve().parent
@@ -35,7 +33,7 @@ CONFIG_DIR = BASE_DIR / "config"
 # Hilfsfunktionen
 # --------------------------------------------------
 def load_yaml(filename: str):
-    """Beliebige YAML-Datei aus dem config-Ordner laden."""
+    """Beliebige YAML‑Datei aus dem config‑Ordner laden."""
     with open(CONFIG_DIR / filename, encoding="utf-8") as f:
         return yaml.safe_load(f) or []
 
@@ -49,7 +47,9 @@ def get_next_opening():
     future.sort(key=lambda x: x["from_dt"])
     return future[0] if future else None
 
-# Jinja-Filter
+# --------------------------------------------------
+# Jinja‑Filter
+# --------------------------------------------------
 @app.template_filter("datetimeformat")
 def datetimeformat(value, fmt="%d.%m.%Y %H:%M"):
     if isinstance(value, str):
@@ -58,8 +58,8 @@ def datetimeformat(value, fmt="%d.%m.%Y %H:%M"):
 
 @app.template_filter("asset")
 def asset(path: str):
-    """Gibt für http/https den Original-Pfad zurück,
-       sonst einen /static/-URL-Pfad."""
+    """Gibt für http/https den Original‑Pfad zurück,
+       sonst einen /static/‑URL‑Pfad."""
     if path.startswith(("http://", "https://", "//")):
         return path
     return url_for("static", filename=path)
@@ -85,8 +85,17 @@ def index():
 
 @app.route("/verein")
 def verein():
-    return render_template("verein.html",
-                           opening=get_next_opening())
+    # Timeline‑Milestones laden
+    timeline = load_yaml("timeline.yaml")
+    # chronologisch sortiert – falls im YAML durcheinander
+    print(timeline)
+    timeline.sort(key=lambda x: parser.parse(x["date"]))
+    return render_template(
+        "verein.html",
+        opening=get_next_opening(),
+        timeline=timeline,
+        members=load_yaml("members.yaml")  # für Team‑Section auf gleicher Seite
+    )
 
 @app.route("/team")
 def team():
@@ -136,7 +145,7 @@ def news_detail(slug):
 @app.route("/kontakt", methods=["GET", "POST"])
 def kontakt():
     if request.method == "POST":
-        # Hier könnte ein echter Mail-Service angebunden werden.
+        # Hier könnte ein echter Mail‑Service angebunden werden.
         return redirect("mailto:info@aixtraball.de")
     return render_template("contact.html",
                            opening=get_next_opening())
@@ -161,17 +170,15 @@ def sitemap():
         {"loc": url_for('team',       _external=True)},
         {"loc": url_for('news_list',  _external=True)}
     ]
-    # alle News-Artikel
+    # alle News‑Artikel
     for n in load_yaml("news.yaml"):
         pages.append({"loc": url_for('news_detail', slug=n["slug"], _external=True),
                       "lastmod": n["date"]})
     xml = render_template("sitemap.xml.j2", pages=pages)
     return Response(xml, mimetype="application/xml")
 
-
-
 # --------------------------------------------------
-# Local run (Dockerfile startet ebenfalls so)
+# Local run (Dockerfile startet ebenfalls so)
 # --------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
