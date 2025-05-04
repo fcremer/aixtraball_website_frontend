@@ -111,24 +111,36 @@ def team():
                            members = load_yaml("members.yaml"),
                            opening = get_next_opening())
 
+
 @app.route("/flipper")
 def flipper_all():
+    """
+    Reise durch unsere Flipper‑Epochen:
+    • lädt flippers.yaml
+    • sortiert chronologisch
+    • berechnet Jahrzehnt‑Label (70er, 80er …)
+    """
     flippers = load_yaml("flippers.yaml")
-    flippers.sort(key=lambda f: f["name"].lower())
 
-    # alphabetische Gruppen A, B, C …
-    groups = []
-    for letter, items in groupby(flippers,
-                                 key=lambda f: f["name"][0].upper()):
-        groups.append({
-            "letter":   letter,
-            "flippers": list(items)
-        })
+    # Erwartet: jedes Objekt hat mindestens "name", "image", "year"
+    for f in flippers:
+        raw_year = f.get("year", "")
+        try:
+            # Nur die ersten vier Ziffern als Jahr verwenden
+            year = int(str(raw_year)[:4])
+            f["year"] = year
+            f["decade_label"] = f"{(year // 10) * 10}er"
+        except (ValueError, TypeError):
+            f["year"] = 0
+            f["decade_label"] = "Unbekannt"
+
+    # chronologisch (ältestes zuerst)
+    flippers.sort(key=lambda f: f["year"] or 9999)
 
     return render_template(
         "flipper_all.html",
-        groups  = groups,
-        opening = get_next_opening()
+        flippers=flippers,
+        opening=get_next_opening()
     )
 
 @app.route("/news")

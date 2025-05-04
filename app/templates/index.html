@@ -25,7 +25,7 @@
       {# Optional: Icon hinzugefügt (benötigt Bootstrap Icons o.ä.) #}
       <h2 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2"></i>Nächster Öffnungstag</h2>
       {# Klasse "date-pulse" hinzugefügt #}
-      <p class="fs-4 date-pulse"> >> {{ opening.from | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to | datetimeformat('%H:%M') }} Uhr << </p>
+      <p class="fs-4 date-pulse"> <i class="bi bi-arrow-right-short"></i> {{ opening.from | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to | datetimeformat('%H:%M') }} Uhr <i class="bi bi-arrow-left-short"></i> </p>
     {% else %}
        {# Fallback-Nachricht auch angepasst für weißen Text #}
       <p class="fs-4">Aktuell stehen keine Termine fest. Schau bald wieder vorbei!</p>
