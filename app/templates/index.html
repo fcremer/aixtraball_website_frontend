@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% block content %}
-<!-- Carousel -->
 <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
   <div class="carousel-inner">
     {% for slide in slides %}
@@ -19,19 +18,21 @@
   </button>
 </div>
 
-<!-- Next opening day -->
-<section class="py-5 bg-light">
+{# ID hinzugefügt, bg-light entfernt, Padding leicht reduziert (py-4 statt py-5) #}
+<section id="next-opening-section" class="py-4">
   <div class="container text-center">
     {% if opening %}
-      <h2 class="fw-bold mb-3">Nächster Öffnungstag</h2>
-      <p class="fs-4">{{ opening.from | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to | datetimeformat('%H:%M') }} Uhr</p>
+      {# Optional: Icon hinzugefügt (benötigt Bootstrap Icons o.ä.) #}
+      <h2 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2"></i>Nächster Öffnungstag</h2>
+      {# Klasse "date-pulse" hinzugefügt #}
+      <p class="fs-4 date-pulse"> >> {{ opening.from | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to | datetimeformat('%H:%M') }} Uhr << </p>
     {% else %}
+       {# Fallback-Nachricht auch angepasst für weißen Text #}
       <p class="fs-4">Aktuell stehen keine Termine fest. Schau bald wieder vorbei!</p>
     {% endif %}
   </div>
 </section>
 
-<!-- Rental promo -->
 <section class="py-5">
   <div class="container text-center">
     <h2 class="fw-bold mb-3">Exklusive Anmietung der Flipperhalle</h2>
@@ -40,29 +41,31 @@
   </div>
 </section>
 
-<!-- Flipper Grid (random subset) -->
-<section class="py-5 bg-light position-relative">
-  <div class="container">
-    <h2 class="fw-bold text-center mb-4">Unsere Flipper</h2>
-    <div class="row g-4 justify-content-center">
-      {% for flipper in home_flippers %}
-        <div class="col-6 col-md-3 col-lg-2">
-          <div class="card h-100 shadow-sm">
-            <img src="{{ flipper.image | asset }}" class="card-img-top" alt="{{ flipper.name }}">
-            <div class="card-body p-2">
-              <h6 class="card-title text-center mb-0">{{ flipper.name }}</h6>
-            </div>
+<section class="py-5">
+  <div class="container pulse-arrow-box">      {# macht Container relativ #}
+    <h2 class="fw-bold text-center mb-4">Flipper-Highlights</h2>
+
+    <div id="homeFlipperGrid" class="row g-4">
+      {% for f in home_flippers %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="card h-100 shadow-sm">
+          <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
+          <div class="card-body p-2">
+            <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
           </div>
         </div>
+      </div>
       {% endfor %}
     </div>
-    <a href="{{ url_for('flipper_all') }}" class="btn btn-link position-absolute top-50 end-0 translate-middle-y">
-      <span class="fs-2">&rsaquo;</span>
+
+    <a href="{{ url_for('flipper_all') }}"
+       class="pulse-arrow"
+       aria-label="Alle Flipper">
+       &rsaquo;
     </a>
   </div>
 </section>
 
-<!-- News Teaser -->
 <section class="py-5">
   <div class="container">
     <h2 class="fw-bold text-center mb-4">News</h2>

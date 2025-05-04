@@ -1,3 +1,8 @@
+/* ==================================================
+   Kombinierte CSS-Datei 
+   (Original-Stile + Angepasste Team-Swiper-Stile)
+   ================================================== */
+
 /* --------------------------------------------------
    Grundfarben / Bootstrap-Overrides
 -------------------------------------------------- */
@@ -11,15 +16,20 @@
 /* --------------------------------------------------
    Basis-Layout
 -------------------------------------------------- */
-html, body { height: 100%; }
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow-x: hidden; /* ✅ Neu: Verhindert horizontales Scrollen */
+}
 body {
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
   color: #212529;
-  padding-top: 70px;        /* Platz für fixe Navbar */
+  padding-top: 70px;
+  min-height: 100vh;
 }
-main { flex: 1 0 auto; }    /* Sticky-Footer-Hack */
+main { flex: 1 0 auto; }
 
 /* --------------------------------------------------
    Navbar
@@ -38,22 +48,28 @@ main { flex: 1 0 auto; }    /* Sticky-Footer-Hack */
 /* --------------------------------------------------
    Buttons und Links
 -------------------------------------------------- */
-.btn-primary   { background-color: var(--bs-primary); border-color: var(--bs-primary); }
+.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
 .btn-primary:hover,
-.btn-primary:focus { background-color: #A52317; border-color: #A52317; }
+.btn-primary:focus {
+  background-color: #A52317;
+  border-color: #A52317;
+}
 
 /* --------------------------------------------------
    Hero-Carousel (Startseite)
 -------------------------------------------------- */
 #heroCarousel .carousel-item {
-  height: 60vh;          /* 60 % des Viewports */
+  height: 60vh;
   min-height: 320px;
-  overflow: hidden;      /* Bildbeschnitt (Maskierung) */
+  overflow: hidden;
 }
 #heroCarousel .carousel-item img {
   width: 100%;
   height: 100%;
-  object-fit: cover;     /* Füllt Container, wird beschnitten */
+  object-fit: cover;
   object-position: center;
 }
 @media (max-width: 767.98px) {
@@ -66,8 +82,199 @@ main { flex: 1 0 auto; }    /* Sticky-Footer-Hack */
 .card-img-top {
   object-fit: cover;
   height: 300px;
+  width: 100%;
 }
-.card-body p:last-child { margin-bottom: 0; } /* Bio-Absatz bündig */
+.card-body p:last-child { margin-bottom: 0; }
+
+/* --------------------------------------------------
+   Pfeil-Button (Startseiten-Flipper)
+-------------------------------------------------- */
+.arrow-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ==============================================================
+   NEU / ANGEPASST: Team-Section und Team-Swiper
+   ============================================================== */
+.team-fullheight {
+  height: calc(100vh - 70px);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  box-sizing: border-box;
+  background-color: #f8f9fa;
+}
+.team-fullheight > .container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 1140px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--bs-gutter-x,.75rem);
+  padding-right: var(--bs-gutter-x,.75rem);
+  position: relative;
+}
+.team-fullheight > .container > h1 {
+  flex-shrink: 0;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.team-fullheight .teamSwiper {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: static;
+  flex-grow: 1;
+  min-height: 0;
+}
+.team-fullheight .teamSwiper .swiper-wrapper {
+  height: 100%;
+  align-items: stretch;
+}
+.team-fullheight .teamSwiper .swiper-slide {
+  height: 100%;
+  width: 440px !important;
+}
+@media (min-width: 768px) {
+  .team-fullheight .teamSwiper .swiper-slide { width: 480px !important; }
+}
+@media (min-width: 992px) {
+  .team-fullheight .teamSwiper .swiper-slide { width: 520px !important; }
+}
+@media (max-width: 767.98px) {
+  .team-fullheight .teamSwiper .swiper-slide {
+    width: 100% !important; /* ✅ Fix: volle Breite auf mobilen Geräten */
+  }
+}
+.team-fullheight .teamSwiper .swiper-slide .card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: .25rem;
+  box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+}
+.team-fullheight .teamSwiper .card-img-top {
+  height: 280px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-top-left-radius: calc(.25rem - 1px);
+  border-top-right-radius: calc(.25rem - 1px);
+}
+.team-fullheight .teamSwiper .card-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1rem;
+  text-align: center;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.team-fullheight .teamSwiper .card-body .bio-scroll-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-height: 50px;
+  text-align: left;
+  padding-right: 5px;
+  margin-top: 0.5rem;
+
+  /* ✅ Bio-Anpassung */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.team-fullheight .teamSwiper .card-body .bio-scroll-area p {
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Scrollbar-Styling */
+.team-fullheight .teamSwiper .card-body .bio-scroll-area::-webkit-scrollbar { width: 6px; }
+.team-fullheight .teamSwiper .card-body .bio-scroll-area::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+.team-fullheight .teamSwiper .card-body .bio-scroll-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+.team-fullheight .teamSwiper .card-body .bio-scroll-area::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+/* Navigation-Pfeile */
+.teamSwiper .swiper-button-prev,
+.teamSwiper .swiper-button-next {
+  color: var(--bs-primary);
+  width: 44px;
+  height: 44px;
+  z-index: 10;
+  top: 50%;
+  transform: translateY(-50%);
+  position: absolute;
+}
+.teamSwiper .swiper-button-prev { left: 10px; }
+.teamSwiper .swiper-button-next { right: 10px; }
+.teamSwiper .swiper-button-prev::after,
+.teamSwiper .swiper-button-next::after {
+  font-size: 28px;
+}
+
+/* --------------------------------------------------
+   Footer
+-------------------------------------------------- */
+footer {
+  flex-shrink: 0;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  font-size: .9rem;
+  color: #6c757d;
+  padding: 1rem 0;
+  margin-top: auto;
+}
+footer a {
+  color: inherit;
+  text-decoration: none;
+}
+footer a:hover {
+  color: var(--bs-primary);
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------
+   Sonstige Überschriften
+-------------------------------------------------- */
+.letter-heading {
+  color: var(--bs-primary);
+}
+
+/* ==============================================================
+   Styling für "Nächster Öffnungstag"-Sektion
+   ============================================================== */
+#next-opening-section {
+  background-color: var(--bs-primary);
+  color: #ffffff;
+  overflow: hidden;
+}
+#next-opening-section h2 {
+  color: #ffffff;
+}
+#next-opening-section h2 .bi {
+  vertical-align: baseline;
+}
+#next-opening-section p {
+  color: #ffffff;
+  margin-bottom: 0;
+}
+@keyframes pulseWhite {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+#next-opening-section .date-pulse {
+  animation: pulseWhite 2.5s infinite ease-in-out;
+  display: inline-block;
+}
 
 /* --------------------------------------------------
    Pfeil-Button (Startseiten-Flipper)
@@ -80,61 +287,35 @@ main { flex: 1 0 auto; }    /* Sticky-Footer-Hack */
 }
 
 /* --------------------------------------------------
-   Footer
+   Pulsierender Pfeil
 -------------------------------------------------- */
-footer {
-  flex-shrink: 0;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-  font-size: .9rem;
-  color: #6c757d;
+.pulse-arrow-box {
+  position: relative;
 }
-footer a { color: inherit; }
-footer a:hover { color: var(--bs-primary); }
-
-/* --------------------------------------------------
-   Team-Carousel (Swiper)
--------------------------------------------------- */
-
-/* 1. Jede Slide/Karte bekommt feste Breite – Swiper zeigt
-      automatisch „so viele, wie reinpassen“. */
-.teamSwiper .swiper-slide {
-  width: 220px;          /* Smartphones */
-  display: flex;         /* sorgt für Stretch der Karte */
-}
-
-@media (min-width: 768px) {   /* Tablets */
-  .teamSwiper .swiper-slide { width: 240px; }
-}
-@media (min-width: 992px) {   /* Desktop */
-  .teamSwiper .swiper-slide { width: 260px; }
-}
-
-/* 2. Dezenter Abstand zwischen den Slides
-      (Swiper fügt `spaceBetween` im JS hinzu, aber Margin
-      ist als Fallback/Optik klarer) */
-.teamSwiper .swiper-slide { margin-right: 16px; }
-
-/* 3. Navigation-Pfeile unaufdringlich einfärben */
-.teamSwiper .swiper-button-prev,
-.teamSwiper .swiper-button-next {
+.pulse-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(50%, -50%);
+  font-size: 3rem;
   color: var(--bs-primary);
-  width: 40px;
-  height: 40px;
+  line-height: 1;
+  text-decoration: none;
+  animation: arrowPulse 2.4s ease-in-out infinite;
 }
-.teamSwiper .swiper-button-prev::after,
-.teamSwiper .swiper-button-next::after {
-  font-size: 28px;
+@keyframes arrowPulse {
+  0%,100% { transform: translate(50%, -50%) scale(1); opacity: 1; }
+  50%     { transform: translate(50%, -50%) scale(1.3); opacity: .6; }
 }
-
-/* --------------------------------------------------
-   (Optionale) Swiper-Bullet-Dots – falls später benötigt
-.teamSwiper .swiper-pagination-bullet-active {
-  background: var(--bs-primary);
+.pulse-arrow:hover,
+.pulse-arrow:focus {
+  transform: translate(50%, -50%) scale(1.4);
 }
--------------------------------------------------- */
-
-
-.letter-heading {
-  color: var(--bs-primary);
+@media (max-width: 575.98px) {
+  .pulse-arrow {
+    position: static;
+    display: block;
+    margin: 1rem auto 0;
+    transform: none;
+  }
 }

@@ -24,6 +24,8 @@ from flask import (
 # --------------------------------------------------
 # Grundkonfiguration
 # --------------------------------------------------
+
+
 app = Flask(__name__)
 
 BASE_DIR   = Path(__file__).resolve().parent

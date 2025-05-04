@@ -2,21 +2,27 @@
 {% extends "base.html" %}
 
 {% block head_extra %}
-  <!-- Swiper CSS -->
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
 
   <style>
-    /* Slide-Breite (je nach Breakpoint) */
-    .teamSwiper .swiper-slide { width: 220px; }
-    @media (min-width: 768px) { .teamSwiper .swiper-slide { width: 240px; } }
-    @media (min-width: 992px) { .teamSwiper .swiper-slide { width: 260px; } }
+    /* CSS für Slide-Breiten und Pfeile kann hier oder in externer CSS sein */
 
-    /* Pfeile in Akzentfarbe, über den Slides */
+    /* 1) Slide-Breite */
+    .teamSwiper .swiper-slide { width: 440px; }
+    @media (min-width: 768px) {
+      .teamSwiper .swiper-slide { width: 480px; }
+    }
+    @media (min-width: 992px) {
+      .teamSwiper .swiper-slide { width: 520px; }
+    }
+
+    /* 3) Navigation-Pfeile */
     .teamSwiper .swiper-button-prev,
     .teamSwiper .swiper-button-next {
       color: var(--bs-primary);
-      width: 44px; height: 44px;
+      width: 44px;
+      height: 44px;
       z-index: 10;
     }
     .teamSwiper .swiper-button-prev::after,
@@ -27,56 +33,74 @@
 {% endblock %}
 
 {% block content %}
-<section class="py-5 bg-light">
-  <div class="container">
+{# Section definiert die Gesamthöhe #}
+<section class="py-5 bg-light team-fullheight">
+  {# Container zentriert den Inhalt und erbt die Höhe #}
+  <div class="container h-100"> {# Entfernt: d-flex flex-column #}
 
     <h1 class="mb-4 text-center">Unser Team</h1>
 
-    <div class="swiper teamSwiper">
-      <div class="swiper-wrapper">
-        {% for member in members %}
-          <div class="swiper-slide">
-            <div class="card h-100 shadow-sm">
-              <img src="{{ member.image | asset }}"
-                   class="card-img-top"
-                   alt="{{ member.name }}">
-              <div class="card-body text-center">
-                <h5 class="card-title mb-1">{{ member.name }}</h5>
-                <p class="card-subtitle text-muted">{{ member.role }}</p>
-                {% if member.bio %}
-                  <p class="card-text small mt-2">{{ member.bio }}</p>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
+    {# Swiper erbt die Höhe vom Container. Wichtig: overflow: hidden wird via CSS hinzugefügt #}
+    <div class="swiper teamSwiper h-100"> {# Entfernt: flex-grow-1 und style="min-height: 0;" #}
+      {# Wrapper braucht volle Höhe für die Slides #}
+      <div class="swiper-wrapper h-100">
 
-      <!-- Navigation für Desktop -->
+        {% for member in members %}
+        {# Slide braucht volle Höhe #}
+        <div class="swiper-slide h-100">
+          {# Karte braucht volle Höhe und Flexbox für interne Anordnung #}
+          <div class="card h-100 shadow-sm d-flex flex-column">
+            <img src="{{ member.image | asset }}"
+                 class="card-img-top"
+                 alt="{{ member.name }}">
+            {# Card-Body nutzt Flexbox für interne Anordnung #}
+            <div class="card-body text-center d-flex flex-column">
+              {# Titel und Rolle bleiben oben #}
+              <div>
+                 <h5 class="card-title mb-1">{{ member.name }}</h5>
+                 <p class="card-subtitle text-muted mb-2">{{ member.role }}</p>
+              </div>
+              {% if member.bio %}
+              {# Scrollbarer Bereich für die Biografie #}
+              <div class="bio-scroll-area">
+                <p class="card-text small mt-2">{{ member.bio }}</p>
+              </div>
+              {% endif %}
+            </div> {# Ende card-body #}
+          </div> {# Ende card #}
+        </div> {# Ende swiper-slide #}
+        {% endfor %}
+
+      </div> {# Ende swiper-wrapper #}
+
       <div class="swiper-button-prev"></div>
       <div class="swiper-button-next"></div>
-    </div>
 
-  </div>
-</section>
+    </div> {# Ende swiper #}
+  </div> {# Ende container #}
+</section> {# Ende team-fullheight section #}
 {% endblock %}
 
 {% block scripts %}
-  <!-- Swiper JS -->
   <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       new Swiper('.teamSwiper', {
+        // WICHTIG: 'auto' sorgt dafür, dass so viele Slides wie möglich basierend
+        // auf ihrer CSS-Breite angezeigt werden.
         slidesPerView : 'auto',
-        spaceBetween  : 16,
-        grabCursor    : true,      // Hand-Cursor + besseres Touch-Gefühl
+        spaceBetween  : 16,     // Abstand zwischen den Slides
+        grabCursor    : true,   // Mauszeiger und Touch-Verhalten
+
+        // Navigationselemente aktivieren
         navigation    : {
           nextEl: '.teamSwiper .swiper-button-next',
           prevEl: '.teamSwiper .swiper-button-prev'
-        }
-        /* touchGestures sind per Default aktiv –
-           kein weiterer Code nötig. */
+        },
+
+        // Keine explizite Höhensteuerung durch Swiper nötig,
+        // da dies durch CSS (.h-100 Klassen und CSS-Regeln) geschieht.
       });
     });
   </script>
