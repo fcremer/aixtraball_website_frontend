@@ -73,19 +73,23 @@
     <div class="container">
       <div class="row align-items-center">
         <div class="col-md-6">
-          <p class="mb-1"><strong>Aixtraball e.V.</strong></p>
+          <img src="{{ url_for('static', filename='images/Logo.png') }}"
+               alt="Aixtraball Logo"
+               class="footer-logo mb-2">
           <p class="mb-1">Merzbrück 210<br>52146 Würselen</p>
-          <p class="mb-0">E-Mail: <a href="mailto:info@aixtraball.de">info@aixtraball.de</a></p>
+          <p class="mb-0">
+            E-Mail: <a href="mailto:info@aixtraball.de">info@aixtraball.de</a>
+          </p>
         </div>
         <div class="col-md-6 text-md-end">
           <div class="d-flex justify-content-md-end align-items-center gap-3 mt-3 mt-md-0">
             <a href="{{ url_for('impressum') }}" class="text-decoration-none text-muted">
               Impressum &amp; Datenschutz
             </a>
-            <a href="https://www.facebook.com/Aixtraball-eV-100063739775945" target="_blank" class="text-muted" aria-label="Facebook">
+            <a href="https://www.facebook.com/DEIN_FACEBOOK_HANDLE" target="_blank" class="text-muted" aria-label="Facebook">
               <i class="bi bi-facebook fs-5"></i>
             </a>
-            <a href="https://www.youtube.com/@aixtraballflippervereinaac2208" target="_blank" class="text-muted" aria-label="YouTube">
+            <a href="https://www.youtube.com/@DEIN_YOUTUBE_KANAL" target="_blank" class="text-muted" aria-label="YouTube">
               <i class="bi bi-youtube fs-5"></i>
             </a>
           </div>

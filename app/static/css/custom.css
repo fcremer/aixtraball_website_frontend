@@ -337,3 +337,9 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
    Sonstige Überschriften
 -------------------------------------------------- */
 .letter-heading{color:var(--bs-primary);}
+
+/* Footer-Logo – passend zur Textfarbe (grau/muted) */
+.footer-logo {
+  height: 20px;
+  filter: brightness(0) saturate(0%) opacity(0.6);
+}
