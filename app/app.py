@@ -83,6 +83,14 @@ def index():
         latest_news  = news_teaser
     )
 
+@app.route("/preise")
+def preise():
+    """Preise‑/Besucherinfos anzeigen."""
+    return render_template(
+        "prices.html",
+        opening=get_next_opening()
+    )
+
 @app.route("/verein")
 def verein():
     # Timeline‑Milestones laden
