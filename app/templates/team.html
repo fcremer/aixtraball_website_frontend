@@ -1,4 +1,3 @@
-{#  app/templates/team.html  #}
 {% extends "base.html" %}
 
 {% block head_extra %}
@@ -30,15 +29,30 @@
       font-size: 28px;
     }
   </style>
+  <style>
+    /* Hero-Bild für Team-Seite */
+    .hero-flipper {
+      background: url('{{ url_for("static", filename="/images/else/background_person.jpg") }}') center/cover;
+      min-height: 45vh;
+    }
+    .hero-flipper .overlay {
+      background: rgba(var(--bs-primary-rgb), .65);
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
+<!-- Hero-Banner wie auf Flipper-All -->
+<header class="hero-flipper d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
+    <h1 class="display-4 fw-bold">Unser Team</h1>
+    <p class="lead mb-0">Lerne unser engagiertes Team kennen</p>
+  </div>
+</header>
 {# Section definiert die Gesamthöhe #}
 <section class="py-5 bg-light team-fullheight">
   {# Container zentriert den Inhalt und erbt die Höhe #}
   <div class="container h-100"> {# Entfernt: d-flex flex-column #}
-
-    <h1 class="mb-4 text-center">Unser Team</h1>
 
     {# Swiper erbt die Höhe vom Container. Wichtig: overflow: hidden wird via CSS hinzugefügt #}
     <div class="swiper teamSwiper h-100"> {# Entfernt: flex-grow-1 und style="min-height: 0;" #}
