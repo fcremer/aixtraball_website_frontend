@@ -4,10 +4,14 @@
     /* -------------------------------------------------------------
        Vereins‑Akzentfarbe (#D23729)
        ------------------------------------------------------------- */
-    .hero-bg{
-      background:url('{{ url_for("static", filename="images/else/r10.png") }}') center/cover;
+    /* Hero-Bild für Verein-Seite */
+    .hero-flipper {
+      background: url('{{ url_for("static", filename="images/else/background_verein.jpg") }}') center/cover;
+      min-height: 45vh;
     }
-    .hero-overlay{background:rgba(var(--bs-primary-rgb),.70);}
+    .hero-flipper .overlay {
+      background: rgba(var(--bs-primary-rgb), .70);
+    }
     .accordion-button:not(.collapsed){
       background:rgba(var(--bs-primary-rgb),.15);
       color:var(--bs-primary);
@@ -72,9 +76,9 @@
 {% endblock %}
 
 {% block content %}
-<!-- Hero ----------------------------------------------------------------- -->
-<header class="text-white text-center py-5 hero-bg">
-  <div class="hero-overlay p-4">
+<!-- Hero-Banner wie auf anderen Seiten -->
+<header class="hero-flipper d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
     <h1 class="display-4 fw-bold">
       <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
            alt="Aixtraball e.V. Logo"
@@ -106,7 +110,7 @@
         </ul>
       </div>
       <div class="col-md-6">
-        <img src="{{ url_for('static', filename='images/else/repair1.jpg') }}"
+        <img src="{{ url_for('static', filename='/images/else/defekt.jpg') }}"
              class="img-fluid rounded shadow" alt="Restauration">
       </div>
     </div>
