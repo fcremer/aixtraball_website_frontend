@@ -1,57 +1,161 @@
-{#  app/templates/flipper_all.html  #}
 {% extends "base.html" %}
+{# app/templates/flipper_all.html #}
 
 {% block head_extra %}
   <style>
-    /* Hero‑Bild ----------------------------------------------------- */
-    .hero-flipper{
-      background:url('{{ url_for("static", filename="images/else/50s.jpg") }}') center/cover;
-      min-height:45vh;
+    /* Hero-Bild ----------------------------------------------------- */
+    .hero-flipper {
+      background: url('{{ url_for("static", filename="images/else/50s.jpg") }}') center/cover;
+      min-height: 45vh;
     }
-    .hero-flipper .overlay{background:rgba(var(--bs-primary-rgb),.65);}
+    .hero-flipper .overlay {
+      background: rgba(var(--bs-primary-rgb), .65);
+    }
 
     /* Timeline ------------------------------------------------------ */
-    .timeline{position:relative;padding:2rem 0;}
-    .timeline::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;background:var(--bs-primary);transform:translateX(-50%);}
-    .timeline-item{position:relative;width:50%;padding:1rem 2rem;margin-bottom:2rem;transform:translateY(30px);transition:transform .6s ease-out;}
-    .timeline-item.show{transform:none;}
-    .timeline-item .timeline-year{font-weight:700;}
-    .timeline-item::after{content:"";position:absolute;top:1.2rem;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid var(--bs-primary);}
-    .timeline-item:nth-of-type(odd){left:0;text-align:right;}
-    .timeline-item:nth-of-type(odd)::after{right:-8px;}
-    .timeline-item:nth-of-type(even){left:50%;}
-    .timeline-item:nth-of-type(even)::after{left:-8px;}
-    @media (max-width:767.98px){
-      .timeline::before{left:8px;transform:none;}
-      .timeline-item{width:100%;padding-left:2.5rem;text-align:left;}
-      .timeline-item:nth-of-type(odd),
-      .timeline-item:nth-of-type(even){left:0;}
-      .timeline-item::after{left:0;}
+    .timeline {
+      position: relative;
+      padding: 2rem 0;
+      overflow: hidden;  /* sorgt dafür, dass hereingleitende Elemente erst sichtbar werden */
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      background: var(--bs-primary);
+      transform: translateX(-50%);
     }
 
-    /* Jahrzehnt‑Badges --------------------------------------------- */
-    .decade-badge{
-      display:inline-block;
-      padding:.25rem .5rem;
-      border-radius:.25rem;
-      background:rgba(var(--bs-primary-rgb),.08);
-      color:var(--bs-primary);
-      font-size:.75rem;
-      letter-spacing:.5px;
-      text-transform:uppercase;
+    .timeline-item {
+      position: relative;
+      width: 50%;
+      padding: 1rem 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(var(--bs-primary-rgb), 0.3);
+      border-radius: 0.25rem;
+
+      /* Anfangszustand für Slide-In + Fade */
+      opacity: 0;
+      transform: translateY(30px);
+      transition: transform .6s ease-out, opacity .6s ease-out;
+    }
+    .timeline-item.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Abstand der Timeline-Items zum Mittelstrich erhöhen */
+    .timeline-item:nth-of-type(odd) {
+      padding-right: 4rem;
+    }
+    .timeline-item:nth-of-type(even) {
+      padding-left: 4rem;
+    }
+
+    .timeline-item .timeline-year {
+      font-weight: 700;
+      color: var(--bs-primary);
+    }
+    .timeline-item::after {
+      content: "";
+      position: absolute;
+      top: 1.2rem;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      border: 4px solid var(--bs-primary);
+    }
+    .timeline-item:nth-of-type(odd) {
+      left: 0;
+      text-align: right;
+    }
+    .timeline-item:nth-of-type(odd)::after {
+      right: -8px;
+    }
+    .timeline-item:nth-of-type(even) {
+      left: 50%;
+    }
+    .timeline-item:nth-of-type(even)::after {
+      left: -8px;
+    }
+
+    @media (max-width: 767.98px) {
+      .timeline::before {
+        left: 8px;
+        transform: none;
+      }
+      .timeline-item {
+        width: 100%;
+        padding-left: 2.5rem;
+        text-align: left;
+      }
+      .timeline-item:nth-of-type(odd),
+      .timeline-item:nth-of-type(even) {
+        left: 0;
+      }
+      .timeline-item::after {
+        left: 0;
+      }
+    }
+
+    /* Jahrzehnt-Badges --------------------------------------------- */
+    .decade-badge {
+      display: inline-block;
+      padding: .25rem .5rem;
+      border-radius: .25rem;
+      background: rgba(var(--bs-primary-rgb), .08);
+      color: var(--bs-primary);
+      font-size: .75rem;
+      letter-spacing: .5px;
+      text-transform: uppercase;
     }
 
     /* Dezente Hintergrundfarben pro Jahrzehnt ----------------------- */
     .timeline-item.decade-1970,
     .timeline-item.decade-1990,
     .timeline-item.decade-2010,
-    .timeline-item.decade-2030{
-      background:rgba(var(--bs-primary-rgb),.03);
+    .timeline-item.decade-2030 {
+      background: rgba(var(--bs-primary-rgb), .03);
     }
     .timeline-item.decade-1980,
     .timeline-item.decade-2000,
-    .timeline-item.decade-2020{
-      background:rgba(var(--bs-primary-rgb),.06);
+    .timeline-item.decade-2020 {
+      background: rgba(var(--bs-primary-rgb), .06);
+    }
+
+    /* Dekaden-Hintergrundabschnitte */
+    .decade-section {
+      position: relative;
+      background-size: auto;
+      background-position: center;
+      background-repeat: repeat;
+      border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+    }
+    .decade-section::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      background: linear-gradient(to right, white 0%, transparent 10%, transparent 90%, white 100%);
+    }
+    .decade-overlay {
+      background: rgba(255,255,255,0.6);
+      padding: 2rem 0;
+    }
+
+    /* Sticky Epoch-Label beim Scrollen */
+    .timeline-epoch {
+      position: sticky;
+      top: 70px;
+      background: transparent;
+      z-index: 5;
+      padding: 0.5rem 0;
     }
   </style>
 {% endblock %}
@@ -60,72 +164,90 @@
 <!-- Hero --------------------------------------------------------------- -->
 <header class="hero-flipper d-flex align-items-center text-white text-center">
   <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">Unsere Flipper‑Epochen</h1>
-    <p class="lead mb-0">Von early-electronic Klassikern bis zu modernen Stern‑Titeln</p>
+    <h1 class="display-4 fw-bold">Unsere Flipper-Epochen</h1>
+    <p class="lead mb-0">Von early-electronic Klassikern bis zu modernen Stern-Titeln</p>
   </div>
 </header>
 
-<!-- Intro‑Text ---------------------------------------------------------- -->
+<!-- Intro-Text ---------------------------------------------------------- -->
 <section class="py-5">
   <div class="container">
     <p class="lead">
       Begib dich mit uns auf eine kleine Zeitreise!  
       Wir haben für dich die Highlights unserer Sammlung chronologisch
-      aufbereitet – vom ältesten Automaten der 70er Jahre bis zum neuesten Gerät.
+      aufbereitet – vom ältesten Automaten der 70er Jahre bis zum neuesten Gerät.
     </p>
   </div>
 </section>
 
-<!-- Timeline ------------------------------------------------------------ -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <h2 class="text-center mb-5">Die Reise beginnt …</h2>
-
-    <div class="timeline">
-      {% for f in flippers %}
-      <div class="timeline-item decade-{{ (f.year // 10) * 10 }}">
-        <span class="timeline-year">
-          {{ f.year }}<span class="decade-badge ms-2">{{ f.decade_label }}</span>
-        </span>
-        <h3 class="h5 mt-2">{{ f.name }}</h3>
-        {% if f.image %}
-          <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}">
-        {% endif %}
-        {% if f.link %}
-          <p><a href="{{ f.link }}" target="_blank">Mehr zum Gerät<i class="bi bi-box-arrow-up-right ms-1"></i></a></p>
-        {% endif %}
+<!-- Timeline nach Dekade ------------------------------------------------------------ -->
+{% set groups = flippers|groupby('decade_label') %}
+{% for decade_label, items in groups %}
+  {% set decade = (items[0].year // 10) * 10 %}
+  <section class="decade-section" style="background-image: url('{{ url_for('static', filename='images/timeline/bg-' ~ decade ~ '.jpg') }}');">
+    <div class="decade-overlay">
+      <div class="container">
+        <div class="timeline-epoch">
+          <span class="epoch-label">{{ decade_label }}</span>
+        </div>
+        <div class="timeline">
+          {% for f in items %}
+          <div class="timeline-item decade-{{ decade }}">
+            <span class="timeline-year">
+              {{ f.year }}
+            </span>
+            <h3 class="h5 mt-2">{{ f.name }}</h3>
+            {% if f.image %}
+              <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}">
+            {% endif %}
+            {% if f.link %}
+              <p>
+                <a href="{{ f.link }}" target="_blank">Mehr zum Gerät
+                  <i class="bi bi-box-arrow-up-right ms-1"></i>
+                </a>
+              </p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
       </div>
-      {% endfor %}
     </div>
-  </div>
-</section>
+  </section>
+{% endfor %}
 
 <!-- CTA --------------------------------------------------------------- -->
 <section class="py-5 text-center">
   <div class="container">
-    <h2 class="mb-3">Selbst spielen – live vor Ort!</h2>
+    <h2 class="mb-3">Selbst spielen – live vor Ort!</h2>
     <p class="lead mb-4">
       Komm an unserem nächsten Öffnungstag vorbei und teste deine Lieblingsgeräte
       aus jeder Epoche.
     </p>
-    <a class="btn btn-primary btn-lg" href="{{ url_for('preise') }}">Preise &amp; Besuch</a>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('preise') }}">
+      Preise &amp; Besuch
+    </a>
   </div>
 </section>
 {% endblock %}
 
-{% block scripts_extra %}
+{% block scripts %}
   {{ super() }}
   <script>
-    /* Slide‑In Animation für die Timeline */
-    window.addEventListener('load', () => {
+    document.addEventListener('DOMContentLoaded', () => {
       const items = document.querySelectorAll('.timeline-item');
-      if (!('IntersectionObserver' in window)) { items.forEach(i=>i.classList.add('show')); return; }
-      const io = new IntersectionObserver((entries,obs)=>{
-        entries.forEach(e=>{
-          if(e.isIntersecting){ e.target.classList.add('show'); obs.unobserve(e.target); }
+      if (!('IntersectionObserver' in window)) {
+        items.forEach(i => i.classList.add('show'));
+        return;
+      }
+      const io = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+            obs.unobserve(entry.target);
+          }
         });
-      },{threshold:.15});
-      items.forEach(el=>io.observe(el));
+      }, { threshold: 0.15 });
+      items.forEach(el => io.observe(el));
     });
   </script>
 {% endblock %}
