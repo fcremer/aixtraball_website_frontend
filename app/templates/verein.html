@@ -1,6 +1,4 @@
-{#  app/templates/verein.html  #}
 {% extends "base.html" %}
-
 {% block head_extra %}
   <style>
     /* -------------------------------------------------------------
@@ -37,6 +35,33 @@
       .timeline-item:nth-of-type(odd),
       .timeline-item:nth-of-type(even){left:0;}
       .timeline-item::after{left:0;}
+    }
+
+    /* Hintergrund für die Timeline */
+    .timeline-section {
+      position: relative;
+      background-size: auto;
+      background-position: center;
+      background-repeat: repeat;
+      border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+    }
+    .timeline-section::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background: linear-gradient(to right, white 0%, transparent 10%, transparent 90%, white 100%);
+    }
+    .timeline-overlay {
+      background: rgba(255,255,255,0.6);
+      padding: 2rem 0;
+    }
+    /* Box-Design wie bei Flipper-Timeline */
+    .timeline-item {
+      border: 1px solid rgba(var(--bs-primary-rgb), 0.3);
+      border-radius: 0.25rem;
+      padding: 1rem 2rem;
+      background: rgba(var(--bs-primary-rgb), 0.10);
     }
   </style>
 {% endblock %}
@@ -79,26 +104,28 @@
   </div>
 </section>
 
-<!-- Timeline ------------------------------------------------------------- -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <h2 class="mb-5 text-center">Unsere Geschichte</h2>
-    {% if timeline %}
-      <div class="timeline">
-        {% for t in timeline %}
-        <div class="timeline-item">
-          <span class="timeline-date">{{ t.date | datetimeformat("%m/%Y") }}</span>
-          <h3 class="h5 mt-2">{{ t.title }}</h3>
-          <p>{{ t.description }}</p>
-          {% if t.image %}
-            <img src="{{ t.image | asset }}" class="img-fluid rounded shadow mb-2" alt="{{ t.title }}">
-          {% endif %}
+<!-- Timeline mit gekacheltem Hintergrund -->
+<section class="timeline-section" style="background-image: url('{{ url_for('static', filename='images/timeline/background_X2.jpg') }}');">
+  <div class="timeline-overlay">
+    <div class="container">
+      <h2 class="mb-5 text-center">Unsere Geschichte</h2>
+      {% if timeline %}
+        <div class="timeline">
+          {% for t in timeline %}
+          <div class="timeline-item">
+            <span class="timeline-date">{{ t.date | datetimeformat("%m/%Y") }}</span>
+            <h3 class="h5 mt-2">{{ t.title }}</h3>
+            <p>{{ t.description }}</p>
+            {% if t.image %}
+              <img src="{{ t.image | asset }}" class="img-fluid rounded shadow mb-2" alt="{{ t.title }}">
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-center text-muted">Noch keine Meilensteine eingetragen.</p>
-    {% endif %}
+      {% else %}
+        <p class="text-center text-muted">Noch keine Meilensteine eingetragen.</p>
+      {% endif %}
+    </div>
   </div>
 </section>
 
@@ -160,7 +187,7 @@
     <h2 class="mb-3">Mitglied werden?</h2>
     <p class="lead col-lg-8 mx-auto">
       Ab 15 € monatlich (Jugendliche 10 €)
-      hilfst du beim Restaurieren und Reparieren und erhältst Zugang zu Events.
+      hilfst du beim </br>Restaurieren und Reparieren und erhältst Zugang zu Events.
     </p>
     <a class="btn btn-light btn-lg" href="{{ url_for('kontakt') }}">Jetzt anfragen</a>
   </div>
@@ -181,7 +208,7 @@
 </section>
 {% endblock %}
 
-{% block scripts_extra %}
+{% block scripts %}
   {{ super() }}
   <script>
     /* Timeline‑Animation */
