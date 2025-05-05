@@ -42,27 +42,24 @@
 </section>
 
 <section class="py-5">
-  <div class="container pulse-arrow-box">      {# macht Container relativ #}
+  <div class="container">      {# macht Container relativ #}
     <h2 class="fw-bold text-center mb-4">Flipper-Highlights</h2>
 
     <div id="homeFlipperGrid" class="row g-4">
       {% for f in home_flippers %}
       <div class="col-6 col-md-4 col-lg-2">
-        <div class="card h-100 shadow-sm">
-          <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
-          <div class="card-body p-2">
-            <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
+        <a href="{{ url_for('flipper_all') }}" class="text-decoration-none text-reset">
+          <div class="card h-100 shadow-sm">
+            <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
+            <div class="card-body p-2">
+              <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
+            </div>
           </div>
-        </div>
+        </a>
       </div>
       {% endfor %}
     </div>
 
-    <a href="{{ url_for('flipper_all') }}"
-       class="pulse-arrow"
-       aria-label="Alle Flipper">
-       &rsaquo;
-    </a>
   </div>
 </section>
 

@@ -145,12 +145,62 @@ def flipper_all():
 
 @app.route("/news")
 def news_list():
-    news = sorted(load_yaml("news.yaml"),
-                  key=lambda x: x["date"],
-                  reverse=True)
-    return render_template("news_list.html",
-                           news    = news,
-                           opening = get_next_opening())
+    """News‑Liste mit Filterung nach Jahr, Kategorie und Suchbegriff."""
+    raw_news = load_yaml("news.yaml")
+
+    # -----------------------
+    # URL‑Parameter auslesen
+    # -----------------------
+    year                = request.args.get("year", type=int)
+    selected_categories = request.args.getlist("category")
+    q                   = request.args.get("q", "").strip()
+
+    # -----------------------
+    # Zusatzinfos vorbereiten
+    # -----------------------
+    from datetime import datetime
+    for n in raw_news:
+        date_str = n.get("date", "")
+        try:
+            dt = parser.parse(date_str)
+        except Exception:
+            # Fallback to minimal date if parsing fails
+            dt = datetime.min
+        # store datetime for sorting and template compatibility
+        n["date"] = dt
+        # extract year if valid date
+        n["_year"] = dt.year if dt != datetime.min else None
+
+    # -----------------------
+    # Filter anwenden
+    # -----------------------
+    news = raw_news
+    if year:
+        news = [n for n in news if n.get("_year") == year]
+    if selected_categories:
+        news = [n for n in news if n.get("category") in selected_categories]
+    if q:
+        q_lower = q.lower()
+        news = [n for n in news if q_lower in n.get("title", "").lower()]
+
+    # -----------------------
+    # Sortierung
+    # -----------------------
+    news.sort(key=lambda x: x["date"], reverse=True)
+
+    # -----------------------
+    # Dropdown‑Werte berechnen
+    # -----------------------
+    years = sorted({n.get("_year") for n in raw_news if n.get("_year")}, reverse=True)
+    categories = sorted({n.get("category") for n in raw_news if n.get("category")})
+
+    return render_template(
+        "news_list.html",
+        news=news,
+        years=years,
+        categories=categories,
+        opening=get_next_opening()
+    )
 
 @app.route("/news/<slug>")
 def news_detail(slug):
