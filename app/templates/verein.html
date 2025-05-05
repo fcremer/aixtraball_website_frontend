@@ -63,6 +63,11 @@
       padding: 1rem 2rem;
       background: rgba(var(--bs-primary-rgb), 0.10);
     }
+    .hero-overlay h1 img {
+      height: 1em;
+      display: inline-block;
+      vertical-align: middle;
+    }
   </style>
 {% endblock %}
 
@@ -70,7 +75,11 @@
 <!-- Hero ----------------------------------------------------------------- -->
 <header class="text-white text-center py-5 hero-bg">
   <div class="hero-overlay p-4">
-    <h1 class="display-4 fw-bold">Aixtraball&nbsp;e.V.</h1>
+    <h1 class="display-4 fw-bold">
+      <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
+           alt="Aixtraball e.V. Logo"
+           style="height:1em; display:inline-block; vertical-align:middle;">
+    </h1>
     <p class="lead mb-0">Flipper‑Kultur bewahren · erleben · teilen</p>
   </div>
 </header>

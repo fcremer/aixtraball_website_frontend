@@ -157,6 +157,22 @@
       z-index: 5;
       padding: 0.5rem 0;
     }
+
+    /* Stil für "Mehr zum Gerät"-Buttons */
+    .device-link {
+      display: inline-block;
+      padding: .25rem .75rem;
+      border: 1px solid var(--bs-primary);
+      border-radius: .25rem;
+      color: var(--bs-primary);
+      text-decoration: none;
+      transition: background .3s ease, color .3s ease;
+    }
+    .device-link:hover,
+    .device-link:focus {
+      background: var(--bs-primary);
+      color: #fff;
+    }
   </style>
 {% endblock %}
 
@@ -202,7 +218,7 @@
             {% endif %}
             {% if f.link %}
               <p>
-                <a href="{{ f.link }}" target="_blank">Mehr zum Gerät
+                <a href="{{ f.link }}" target="_blank" class="device-link">Mehr zum Gerät
                   <i class="bi bi-box-arrow-up-right ms-1"></i>
                 </a>
               </p>

@@ -5,9 +5,21 @@
     <h1 class="mb-3">{{ article.title }}</h1>
     <p class="text-muted">{{ article.date }}</p>
     {% if article.images %}
-      {% for img in article.images %}
-        <img src="{{ img | asset }}" class="img-fluid rounded mb-3" alt="{{ article.title }}">
-      {% endfor %}
+      {% if article.images|length > 1 %}
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mb-3">
+          {% for img in article.images %}
+            <div class="col">
+              <a href="{{ img | asset }}" class="glightbox" data-gallery="news-gallery">
+                <img src="{{ img | asset }}" class="img-fluid rounded" alt="{{ article.title }}">
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <a href="{{ article.images[0] | asset }}" class="glightbox" data-gallery="news-gallery">
+          <img src="{{ article.images[0] | asset }}" class="img-fluid rounded mb-3" alt="{{ article.title }}">
+        </a>
+      {% endif %}
     {% endif %}
     {{ article.content | safe }}
     {% if article.youtube_links %}
