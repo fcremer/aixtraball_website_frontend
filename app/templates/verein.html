@@ -1,46 +1,90 @@
-{#  app/templates/verein.html  #}
 {% extends "base.html" %}
-
 {% block head_extra %}
-  <!-- keine zusätzlichen Framework-CSS nötig; Bootstrap ist global -->
-
   <style>
     /* -------------------------------------------------------------
-       Vereins-Akzentfarbe konsistent einsetzen (#D23729)
+       Vereins‑Akzentfarbe (#D23729)
        ------------------------------------------------------------- */
-    /* 1. Vollflächiges Hero-Overlay in 70 % Vereinsrot */
-    .hero-bg {
-      background: url('{{ url_for("static", filename="images/else/r10.png") }}')
-                  center / cover;
+    /* Hero-Bild für Verein-Seite */
+    .hero-flipper {
+      background: url('{{ url_for("static", filename="images/else/background_verein.jpg") }}') center/cover;
+      min-height: 45vh;
     }
-    .hero-overlay {
-      background: rgba(var(--bs-primary-rgb), 0.70);
+    .hero-flipper .overlay {
+      background: rgba(var(--bs-primary-rgb), .70);
     }
-
-    /* 2. Accordion-Header – aktive Farbe & Icon */
-    .accordion-button:not(.collapsed) {
-      background-color: rgba(var(--bs-primary-rgb), 0.15);
-      color: var(--bs-primary);
+    .accordion-button:not(.collapsed){
+      background:rgba(var(--bs-primary-rgb),.15);
+      color:var(--bs-primary);
     }
-    .accordion-button::after { /* Pfeil-Icon */
-      filter: hue-rotate(-10deg) saturate(200%);  /* leicht in Rot gefärbt */
-    }
-
-    /* 3. CTA-Button Hover */
+    .accordion-button::after{filter:hue-rotate(-10deg) saturate(200%);}
     .btn-light:hover,
-    .btn-light:focus {
-      background-color: rgba(var(--bs-primary-rgb), 0.10);
-      color: var(--bs-primary);
+    .btn-light:focus{background:rgba(var(--bs-primary-rgb),.10);color:var(--bs-primary);}
+
+    /* -------------------------------------------------------------
+       Timeline
+       ------------------------------------------------------------- */
+    .timeline{position:relative;padding:2rem 0;}
+    .timeline::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;background:var(--bs-primary);transform:translateX(-50%);}
+    .timeline-item{position:relative;width:50%;padding:1rem 2rem;margin-bottom:2rem;transform:translateY(30px);transition:transform .6s ease-out;}
+    .timeline-item.show{transform:none;}
+    .timeline-item .timeline-date{font-weight:700;color:var(--bs-primary);}
+    .timeline-item::after{content:"";position:absolute;top:1.2rem;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid var(--bs-primary);}
+    .timeline-item:nth-of-type(odd){left:0;text-align:right;}
+    .timeline-item:nth-of-type(odd)::after{right:-8px;}
+    .timeline-item:nth-of-type(even){left:50%;}
+    .timeline-item:nth-of-type(even)::after{left:-8px;}
+    @media(max-width:767.98px){
+      .timeline::before{left:8px;transform:none;}
+      .timeline-item{width:100%;padding-left:2.5rem;text-align:left;}
+      .timeline-item:nth-of-type(odd),
+      .timeline-item:nth-of-type(even){left:0;}
+      .timeline-item::after{left:0;}
+    }
+
+    /* Hintergrund für die Timeline */
+    .timeline-section {
+      position: relative;
+      background-size: auto;
+      background-position: center;
+      background-repeat: repeat;
+      border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+    }
+    .timeline-section::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background: linear-gradient(to right, white 0%, transparent 10%, transparent 90%, white 100%);
+    }
+    .timeline-overlay {
+      background: rgba(255,255,255,0.6);
+      padding: 2rem 0;
+    }
+    /* Box-Design wie bei Flipper-Timeline */
+    .timeline-item {
+      border: 1px solid rgba(var(--bs-primary-rgb), 0.3);
+      border-radius: 0.25rem;
+      padding: 1rem 2rem;
+      background: rgba(var(--bs-primary-rgb), 0.10);
+    }
+    .hero-overlay h1 img {
+      height: 1em;
+      display: inline-block;
+      vertical-align: middle;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero ----------------------------------------------------------------- -->
-<header class="text-white text-center py-5 hero-bg">
-  <div class="hero-overlay p-4">
-    <h1 class="display-4 fw-bold">Aixtraball&nbsp;e.V.</h1>
-    <p class="lead mb-0">Flipper-Kultur bewahren · erleben · teilen</p>
+<!-- Hero-Banner wie auf anderen Seiten -->
+<header class="hero-flipper d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
+    <h1 class="display-4 fw-bold">
+      <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
+           alt="Aixtraball e.V. Logo"
+           style="height:1em; display:inline-block; vertical-align:middle;">
+    </h1>
+    <p class="lead mb-0">Flipper‑Kultur bewahren · erleben · teilen</p>
   </div>
 </header>
 
@@ -51,108 +95,73 @@
       <div class="col-md-6">
         <h2 class="mb-3">Unsere Mission</h2>
         <p>
-          Am Flugplatz <strong>Aachen-Merzbrück</strong> bewahren wir auf rund
-          <strong>300&nbsp;m²</strong> Flipper-Kultur. In zwei Hallen warten
+          Am Flugplatz <strong>Aachen‑Merzbrück</strong> bewahren wir auf rund
+          <strong>300&nbsp;m²</strong> Flipper‑Kultur. In unserer Halle warten
           mehr als <strong>50 restaurierte Automaten</strong> darauf, entdeckt zu
-          werden – vom EM-Klassiker bis zum neuesten Stern-Titel.
+          werden – vom EM‑Klassiker bis zum neuesten Stern‑Titel.
         </p>
         <ul class="list-unstyled">
           <li class="mb-2"><i class="bi bi-tools me-2 text-primary"></i>
               Restauration &amp; Reparatur historischer Geräte</li>
           <li class="mb-2"><i class="bi bi-mortarboard me-2 text-primary"></i>
-              Workshops &amp; Technik-Einblicke</li>
+              Workshops &amp; Technik‑Einblicke</li>
           <li><i class="bi bi-people me-2 text-primary"></i>
               Offene Spieltage &amp; Turniere</li>
         </ul>
       </div>
       <div class="col-md-6">
-        <img src="{{ url_for('static', filename='images/else/repair1.jpg') }}"
+        <img src="{{ url_for('static', filename='/images/else/defekt.jpg') }}"
              class="img-fluid rounded shadow" alt="Restauration">
       </div>
     </div>
   </div>
 </section>
 
-<!-- Hallen-Facts --------------------------------------------------------- -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <div class="row text-center g-4">
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h3 class="display-5 fw-bold text-primary">300&nbsp;m²</h3>
-            <p class="mb-0">Fläche</p>
+<!-- Timeline mit gekacheltem Hintergrund -->
+<section class="timeline-section" style="background-image: url('{{ url_for('static', filename='images/timeline/background_X2.jpg') }}');">
+  <div class="timeline-overlay">
+    <div class="container">
+      <h2 class="mb-5 text-center">Unsere Geschichte</h2>
+      {% if timeline %}
+        <div class="timeline">
+          {% for t in timeline %}
+          <div class="timeline-item">
+            <span class="timeline-date">{{ t.date | datetimeformat("%m/%Y") }}</span>
+            <h3 class="h5 mt-2">{{ t.title }}</h3>
+            <p>{{ t.description }}</p>
+            {% if t.image %}
+              <img src="{{ t.image | asset }}" class="img-fluid rounded shadow mb-2" alt="{{ t.title }}">
+            {% endif %}
           </div>
+          {% endfor %}
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h3 class="display-5 fw-bold text-primary">50+</h3>
-            <p class="mb-0">Flipper­automaten</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card h-100 border-0 shadow-sm">
-          <div class="card-body">
-            <h3 class="display-5 fw-bold text-primary">2015</h3>
-            <p class="mb-0">Gründungs­jahr</p>
-          </div>
-        </div>
-      </div>
+      {% else %}
+        <p class="text-center text-muted">Noch keine Meilensteine eingetragen.</p>
+      {% endif %}
     </div>
   </div>
 </section>
 
-<!-- Satzung (Accordion) -------------------------------------------------- -->
+<!-- Satzung (Kurzfassung) ------------------------------------------------ -->
+{% set paras = [
+  ('Präambel',
+    'In den 60er Jahren bis in die 90er Jahre waren Flipperautomaten ein fester Bestandteil der Unterhaltungskultur …'),
+  ('§1 Name & Sitz',
+    '1. Der Verein führt den Namen „AixtraBall e.V.“<br>2. Er hat seinen Sitz in Würselen …'),
+  ('§2 Zweck',
+    'Der Zweck des Vereins ist die Förderung von Kunst und Kultur …'),
+  ('§4 Mitgliedschaft',
+    '1. Mitglieder können alle natürlichen und juristischen Personen werden …'),
+  ('§5 Mitgliedsbeiträge',
+    '1. Von den Vereinsmitgliedern werden Monatsbeiträge von derzeit 15 € erhoben …'),
+  ('§6 Rechte & Pflichten',
+    '1. Mitglieder erhalten Zugang zu den Vereinsräumlichkeiten …')
+] %}
 <section class="py-5">
   <div class="container">
-    <h2 class="mb-4 text-center">Unsere Satzung&nbsp;<small class="text-muted">(Kurzfassung)</small></h2>
-
-    {% set paras = [
-      ('Präambel',
-       'In den 60er Jahren bis in die 90er Jahre waren Flipperautomaten ein fester Bestandteil der Unterhaltungskultur, und Geräte waren in fast jeder Kneipe und Gaststätte zu finden. Mit der Zeit wurden sie mangels Rentabilität zunehmend von Geldspielgeräten verdrängt.
-       Heute ist es eine seltene Ausnahme, einen Flipperautomat in der Öffentlichkeit zu finden. Obwohl noch immer alte Geräte existieren und neue regelmäßig produziert werden, welche weltweit Interessenten und Käufer finden, droht regelrecht ein Aussterben, da Flipperautomaten fast ausschließlich in Privathaushalten stehen und somit der Aufmerksamkeit der breiten Masse entzogen werden.
-       In diesem Sinne gibt sich der Verein „AixtraBall e.V.“ folgende Satzung:'),
-      ('§1 Name&nbsp;& Sitz',
-       '1. Der Verein führt den Namen „AixtraBall e.V.“
-       2. Er hat seinen Sitz in Würselen und ist im Vereinsregister eingetragen.
-       3. Das Geschäftsjahr ist das Kalenderjahr.'),
-      ('§2 Zweck',
-       'Der Zweck des Vereins ist die Förderung von Kunst und Kultur. Der Verein macht es sich daher zur Aufgabe, die Kultur der Flipperautomaten zu fördern. Hierzu wird die Geschichte von Flipperautomaten zu dokumentiert und in einen historischen, gesellschaftlichen, sowie technischen Kontext gestellt.
-       Er verfolgt das Ziel, diese Apparate als Kultur- und Kunstobjekt sowie Unterhaltungs- und Sportgerät in der Öffentlichkeit bekannter zu machen, ihre Verbreitung zu fördern und den Bestand an historischen Geräten zu erhalten.
-       Zu Informationszwecken werden die Geräte vom Verein gesammelt, in Stand gesetzt oder leihweise zur Verfügung gestellte Geräte im geeigneten Rahmen präsentiert und der Öffentlichkeit zugänglich gemacht.
-       Der Satzungszweck wird insbesondere verwirklicht durch:
-       • die Einrichtung von geeigneten Räumlichkeiten zur Erhaltung und Restauration von Spielautomaten.
-       • die Archivierung und Dokumentierung von Spielgeräten.
-       • die öffentliche Ausstellung von Spielgeräten mit Einblick in den Aufbau und die Funktionsweise der Apparate.
-       • die Organisation von Veranstaltungen und Workshops, um einer interessierten Öffentlichkeit die Entwicklung der Spielgeräte in didaktisch wertvoller Form erfahrbar machen.
-       • die Bewahrung der Historie und Begebenheiten der Spielgeräte-Industrie und Sammlergeschichte.
-       • die Presse- und Öffentlichkeitsarbeit unter Einbeziehung des Internets.'),
-      ('§4 Mitgliedschaft',
-       '1. Mitglieder können alle natürlichen und juristischen Personen werden, die die Ziele des Vereins unterstützen.
-       2. Auf Vorschlag des Vorstandes kann die Mitgliederversammlung Ehrenmitglieder ernennen.
-       3. Voraussetzung für den Erwerb der Mitgliedschaft ist ein Antrag, der in Textform an den Vorstand zu richten ist.
-       4. Die Aufnahme erfolgt durch einstimmige Entscheidung des Vorstandes.
-       5. Der Austritt eines Mitgliedes erfolgt durch schriftliche Erklärung gegenüber dem Vorstand mit einer Frist von drei Monaten zum Schluss des Geschäftsjahres möglich.
-       6. Ein Mitglied kann durch einstimmigen Beschluss des Vorstandes ausgeschlossen werden, z.B. wenn es den Vereinszielen zuwider handelt oder seinen Verpflichtungen gegenüber dem Verein nicht nachkommt.
-       Gegen den Beschluss kann das Mitglied die Mitgliederversammlung anrufen. Das Mitglied ist zu der Versammlung einzuladen und anzuhören.'),
-      ('§5 Mitgliedsbeiträge',
-       '1. Von den Vereinsmitgliedern werden Monatsbeiträge von derzeit 15,- Euro erhoben. Kinder und Jugendliche bis 18 Jahre sowie Auszubildende und Studenten zahlen monatlich 10 Euro. Zur Finanzierung besonderer Vorhaben oder zur Beseitigung finanzieller Schwierigkeiten des Vereins können Umlagen erhoben werden.
-       2. Höhe und Fälligkeit von Monatsbeiträgen und Umlagen werden von der Mitgliederversammlung mit einfacher Mehrheit der abgegebenen Stimmen festgesetzt.
-       3. Ehrenmitglieder sind vom Monatsbeitrag befreit.
-       4. Der Vorstand kann in geeigneten Fällen durch einstimmigen Beschluss Beiträge und Umlagen ganz oder teilweise erlassen oder stunden.'),
-       ('§6 Rechte und Pflichten der Mitglieder',
-       '1. Mitglieder erhalten Zugang zu den Vereinsräumlichkeiten im Rahmen von Vereinsabenden und sonstiger Vereinsveranstaltungen.
-       Zusätzlich kann ein Vollmitglied den Schlüssel für die Vereinsräumlichkeiten beim Vorstand erfragen, um die Räumlichkeiten eigenständig zu nutzen.
-       Die Schlüsselvergabe wird protokolliert. Das Vereinsmitglied ist während dieser Zeit für von ihm verursachte Schäden verantwortlich.
-       2. Mitglieder können (und sollen im Rahmen Ihrer Möglichkeiten) dem Verein Ausstellungsgeräte als Leihgabe zur Verfügung stellen.
-       Diese Geräte werden für Präsentationen und Veranstaltungen genutzt und sollten nach Möglichkeit funktionsfähig sein.
-       3. Aufstellplätze für Geräte werden gemäß den Räumlichkeiten nach einem Schlüssel, für funktionierende und restaurierungsbedürftige Geräte unter den Mitgliedern des Vereins vom Vorstand aufgeteilt.
-       4. Die Geräte in den Vereinsräumlichkeiten können während der Öffnungszeiten, für alle Voll- und Tagesmitglieder kostenfrei genutzt werden.
-       5. Die Mitglieder sind berechtigt und bevollmächtigt, für und im Namen des Vereins Ausgaben zu tätigen, sofern diese für den Betrieb des Vereins üblich und angemessen sind und in Anbetracht der Art und der Höhe der Ausgaben eine Einwilligung des Vorstands regelmäßig zu erwarten ist.')
-    ] %}
+    <h2 class="mb-4 text-center">
+      Unsere Satzung&nbsp;<small class="text-muted">(Kurzfassung)</small>
+    </h2>
 
     <div class="accordion" id="satzungAcc">
       {% for para in paras %}
@@ -163,14 +172,14 @@
                   data-bs-toggle="collapse"
                   data-bs-target="#c{{ loop.index0 }}"
                   aria-expanded="{{ 'true' if loop.first else 'false' }}">
-            {{ para[0]|safe }}
+            {{ para[0] | safe }}
           </button>
         </h2>
         <div id="c{{ loop.index0 }}"
              class="accordion-collapse collapse {{ 'show' if loop.first else '' }}"
              data-bs-parent="#satzungAcc">
           <div class="accordion-body">
-            {{ para[1] }}
+            {{ para[1] | safe }}
           </div>
         </div>
       </div>
@@ -180,20 +189,18 @@
     <p class="text-center mt-4">
       <a class="btn btn-outline-primary"
          href="{{ url_for('static', filename='docs/satzung.pdf') }}"
-         target="_blank">
-        Vollständige Satzung (PDF)
-      </a>
+         target="_blank">Vollständige Satzung (PDF)</a>
     </p>
   </div>
 </section>
 
-<!-- Call-to-Action ------------------------------------------------------- -->
+<!-- Call‑to‑Action ------------------------------------------------------- -->
 <section class="py-5 bg-primary text-white text-center">
   <div class="container">
     <h2 class="mb-3">Mitglied werden?</h2>
     <p class="lead col-lg-8 mx-auto">
-      Ab 15&nbsp;€ monatlich (Jugendliche 10&nbsp;€) spielst du jederzeit,
-      hilfst beim Restaurieren und erhältst Zugang zu Events.
+      Ab 15 € monatlich (Jugendliche 10 €)
+      hilfst du beim </br>Restaurieren und Reparieren und erhältst Zugang zu Events.
     </p>
     <a class="btn btn-light btn-lg" href="{{ url_for('kontakt') }}">Jetzt anfragen</a>
   </div>
@@ -204,17 +211,30 @@
   <div class="container text-center">
     <h2 class="mb-4">Unsere Förderer</h2>
     <div class="d-flex flex-wrap justify-content-center gap-4">
-      <img src="{{ url_for('static', filename='images/foerderer/auto_koch.png') }}"
-           height="60" alt="Auto Koch">
-      <img src="{{ url_for('static', filename='images/foerderer/avo_pinball-klein.png') }}"
-           height="60" alt="Avo Pinball">
-      <img src="{{ url_for('static', filename='images/foerderer/krings.png') }}"
-           height="60" alt="Krings und Krings Anwälte">
-      <img src="{{ url_for('static', filename='images/foerderer/pinwitch.png') }}"
-           height="60" alt="PinWitch">
-      <img src="{{ url_for('static', filename='images/foerderer/skydisc.png') }}"
-           height="60" alt="Skydisc">
+      <img src="{{ url_for('static', filename='images/foerderer/auto_koch.png') }}" height="60" alt="Auto Koch">
+      <img src="{{ url_for('static', filename='images/foerderer/avo_pinball-klein.png') }}" height="60" alt="Avo Pinball">
+      <img src="{{ url_for('static', filename='images/foerderer/krings.png') }}" height="60" alt="Krings & Krings Anwälte">
+      <img src="{{ url_for('static', filename='images/foerderer/pinwitch.png') }}" height="60" alt="PinWitch">
+      <img src="{{ url_for('static', filename='images/foerderer/skydisc.png') }}" height="60" alt="Skydisc">
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    /* Timeline‑Animation */
+    window.addEventListener('load', () => {
+      const items = document.querySelectorAll('.timeline-item');
+      if (!('IntersectionObserver' in window)) { items.forEach(i => i.classList.add('show')); return; }
+      const io = new IntersectionObserver((entries, obs) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); }
+        });
+      }, { threshold: .15 });
+      items.forEach(el => io.observe(el));
+    });
+  </script>
+{% endblock %}
 ^{% endblock %}

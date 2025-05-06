@@ -1,9 +1,9 @@
 """
-app/app.py  –  Haupt-Backend der Vereins-Website
+app/app.py  –  Haupt-Backend der Vereins‑Website
 ------------------------------------------------
-• Frontend-Routen (Startseite, Verein, Team, Flipper, News …)
-• YAML-basierte Inhalte werden bei jeder Request live eingelesen
-• Hilfsfilter:  asset()   → lokale/remote-Bilder
+• Frontend‑Routen (Startseite, Verein, Team, Flipper, News …)
+• YAML‑basierte Inhalte werden bei jeder Request live eingelesen
+• Hilfsfilter:  asset()   → lokale/remote‑Bilder
                 datetimeformat() → Datumsausgabe
 """
 
@@ -24,8 +24,6 @@ from flask import (
 # --------------------------------------------------
 # Grundkonfiguration
 # --------------------------------------------------
-
-
 app = Flask(__name__)
 
 BASE_DIR   = Path(__file__).resolve().parent
@@ -35,7 +33,7 @@ CONFIG_DIR = BASE_DIR / "config"
 # Hilfsfunktionen
 # --------------------------------------------------
 def load_yaml(filename: str):
-    """Beliebige YAML-Datei aus dem config-Ordner laden."""
+    """Beliebige YAML‑Datei aus dem config‑Ordner laden."""
     with open(CONFIG_DIR / filename, encoding="utf-8") as f:
         return yaml.safe_load(f) or []
 
@@ -49,7 +47,9 @@ def get_next_opening():
     future.sort(key=lambda x: x["from_dt"])
     return future[0] if future else None
 
-# Jinja-Filter
+# --------------------------------------------------
+# Jinja‑Filter
+# --------------------------------------------------
 @app.template_filter("datetimeformat")
 def datetimeformat(value, fmt="%d.%m.%Y %H:%M"):
     if isinstance(value, str):
@@ -58,8 +58,8 @@ def datetimeformat(value, fmt="%d.%m.%Y %H:%M"):
 
 @app.template_filter("asset")
 def asset(path: str):
-    """Gibt für http/https den Original-Pfad zurück,
-       sonst einen /static/-URL-Pfad."""
+    """Gibt für http/https den Original‑Pfad zurück,
+       sonst einen /static/‑URL‑Pfad."""
     if path.startswith(("http://", "https://", "//")):
         return path
     return url_for("static", filename=path)
@@ -83,10 +83,27 @@ def index():
         latest_news  = news_teaser
     )
 
+@app.route("/preise")
+def preise():
+    """Preise‑/Besucherinfos anzeigen."""
+    return render_template(
+        "prices.html",
+        opening=get_next_opening()
+    )
+
 @app.route("/verein")
 def verein():
-    return render_template("verein.html",
-                           opening=get_next_opening())
+    # Timeline‑Milestones laden
+    timeline = load_yaml("timeline.yaml")
+    # chronologisch sortiert – falls im YAML durcheinander
+    print(timeline)
+    timeline.sort(key=lambda x: parser.parse(x["date"]))
+    return render_template(
+        "verein.html",
+        opening=get_next_opening(),
+        timeline=timeline,
+        members=load_yaml("members.yaml")  # für Team‑Section auf gleicher Seite
+    )
 
 @app.route("/team")
 def team():
@@ -94,34 +111,96 @@ def team():
                            members = load_yaml("members.yaml"),
                            opening = get_next_opening())
 
+
 @app.route("/flipper")
 def flipper_all():
+    """
+    Reise durch unsere Flipper‑Epochen:
+    • lädt flippers.yaml
+    • sortiert chronologisch
+    • berechnet Jahrzehnt‑Label (70er, 80er …)
+    """
     flippers = load_yaml("flippers.yaml")
-    flippers.sort(key=lambda f: f["name"].lower())
 
-    # alphabetische Gruppen A, B, C …
-    groups = []
-    for letter, items in groupby(flippers,
-                                 key=lambda f: f["name"][0].upper()):
-        groups.append({
-            "letter":   letter,
-            "flippers": list(items)
-        })
+    # Erwartet: jedes Objekt hat mindestens "name", "image", "year"
+    for f in flippers:
+        raw_year = f.get("year", "")
+        try:
+            # Nur die ersten vier Ziffern als Jahr verwenden
+            year = int(str(raw_year)[:4])
+            f["year"] = year
+            f["decade_label"] = f"{(year // 10) * 10}er"
+        except (ValueError, TypeError):
+            f["year"] = 0
+            f["decade_label"] = "Unbekannt"
+
+    # chronologisch (ältestes zuerst)
+    flippers.sort(key=lambda f: f["year"] or 9999)
 
     return render_template(
         "flipper_all.html",
-        groups  = groups,
-        opening = get_next_opening()
+        flippers=flippers,
+        opening=get_next_opening()
     )
 
 @app.route("/news")
 def news_list():
-    news = sorted(load_yaml("news.yaml"),
-                  key=lambda x: x["date"],
-                  reverse=True)
-    return render_template("news_list.html",
-                           news    = news,
-                           opening = get_next_opening())
+    """News‑Liste mit Filterung nach Jahr, Kategorie und Suchbegriff."""
+    raw_news = load_yaml("news.yaml")
+
+    # -----------------------
+    # URL‑Parameter auslesen
+    # -----------------------
+    year                = request.args.get("year", type=int)
+    selected_categories = request.args.getlist("category")
+    q                   = request.args.get("q", "").strip()
+
+    # -----------------------
+    # Zusatzinfos vorbereiten
+    # -----------------------
+    from datetime import datetime
+    for n in raw_news:
+        date_str = n.get("date", "")
+        try:
+            dt = parser.parse(date_str)
+        except Exception:
+            # Fallback to minimal date if parsing fails
+            dt = datetime.min
+        # store datetime for sorting and template compatibility
+        n["date"] = dt
+        # extract year if valid date
+        n["_year"] = dt.year if dt != datetime.min else None
+
+    # -----------------------
+    # Filter anwenden
+    # -----------------------
+    news = raw_news
+    if year:
+        news = [n for n in news if n.get("_year") == year]
+    if selected_categories:
+        news = [n for n in news if n.get("category") in selected_categories]
+    if q:
+        q_lower = q.lower()
+        news = [n for n in news if q_lower in n.get("title", "").lower()]
+
+    # -----------------------
+    # Sortierung
+    # -----------------------
+    news.sort(key=lambda x: x["date"], reverse=True)
+
+    # -----------------------
+    # Dropdown‑Werte berechnen
+    # -----------------------
+    years = sorted({n.get("_year") for n in raw_news if n.get("_year")}, reverse=True)
+    categories = sorted({n.get("category") for n in raw_news if n.get("category")})
+
+    return render_template(
+        "news_list.html",
+        news=news,
+        years=years,
+        categories=categories,
+        opening=get_next_opening()
+    )
 
 @app.route("/news/<slug>")
 def news_detail(slug):
@@ -136,7 +215,7 @@ def news_detail(slug):
 @app.route("/kontakt", methods=["GET", "POST"])
 def kontakt():
     if request.method == "POST":
-        # Hier könnte ein echter Mail-Service angebunden werden.
+        # Hier könnte ein echter Mail‑Service angebunden werden.
         return redirect("mailto:info@aixtraball.de")
     return render_template("contact.html",
                            opening=get_next_opening())
@@ -161,17 +240,15 @@ def sitemap():
         {"loc": url_for('team',       _external=True)},
         {"loc": url_for('news_list',  _external=True)}
     ]
-    # alle News-Artikel
+    # alle News‑Artikel
     for n in load_yaml("news.yaml"):
         pages.append({"loc": url_for('news_detail', slug=n["slug"], _external=True),
                       "lastmod": n["date"]})
     xml = render_template("sitemap.xml.j2", pages=pages)
     return Response(xml, mimetype="application/xml")
 
-
-
 # --------------------------------------------------
-# Local run (Dockerfile startet ebenfalls so)
+# Local run (Dockerfile startet ebenfalls so)
 # --------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

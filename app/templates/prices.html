@@ -1,0 +1,122 @@
+{#  app/templates/prices.html  #}
+{% extends "base.html" %}
+
+{% block head_extra %}
+  <style>
+    /* -------------------------------------------------------------
+       Hero‑Bild & Akzent
+       ------------------------------------------------------------- */
+    .hero-prices{
+      background:url('{{ url_for("static", filename="images/else/prices.png") }}') center/cover;
+      min-height:45vh;
+    }
+    .hero-prices .overlay{background:rgba(var(--bs-primary-rgb),.65);}
+
+    /* Preis‑Karten */
+    .price-card{
+      border:1px solid rgba(0,0,0,.1);
+      border-radius:.5rem;
+      box-shadow:0 .125rem .5rem rgba(0,0,0,.05);
+      transition:transform .2s ease;
+    }
+    .price-card:hover{transform:translateY(-3px);}
+    .price{font-size:2.25rem;font-weight:700;color:var(--bs-primary);}
+  </style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero --------------------------------------------------------------- -->
+<header class="hero-prices d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
+    <h1 class="display-4 fw-bold">Preise &amp; Besuch</h1>
+    <p class="lead mb-0">Spielen, staunen &amp; wohlfühlen – ganz ohne Münzeinwurf!</p>
+  </div>
+</header>
+
+<!-- Intro‑Text ---------------------------------------------------------- -->
+<section class="py-5">
+  <div class="container">
+    <p class="lead">
+      Du bist herzlich eingeladen, unseren Flipperverein auf dem Flugplatz Merzbrück zu besuchen!</br>
+      Verpasse nicht <strong>jeden letzten Sonntag im Monat</strong>, wenn unsere Türen für dich geöffnet sind.
+      Genieße die Zeit mit netten Leuten und coolen Flippern. </br> Vielleicht knackst du dabei sogar die Highscores.
+    </p>
+  </div>
+</section>
+
+<!-- Tarife -------------------------------------------------------------- -->
+<section class="py-5 bg-light">
+    <div class="container">
+      <h2 class="text-center mb-5">Unsere Tarife</h2>
+  
+      {# Eine Reihe – auf großen Screens 4 Spalten, auf Tablet 2 Spalten,
+         auf Mobil 1 Spalte #}
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+  
+        <!-- Einzelpreise -->
+        <div class="col d-flex">
+          <div class="price-card p-4 text-center flex-fill border-primary">
+            <h3 class="h5 mb-3">Einzelpreise</h3>
+            <p class="price mb-1">15&nbsp;€</p>
+            <p class="text-muted mb-3">Erwachsene</p>
+            <hr>
+            <p class="price mb-1" style="font-size:1.75rem;">5&nbsp;€</p>
+            <p class="text-muted">Kinder &amp; Jugendliche <small>(bis&nbsp;18&nbsp;J.)</small></p>
+          </div>
+        </div>
+  
+        <!-- Familien‑Ticket -->
+        <div class="col d-flex">
+          <div class="price-card p-4 text-center flex-fill border-primary">
+            <h3 class="h5 mb-3">Familien‑Ticket</h3>
+            <p class="price mb-1">25&nbsp;€</p>
+            <p class="text-muted">2 Erwachsene + 1‑3 Kinder/Jugendliche</p>
+            <hr>
+            <p class="mb-0 small">
+              <span class="text-primary">*</span>Bei Vorlage der Familienkarte erhältst du
+              <strong>5&nbsp;€ Rabatt</strong>.
+            </p>
+          </div>
+        </div>
+  
+        <!-- Gutscheine -->
+        <div class="col d-flex">
+          <div class="price-card p-4 text-center flex-fill border-primary">
+            <h3 class="h5 mb-3">Gutscheine</h3>
+            <p class="display-6"><i class="bi bi-gift"></i></p>
+            <p>Das perfekte Geschenk für Flipper‑Fans! </br> Sprich uns einfach an – wir stellen dir gern einen Gutschein aus.</p>
+          </div>
+        </div>
+  
+        <!-- Exklusive Hallenmiete -->
+        <div class="col d-flex">
+          <div class="price-card p-4 text-center flex-fill border-primary">
+            <h3 class="h5 mb-3">Exklusive Hallenmiete</h3>
+            <p class="display-6"><i class="bi bi-people-fill"></i></p>
+            <p>Miete unsere gesamte Halle exklusiv für deinen Event.</p>
+            <p class="fw-bold">Preis auf Anfrage</p>
+            <p class="small text-muted">Sprich uns gerne an!</p>
+          </div>
+        </div>
+  
+      </div>
+    </div>
+  </section>
+
+<!-- Call‑to‑Action ------------------------------------------------------- -->
+<section class="py-5 text-center">
+  <div class="container">
+    <h2 class="mb-3">Jetzt den nächsten Termin vormerken!</h2>
+
+    {% if opening %}
+      <p class="fs-5 mb-4">
+        <i class="bi bi-calendar-event me-2"></i>
+        <strong>{{ opening.from_dt | datetimeformat("%d.%m.%Y") }}</strong>
+      </p>
+    {% endif %}
+
+    <p class="lead mb-4">Oder hast du Fragen? Wir helfen dir gern weiter.</p>
+    <a href="{{ url_for('kontakt') }}" class="btn btn-primary btn-lg">Kontakt aufnehmen</a>
+  </div>
+</section>
+{% endblock %}
