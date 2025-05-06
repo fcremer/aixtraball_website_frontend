@@ -29,78 +29,109 @@
     .teamSwiper .swiper-button-next::after {
       font-size: 28px;
     }
+
+    /* --- Full‑screen Member Slides ----------------------------------- */
+    .member-slide{
+      width:100%;
+      height:100vh;               /* volle Fensterhöhe */
+      display:flex;
+      align-items:center;
+      background-size:cover;
+      background-position:center left;
+      position:relative;
+    }
+    .member-slide::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, rgba(255,255,255,0) 55%, #fff 95%);
+    }
+    .member-info{
+      position:relative;
+      margin-left:auto;
+      margin-right:5%;
+      max-width:420px;
+      background:#fff;
+      padding:2rem;
+      box-shadow:0 .5rem 1rem rgba(0,0,0,.15);
+      border-radius:.5rem;
+      text-align:left;
+    }
+    .member-info h2{
+      color:var(--bs-primary);
+      margin-bottom:.25rem;
+    }
+    .member-info .role{
+      font-weight:600;
+      margin-bottom:1rem;
+    }
+    @media (max-width: 767.98px){
+      .member-slide{
+        flex-direction:column;
+        justify-content:flex-end;
+        background-position:center top;
+      }
+      .member-slide::after{
+        background:linear-gradient(180deg, rgba(255,255,255,0) 60%, #fff 95%);
+      }
+      .member-info{
+        margin:auto 1rem 3rem;
+        max-width:90%;
+      }
+    }
   </style>
 {% endblock %}
 
 {% block content %}
-{# Section definiert die Gesamthöhe #}
-<section class="py-5 bg-light team-fullheight">
-  {# Container zentriert den Inhalt und erbt die Höhe #}
-  <div class="container h-100"> {# Entfernt: d-flex flex-column #}
+<!-- Hero‑Banner -->
+<header class="hero-flipper d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
+    <h1 class="display-4 fw-bold">Unser Team</h1>
+    <p class="lead mb-0">Lerne unser engagiertes Team kennen</p>
+  </div>
+</header>
 
-    <h1 class="mb-4 text-center">Unser Team</h1>
+<!-- Vollbild‑Swiper für Mitglieder -->
+<div class="swiper memberSwiper">
+  <div class="swiper-wrapper">
+    {% for m in members %}
+    <div class="swiper-slide member-slide" style="background-image:url('{{ m.image | asset }}');">
+      <div class="member-info">
+        <h2>{{ m.name }}</h2>
+        <div class="role text-muted mb-2">{{ m.role }}</div>
+        {% if m.bio %}
+          <p>{{ m.bio }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 
-    {# Swiper erbt die Höhe vom Container. Wichtig: overflow: hidden wird via CSS hinzugefügt #}
-    <div class="swiper teamSwiper h-100"> {# Entfernt: flex-grow-1 und style="min-height: 0;" #}
-      {# Wrapper braucht volle Höhe für die Slides #}
-      <div class="swiper-wrapper h-100">
-
-        {% for member in members %}
-        {# Slide braucht volle Höhe #}
-        <div class="swiper-slide h-100">
-          {# Karte braucht volle Höhe und Flexbox für interne Anordnung #}
-          <div class="card h-100 shadow-sm d-flex flex-column">
-            <img src="{{ member.image | asset }}"
-                 class="card-img-top"
-                 alt="{{ member.name }}">
-            {# Card-Body nutzt Flexbox für interne Anordnung #}
-            <div class="card-body text-center d-flex flex-column">
-              {# Titel und Rolle bleiben oben #}
-              <div>
-                 <h5 class="card-title mb-1">{{ member.name }}</h5>
-                 <p class="card-subtitle text-muted mb-2">{{ member.role }}</p>
-              </div>
-              {% if member.bio %}
-              {# Scrollbarer Bereich für die Biografie #}
-              <div class="bio-scroll-area">
-                <p class="card-text small mt-2">{{ member.bio }}</p>
-              </div>
-              {% endif %}
-            </div> {# Ende card-body #}
-          </div> {# Ende card #}
-        </div> {# Ende swiper-slide #}
-        {% endfor %}
-
-      </div> {# Ende swiper-wrapper #}
-
-      <div class="swiper-button-prev"></div>
-      <div class="swiper-button-next"></div>
-
-    </div> {# Ende swiper #}
-  </div> {# Ende container #}
-</section> {# Ende team-fullheight section #}
+  <!-- Navigation -->
+  <div class="swiper-button-prev"></div>
+  <div class="swiper-button-next"></div>
+  <div class="swiper-pagination"></div>
+</div>
 {% endblock %}
 
 {% block scripts %}
   <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      new Swiper('.teamSwiper', {
-        // WICHTIG: 'auto' sorgt dafür, dass so viele Slides wie möglich basierend
-        // auf ihrer CSS-Breite angezeigt werden.
-        slidesPerView : 'auto',
-        spaceBetween  : 16,     // Abstand zwischen den Slides
-        grabCursor    : true,   // Mauszeiger und Touch-Verhalten
-
-        // Navigationselemente aktivieren
-        navigation    : {
-          nextEl: '.teamSwiper .swiper-button-next',
-          prevEl: '.teamSwiper .swiper-button-prev'
+      new Swiper('.memberSwiper',{
+        effect      : 'fade',
+        fadeEffect  : { crossFade:true },
+        slidesPerView:1,
+        speed       : 600,
+        navigation  : {
+          nextEl: '.memberSwiper .swiper-button-next',
+          prevEl: '.memberSwiper .swiper-button-prev'
         },
-
-        // Keine explizite Höhensteuerung durch Swiper nötig,
-        // da dies durch CSS (.h-100 Klassen und CSS-Regeln) geschieht.
+        pagination  : {
+          el: '.memberSwiper .swiper-pagination',
+          clickable:true
+        },
+        keyboard    : { enabled:true },
       });
     });
   </script>
