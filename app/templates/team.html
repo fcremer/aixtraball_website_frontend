@@ -5,116 +5,227 @@
         href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
 
   <style>
-    /* CSS für Slide-Breiten und Pfeile kann hier oder in externer CSS sein */
-
-    /* 1) Slide-Breite */
-    .teamSwiper .swiper-slide { width: 440px; }
-    @media (min-width: 768px) {
-      .teamSwiper .swiper-slide { width: 480px; }
-    }
-    @media (min-width: 992px) {
-      .teamSwiper .swiper-slide { width: 520px; }
-    }
-
-    /* 3) Navigation-Pfeile */
-    .teamSwiper .swiper-button-prev,
-    .teamSwiper .swiper-button-next {
-      color: var(--bs-primary);
-      width: 44px;
-      height: 44px;
-      z-index: 10;
-    }
-    .teamSwiper .swiper-button-prev::after,
-    .teamSwiper .swiper-button-next::after {
-      font-size: 28px;
-    }
-  </style>
-  <style>
     /* Hero-Bild für Team-Seite */
     .hero-flipper {
       background: url('{{ url_for("static", filename="/images/else/background_person.jpg") }}') center/cover;
-      min-height: 45vh;
+      min-height: 30vh;
     }
     .hero-flipper .overlay {
       background: rgba(var(--bs-primary-rgb), .65);
+    }
+
+    /* Vollbild‑Member‑Slides */
+    .member-slide{
+      width:100%;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      background-size:cover;
+      background-position:left center;
+      position:relative;
+    }
+    .member-slide::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, rgba(255,255,255,0) 55%, #fff 97%);
+      z-index:0;
+    }
+    .member-info{
+      position:relative;
+      margin-left:auto;
+      margin-right:5%;
+      max-width:420px;
+      background:#fff;
+      border: 1px solid var(--bs-primary);
+      padding:2rem;
+      border-radius:.5rem;
+      box-shadow:0 .5rem 1rem rgba(0,0,0,.15);
+      text-align:left;
+      z-index:1;
+    }
+    .member-info h2{ color:var(--bs-primary); margin-bottom:.25rem; }
+    .member-info .role{ font-weight:600; margin-bottom:1rem; }
+
+    @media (max-width: 767.98px){
+      .member-slide{
+        flex-direction:column;
+        justify-content:flex-start;
+        background-position:left top;
+        background-size:cover;          /* volle Breite auf kleinen Geräten */
+        background-repeat:no-repeat;
+      }
+      .member-slide::after{
+        background:linear-gradient(180deg, rgba(255,255,255,0) 50%, #fff 98%);
+      }
+      .member-info{
+        margin:66vh auto 1rem;     /* startet im unteren Drittel */
+        max-width:90%;
+        max-height:33vh;           /* Drittel der Höhe */
+        overflow-y:auto;
+        -webkit-overflow-scrolling: touch; /* sanftes Scrollen auf iOS */
+      }
+
+      /* Pagination unterhalb der Box auf Mobile */
+      .memberSwiper .swiper-pagination {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin: 1rem auto 0;
+        text-align: center;
+        z-index: 1;
+      }
+    }
+
+    /* Deaktiviert Fade‑Opacity, falls Swiper die Klasse trotzdem anlegt */
+    .memberSwiper.swiper-fade .swiper-slide{
+      opacity:1 !important;
+      transition-property:transform !important;
+    }
+
+    /* Paginierung unterhalb der Box platzieren */
+    .memberSwiper .swiper-pagination{
+      position:absolute;
+      bottom:0.75rem;
+      left:0;
+      width:100%;
+      text-align:center;
+      z-index:0;               /* hinter der Info-Box, damit sie nicht überlappt */
+    }
+
+    /* Navigation-Pfeile in Vereinsfarbe (rot) */
+    .memberSwiper .swiper-button-prev,
+    .memberSwiper .swiper-button-next {
+      color: var(--bs-primary) !important;
+    }
+
+    /* Aktive Pagination-Bullets rot einfärben */
+    .memberSwiper .swiper-pagination-bullet-active {
+      background: var(--bs-primary) !important;
+    }
+
+    /* Make outline-primary buttons fully red */
+    .btn-outline-primary {
+      color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+    .btn-outline-primary:hover,
+    .btn-outline-primary:focus {
+      color: #fff;
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+    .btn-outline-primary:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.5);
+    }
+    .btn-outline-primary:active,
+    .btn-outline-primary.active {
+      color: #fff;
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+
+    /* Override Bootstrap active selector for toggle button */
+    .bio-toggle:active,
+    .bio-toggle.active {
+      color: #fff !important;
+      background-color: var(--bs-primary) !important;
+      border-color: var(--bs-primary) !important;
+    }
+    .btn-outline-primary.disabled,
+    .btn-outline-primary:disabled {
+      color: var(--bs-primary);
+      background-color: transparent;
+      border-color: var(--bs-primary);
+    }
+
+    /* Bio always visible on desktop, collapsible on mobile */
+    .bio-content { display: block; }
+    .bio-toggle { display: none !important; }
+    @media (max-width: 767.98px) {
+      .bio-content { display: none; }
+      .bio-content.show { display: block; }
+      .bio-toggle {
+        display: inline-block !important;
+        margin-top: 0.5rem;
+        color: var(--bs-primary);
+      }
+    }
+
+    /* Make toggle button red when bio is expanded */
+    .bio-toggle.active-indicator {
+      color: var(--bs-primary) !important;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero-Banner wie auf Flipper-All -->
-<header class="hero-flipper d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">Unser Team</h1>
-    <p class="lead mb-0">Lerne unser engagiertes Team kennen</p>
+<!-- Vollbild‑Swiper für Mitglieder -->
+<div class="swiper memberSwiper">
+  <div class="swiper-wrapper">
+    {% for m in members %}
+    <div class="swiper-slide member-slide" style="background-image:url('{{ m.image | asset }}');">
+      <div class="member-info">
+        <h2>{{ m.name }}</h2>
+        <div class="role text-muted mb-2">{{ m.role }}</div>
+        <button class="btn btn-outline-primary bio-toggle">Bio anzeigen</button>
+        <div class="bio-content">
+          {% if m.bio %}
+            <p>{{ m.bio }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
   </div>
-</header>
-{# Section definiert die Gesamthöhe #}
-<section class="py-5 bg-light team-fullheight">
-  {# Container zentriert den Inhalt und erbt die Höhe #}
-  <div class="container h-100"> {# Entfernt: d-flex flex-column #}
 
-    {# Swiper erbt die Höhe vom Container. Wichtig: overflow: hidden wird via CSS hinzugefügt #}
-    <div class="swiper teamSwiper h-100"> {# Entfernt: flex-grow-1 und style="min-height: 0;" #}
-      {# Wrapper braucht volle Höhe für die Slides #}
-      <div class="swiper-wrapper h-100">
-
-        {% for member in members %}
-        {# Slide braucht volle Höhe #}
-        <div class="swiper-slide h-100">
-          {# Karte braucht volle Höhe und Flexbox für interne Anordnung #}
-          <div class="card h-100 shadow-sm d-flex flex-column">
-            <img src="{{ member.image | asset }}"
-                 class="card-img-top"
-                 alt="{{ member.name }}">
-            {# Card-Body nutzt Flexbox für interne Anordnung #}
-            <div class="card-body text-center d-flex flex-column">
-              {# Titel und Rolle bleiben oben #}
-              <div>
-                 <h5 class="card-title mb-1">{{ member.name }}</h5>
-                 <p class="card-subtitle text-muted mb-2">{{ member.role }}</p>
-              </div>
-              {% if member.bio %}
-              {# Scrollbarer Bereich für die Biografie #}
-              <div class="bio-scroll-area">
-                <p class="card-text small mt-2">{{ member.bio }}</p>
-              </div>
-              {% endif %}
-            </div> {# Ende card-body #}
-          </div> {# Ende card #}
-        </div> {# Ende swiper-slide #}
-        {% endfor %}
-
-      </div> {# Ende swiper-wrapper #}
-
-      <div class="swiper-button-prev"></div>
-      <div class="swiper-button-next"></div>
-
-    </div> {# Ende swiper #}
-  </div> {# Ende container #}
-</section> {# Ende team-fullheight section #}
+  <div class="swiper-button-prev"></div>
+  <div class="swiper-button-next"></div>
+  <div class="swiper-pagination"></div>
+</div>
 {% endblock %}
 
 {% block scripts %}
   <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      new Swiper('.teamSwiper', {
-        // WICHTIG: 'auto' sorgt dafür, dass so viele Slides wie möglich basierend
-        // auf ihrer CSS-Breite angezeigt werden.
-        slidesPerView : 'auto',
-        spaceBetween  : 16,     // Abstand zwischen den Slides
-        grabCursor    : true,   // Mauszeiger und Touch-Verhalten
-
-        // Navigationselemente aktivieren
-        navigation    : {
-          nextEl: '.teamSwiper .swiper-button-next',
-          prevEl: '.teamSwiper .swiper-button-prev'
+      const swiper = new Swiper('.memberSwiper',{
+        effect:'slide',
+        slidesPerView:1,
+        speed:600,
+        navigation:{
+          nextEl:'.memberSwiper .swiper-button-next',
+          prevEl:'.memberSwiper .swiper-button-prev'
         },
+        pagination:{
+          el:'.memberSwiper .swiper-pagination',
+          clickable:true
+        },
+        keyboard:{ enabled:true }
+      });
 
-        // Keine explizite Höhensteuerung durch Swiper nötig,
-        // da dies durch CSS (.h-100 Klassen und CSS-Regeln) geschieht.
+      // Ensure no residual fade classes / inline opacity
+      const container = document.querySelector('.memberSwiper');
+      const clearFade = () => {
+        container.classList.remove('swiper-fade');
+        container.querySelectorAll('.swiper-slide').forEach(s=>{
+          s.style.removeProperty('opacity');
+          s.style.removeProperty('transition-duration');
+          s.style.removeProperty('transition-property');
+        });
+      };
+      clearFade();
+      swiper.on('slideChangeTransitionStart', clearFade);
+
+      // Toggle bio on mobile
+      document.querySelectorAll('.bio-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const content = btn.nextElementSibling;
+          content.classList.toggle('show');
+          btn.classList.toggle('active-indicator', content.classList.contains('show'));
+          btn.textContent = content.classList.contains('show') ? 'Bio verbergen' : 'Bio anzeigen';
+        });
       });
     });
   </script>

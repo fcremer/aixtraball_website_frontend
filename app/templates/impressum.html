@@ -3,9 +3,14 @@
 {% block head_extra %}
   <style>
     /* Akzent-Rot auch hier für Headings und Links */
-    .heading-primary { color: var(--bs-primary); }
-    a { color: var(--bs-primary); }
+    .heading-primary { color: #A52317 !important; }
+    a { color: #A52317 !important; }
     a:hover { color: #A52317; }
+
+    /* Rote Schrift für geöffnete Accordion-Toggles */
+    .accordion-button:not(.collapsed) {
+      color: #A52317 !important;
+    }
   </style>
 {% endblock %}
 
@@ -52,44 +57,53 @@
     <div class="accordion" id="legalAcc">
 
       {% set sections = [
-        ('Haftungs­beschränkung (§1)',            '
-          Die Inhalte dieser Website werden mit größtmöglicher Sorgfalt erstellt …
+        ('Haftungs­beschränkung (§1)', '
+          <p><strong>Haftung für Inhalte:</strong> Wir sind gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf rechtswidrige Tätigkeiten hinweisen.</p>
+          <p><strong>Haftung für Links:</strong> Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen.</p>
+          <p>Für den Inhalt der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.</p>
+          <p>Bei Bekanntwerden von Rechtsverletzungen werden entsprechende Links unverzüglich entfernt.</p>
+          <p><strong>Haftungsausschluss:</strong> Jegliche Haftung für Schäden, die direkt oder indirekt aus der Nutzung dieser Website entstehen, ist ausgeschlossen, sofern diese nicht auf vorsätzlicher oder grob fahrlässiger Pflichtverletzung beruhen.</p>
         '),
-        ('Externe Links (§2)',                    '
-          Diese Website enthält Verknüpfungen zu Websites Dritter. …
+        ('Externe Links (§2)', '
+          <p>Diese Website enthält Verknüpfungen zu Websites Dritter („externe Links“). Diese Websites unterliegen der Haftung der jeweiligen Betreiber. Der Anbieter hat bei der erstmaligen Verknüpfung der externen Links die fremden Inhalte daraufhin überprüft, ob etwaige Rechtsverstöße bestehen. Zu dem Zeitpunkt waren keine Rechtsverstöße ersichtlich.</p>
+          <p>Der Anbieter hat keinerlei Einfluss auf die aktuelle und zukünftige Gestaltung und auf die Inhalte der verknüpften Seiten. Eine ständige Kontrolle der externen Links ist für den Anbieter ohne konkrete Hinweise auf Rechtsverstöße nicht zumutbar. Bei Kenntnis von Rechtsverstößen werden jedoch derartige externe Links unverzüglich gelöscht.</p>
         '),
-        ('Urheber- &amp; Leistungs­schutz­recht (§3)', '
-          Die auf dieser Website veröffentlichten Inhalte unterliegen dem deutschen …
+        ('Urheber- &amp; Leistungsschutzrecht (§3)', '
+          <p>Die auf dieser Website veröffentlichten Inhalte unterliegen dem deutschen Urheber- und Leistungsschutzrecht. Jede vom deutschen Urheberrecht nicht zugelassene Verwertung bedarf der vorherigen schriftlichen Zustimmung des Anbieters oder jeweiligen Rechteinhabers.</p>
+          <p>Dies gilt insbesondere für Vervielfältigung, Bearbeitung, Übersetzung, Einspeicherung, Verarbeitung bzw. Wiedergabe von Inhalten in Datenbanken oder anderen elektronischen Medien und Systemen.</p>
+          <p>Inhalte und Rechte Dritter sind dabei als solche gekennzeichnet. Die unerlaubte Vervielfältigung oder Weitergabe einzelner Inhalte oder kompletter Seiten ist nicht gestattet und strafbar.</p>
         '),
-        ('Besondere Nutzungs­bedingungen (§4)',   '
-          Soweit besondere Bedingungen … ausdrücklich darauf hingewiesen. …
+        ('Besondere Nutzungsbedingungen (§4)', '
+          <p>Soweit besondere Bedingungen für einzelne Nutzungen dieser Website von den vorgenannten Paragraphen abweichen, wird an entsprechender Stelle ausdrücklich darauf hingewiesen. In diesem Falle gelten im jeweiligen Einzelfall die besonderen Nutzungsbedingungen.</p>
         '),
-        ('Datenschutz­erklärung (DSGVO)',         '
-          <p>Diese Datenschutzerklärung klärt Sie über Art, Umfang und Zweck der
-          Verarbeitung personenbezogener Daten innerhalb unseres Onlineangebotes auf.</p>
-
-          <h6>Arten der verarbeiteten Daten</h6>
+        ('Datenschutzerklärung (DSGVO)', '
+          <p>Diese Datenschutzerklärung klärt Sie über Art, Umfang und Zweck der Verarbeitung personenbezogener Daten (nachfolgend kurz „Daten“) im Rahmen der Bereitstellung unseres Onlineangebots auf.</p>
+          <h6>Verantwortlicher</h6>
+          <p>Aixtraball e.V., Merzbrück 210, 52146 Würselen</p>
+          <h6>Verarbeitete Datenarten</h6>
           <ul>
-            <li>Bestands- &amp; Kontaktdaten</li>
-            <li>Inhalts- &amp; Nutzungsdaten</li>
-            <li>Meta- / Kommunikations­daten (z.&nbsp;B. IP-Adresse)</li>
+            <li>Bestandsdaten (z. B. Name, Adresse)</li>
+            <li>Kontaktdaten (z. B. E-Mail, Telefonnummer)</li>
+            <li>Nutzungsdaten (z. B. besuchte Webseiten, Zugriffszeiten)</li>
+            <li>Meta-/Kommunikationsdaten (z. B. IP-Adressen)</li>
           </ul>
-
+          <h6>Rechtsgrundlagen der Verarbeitung</h6>
+          <p>Die Verarbeitung erfolgt gemäß Art. 6 Abs. 1 lit. f DSGVO auf Basis unseres berechtigten Interesses an der sicheren und effizienten Bereitstellung unseres Onlineangebots.</p>
           <h6>Rechte der betroffenen Personen</h6>
-          <p>Sie haben jederzeit das Recht auf Auskunft, Berichtigung, Löschung,
-             Einschränkung der Verarbeitung und Daten­übertragbarkeit
-             (Art.&nbsp;15 ff. DSGVO). …</p>
-
-          <p>Ausführliche Informationen finden Sie in unserer
-             <a href="{{ url_for(\'static\', filename=\'docs/datenschutz.pdf\') }}"
-                target="_blank">ausführlichen DSGVO-Erklärung&nbsp;(PDF)</a>.</p>
-        ')
+          <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit gemäß Art. 15 ff. DSGVO.</p>
+          <p>Weitere Informationen finden Sie in unserer 
+          <a href="{{ url_for(\'static\', filename=\'docs/datenschutz.pdf\') }}" target="_blank">ausführlichen Datenschutzerklärung&nbsp;(PDF)</a>.</p>
+        '),
+        ('Online-Streitbeilegung (§5)', '
+          <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr" target="_blank">https://ec.europa.eu/consumers/odr</a>.</p>
+          <p>Wir sind weder verpflichtet noch bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+        '),
       ] %}
 
       {% for sec in sections %}
       <div class="accordion-item">
         <h2 class="accordion-header" id="h{{ loop.index0 }}">
-          <button class="accordion-button {{ '' if loop.first else 'collapsed' }}"
+          <button class="accordion-button accordion-toggle {{ '' if loop.first else 'collapsed' }}"
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#c{{ loop.index0 }}"
