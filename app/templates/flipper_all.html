@@ -3,6 +3,83 @@
 
 {% block head_extra %}
   <style>
+    /* Flipper-Detail-Overlay --------------------------------------- */
+    .flipper-overlay{
+      position:fixed;            /* bleibt gleich, aber anchor für absolute Kinder */
+      top:0; right:0;
+      height:100%;
+      width:100%;
+      max-width:460px;
+      background:#fff;
+      box-shadow:-4px 0 12px rgba(0,0,0,.3);
+      transform:translateX(100%);
+      transition:transform .4s ease;
+      z-index:1050;
+      overflow-y:auto;
+    }
+    .flipper-overlay.open{transform:translateX(0);}
+    @media (max-width:767.98px){
+      .flipper-overlay{max-width:none;}
+    }
+    .flipper-overlay .flipper-hero{
+      position:relative;
+      height:220px;
+      background-size:cover;
+      background-position:center;
+    }
+    .flipper-overlay .flipper-hero::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0; height:60%;
+      background:linear-gradient(180deg,rgba(0,0,0,0) 0%, #ffffff 100%);
+    }
+    .flipper-overlay .flipper-content{padding:1rem 1.5rem;}
+    .flipper-overlay .close-overlay{
+      position:absolute;
+      top:1rem; right:1rem;
+      width:42px; height:42px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.65);
+      border:0;
+      border-radius:50%;
+      font-size:1.5rem;
+      line-height:1;
+      color:#fff;
+      z-index:2;                 /* über dem Hero-Bild */
+      transition:background .3s ease;
+    }
+    .flipper-overlay .close-overlay:hover,
+    .flipper-overlay .close-overlay:focus{
+      background:rgba(var(--bs-primary-rgb), .85);
+      color:#fff;
+    }
+    /* Detail-Slider im unteren Drittel ----------------------------- */
+    .flipper-detail-hero{
+      position:relative;
+      height:180px;
+      margin-top:1.5rem;
+      overflow:hidden;
+    }
+    .flipper-detail-hero::before{
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(0deg,
+        rgba(255, 255, 255, 1) 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .flipper-detail-hero img{
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+      transition:opacity .8s ease;
+      opacity:1;
+    }
     /* Hero-Bild ----------------------------------------------------- */
     .hero-flipper {
       background: url('{{ url_for("static", filename="images/else/50s.jpg") }}') center/cover;
@@ -173,6 +250,51 @@
       background: var(--bs-primary);
       color: #fff;
     }
+    /* Detail-Slider im unteren Drittel ----------------------------- */
+    .flipper-detail-hero{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      width:100%;
+      height:33vh;               /* füllt bis zum Seitenende */
+      max-height:320px;          /* nur beschränken, falls höher */
+      overflow:hidden;
+    }
+  .flipper-detail-hero::before{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 120px;            /* Fade-Region, beginnt direkt an Oberkante des Bildes */
+    background: linear-gradient(to bottom,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.7) 40%,
+      rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .flipper-detail-hero img{
+      width:100%; height:100%;
+      object-fit:cover;
+      object-position:center bottom;  /* Zoom mittig, unten orientiert */
+      display:block;
+      transition:opacity .8s ease;
+      opacity:1;
+  }
+    .flipper-overlay .flipper-content{
+      padding:1rem 1.5rem;
+      padding-bottom:33vh;      /* Platz für Detailbild, passt sich an Höhe an */
+    }
+    @media (max-width: 767.98px) {
+  /* verberge den Slider mit den Detailbildern */
+  .flipper-detail-hero {
+    display: none !important;
+  }
+  /* entferne die extra Reservierung für den Slider */
+  .flipper-overlay .flipper-content {
+    padding-bottom: 1.5rem !important;
+  }
+}
   </style>
 {% endblock %}
 
@@ -208,18 +330,33 @@
         </div>
         <div class="timeline">
           {% for f in items %}
-          <div class="timeline-item decade-{{ decade }}">
+          <div class="timeline-item decade-{{ decade }}"
+               data-name="{{ f.name }}"
+               data-image="{{ f.image | asset }}"
+               data-year="{{ f.year }}"
+               {% if f.manufacturer %}data-manufacturer="{{ f.manufacturer }}"{% endif %}
+               {% if f.system %}data-system="{{ f.system }}"{% endif %}
+               {% if f.designer %}data-designer="{{ f.designer }}"{% endif %}
+               {% if f.artwork %}data-artwork="{{ f.artwork }}"{% endif %}
+               {% if f.sound %}data-sound="{{ f.sound }}"{% endif %}
+               {% if f.production %}data-production="{{ f.production }}"{% endif %}
+               {% if f.features %}data-features="{{ f.features|join(' • ') }}"{% endif %}
+               {% if f.notable_facts %}data-facts="{{ f.notable_facts|join(' • ') }}"{% endif %}
+               {% if f.link %}data-link="{{ f.link }}"{% endif %}
+               {% if f.image_details %}data-imagedetails="{{ f.image_details|join('|') }}"{% endif %}>
             <span class="timeline-year">
               {{ f.year }}
             </span>
             <h3 class="h5 mt-2">{{ f.name }}</h3>
             {% if f.image %}
+            <a href="#" class="flipper-trigger d-block">
               <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}">
+            </a>
             {% endif %}
             {% if f.link %}
               <p>
-                <a href="{{ f.link }}" target="_blank" class="device-link">Mehr zum Gerät
-                  <i class="bi bi-box-arrow-up-right ms-1"></i>
+                <a href="#" class="device-link flipper-trigger">Mehr zum Gerät
+                  <i class="bi bi-info-circle ms-1"></i>
                 </a>
               </p>
             {% endif %}
@@ -230,6 +367,35 @@
     </div>
   </section>
 {% endfor %}
+
+<!-- Flipper-Detail-Overlay ------------------------------------------- -->
+<div id="flipperOverlay" class="flipper-overlay" aria-hidden="true">
+  <button class="close-overlay" aria-label="Schließen">&times;</button>
+  <div class="flipper-hero"></div>
+  <div class="flipper-content">
+    <h3 id="fo-name"></h3>
+    <p class="text-muted mb-2"><span id="fo-year"></span></p>
+    <ul class="list-unstyled small mb-3">
+      <li><strong>Hersteller:</strong> <span id="fo-manufacturer"></span></li>
+      <li><strong>System:</strong> <span id="fo-system"></span></li>
+      <li><strong>Designer:</strong> <span id="fo-designer"></span></li>
+      <li><strong>Artwork:</strong> <span id="fo-artwork"></span></li>
+      <li><strong>Sound:</strong> <span id="fo-sound"></span></li>
+      <li><strong>Produktion:</strong> <span id="fo-production"></span></li>
+    </ul>
+    <h5>Features</h5>
+    <p id="fo-features"></p>
+    <h5>Besonderheiten</h5>
+    <p id="fo-facts"></p>
+    <p class="mt-3">
+      <a id="fo-link" href="#" target="_blank" class="btn btn-outline-primary btn-sm">IPDB-Eintrag öffnen</a>
+    </p>
+    <!-- Detail-Slider ------------------------------------------- -->
+    <div class="flipper-detail-hero d-none">
+      <img id="fd-img" src="" alt="Detailbild">
+    </div>
+  </div>
+</div>
 
 <!-- CTA --------------------------------------------------------------- -->
 <section class="py-5 text-center">
@@ -250,6 +416,7 @@
   {{ super() }}
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const STATIC_PREFIX = "{{ url_for('static', filename='') }}";
       const items = document.querySelectorAll('.timeline-item');
       if (!('IntersectionObserver' in window)) {
         items.forEach(i => i.classList.add('show'));
@@ -264,6 +431,114 @@
         });
       }, { threshold: 0.15 });
       items.forEach(el => io.observe(el));
+
+      /* Flipper-Detail-Overlay ----------------------------------- */
+      const overlay   = document.getElementById('flipperOverlay');
+      const hero      = overlay.querySelector('.flipper-hero');
+      const heroDetail = overlay.querySelector('.flipper-detail-hero');
+      const fdImg      = document.getElementById('fd-img');
+      const nameEl    = document.getElementById('fo-name');
+      const yearEl    = document.getElementById('fo-year');
+      const manuEl    = document.getElementById('fo-manufacturer');
+      const systemEl  = document.getElementById('fo-system');
+      const designerEl= document.getElementById('fo-designer');
+      const artworkEl = document.getElementById('fo-artwork');
+      const soundEl   = document.getElementById('fo-sound');
+      const prodEl    = document.getElementById('fo-production');
+      const featEl    = document.getElementById('fo-features');
+      const factsEl   = document.getElementById('fo-facts');
+      const linkEl    = document.getElementById('fo-link');
+
+      let detailTimer = null;
+
+      function openOverlay(item){
+        hero.style.backgroundImage = `url('${item.dataset.image}')`;
+        nameEl.textContent  = item.dataset.name || '';
+        yearEl.textContent  = item.dataset.year || '';
+        manuEl.textContent  = item.dataset.manufacturer || '';
+        systemEl.textContent= item.dataset.system || '';
+        designerEl.textContent = item.dataset.designer || '';
+        artworkEl.textContent  = item.dataset.artwork || '';
+        soundEl.textContent    = item.dataset.sound || '';
+        prodEl.textContent     = item.dataset.production || '';
+        featEl.textContent     = item.dataset.features || '';
+        factsEl.textContent    = item.dataset.facts || '';
+        linkEl.href            = item.dataset.link || '#';
+        /* Detailbilder ---------------------------------- */
+        const rawImgs = item.dataset.imagedetails ? item.dataset.imagedetails.split('|') : [];
+        const imgs = rawImgs.map(p => {
+          if(!p) return '';
+          if(/^https?:\/\//i.test(p)) return p;
+          // remove leading slashes and prepend static prefix
+          return STATIC_PREFIX + p.replace(/^\/+/, '');
+        }).filter(Boolean);
+        if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
+        if(imgs.length){
+          heroDetail.classList.remove('d-none');
+          let idx = 0;
+          fdImg.style.opacity = 0;
+          fdImg.onload = ()=>{ fdImg.style.opacity = 1; };
+          fdImg.src = imgs[0];
+          detailTimer = setInterval(()=>{
+            fdImg.style.opacity = 0;
+            idx = (idx + 1) % imgs.length;
+            setTimeout(()=>{
+              fdImg.src = imgs[idx];
+            },400);
+          },8000);
+        }else{
+          heroDetail.classList.add('d-none');
+        }
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        overlay.setAttribute('aria-hidden','false');
+      }
+
+      document.querySelectorAll('.flipper-trigger').forEach(trig=>{
+        trig.addEventListener('click', e=>{
+          e.preventDefault();
+          e.stopPropagation();          // verhindert, dass der Dokument-Listener das Overlay sofort wieder schließt
+          const item = trig.closest('.timeline-item');
+          if(item) openOverlay(item);
+        });
+      });
+
+      overlay.querySelector('.close-overlay').addEventListener('click', ()=>{
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+        overlay.setAttribute('aria-hidden','true');
+        if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
+      });
+
+      /* Desktop: Klick außerhalb des Overlays schließt es --------- */
+      document.addEventListener('click', ev=>{
+        if(!overlay.classList.contains('open')) return;
+        if(!overlay.contains(ev.target)){  // Klick links neben dem Panel
+          overlay.classList.remove('open');
+          document.body.style.overflow = '';
+          overlay.setAttribute('aria-hidden','true');
+          if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
+        }
+      });
+
+      /* Mobile: Swipe‑to‑Close ------------------------------------- */
+      let touchStartX = null;
+      overlay.addEventListener('touchstart', e=>{
+        touchStartX = e.touches[0].clientX;
+      });
+      overlay.addEventListener('touchmove', e=>{
+        if(touchStartX===null) return;
+        const deltaX = e.touches[0].clientX - touchStartX;
+        // nach rechts wischen (Panel sitzt rechts)
+        if(deltaX > 80){
+          overlay.classList.remove('open');
+          document.body.style.overflow = '';
+          overlay.setAttribute('aria-hidden','true');
+          if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
+          touchStartX = null;
+        }
+      });
+      overlay.addEventListener('touchend', ()=>{ touchStartX = null; });
     });
   </script>
 {% endblock %}
