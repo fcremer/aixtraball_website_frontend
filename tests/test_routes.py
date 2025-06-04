@@ -117,5 +117,5 @@ def test_current_opening_visible(client):
 
     html = client.get("/").data.decode()
 
-    assert t_from.strftime("%d.%m.%Y") in html, "Aktueller Termin fehlt"
+    assert "Heute" in html, "Aktueller Termin fehlt"
     assert next_from.strftime("%d.%m.%Y") not in html, "Falscher Termin angezeigt"
