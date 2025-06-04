@@ -47,7 +47,10 @@ def get_next_opening():
 
     future = [o for o in openings if o["to_dt"] > now]
     future.sort(key=lambda x: x["from_dt"])
-    return future[0] if future else None
+    opening = future[0] if future else None
+    if opening:
+        opening["is_today"] = opening["from_dt"].date() == now.date()
+    return opening
 
 # --------------------------------------------------
 # Jinja‑Filter
