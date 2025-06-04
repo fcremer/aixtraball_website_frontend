@@ -96,3 +96,26 @@ def test_timeline_visible_on_verein(client):
     html = client.get("/verein").data.decode()
 
     assert first_title in html, "Timeline‑Titel nicht gefunden"
+
+# ------------------------------------------------------------------
+# 5  Aktueller Öffnungstag bleibt sichtbar
+# ------------------------------------------------------------------
+def test_current_opening_visible(client):
+    """Wenn gerade ein Öffnungstag läuft, soll er auf der Startseite erscheinen."""
+    now = datetime.now()
+    t_from = now - timedelta(hours=1)
+    t_to = now + timedelta(hours=1)
+    next_from = now + timedelta(days=1)
+    next_to = next_from + timedelta(hours=4)
+
+    _write("opening_days.yaml", [
+        {"from": t_from.strftime("%Y-%m-%d %H:%M"),
+         "to": t_to.strftime("%Y-%m-%d %H:%M")},
+        {"from": next_from.strftime("%Y-%m-%d %H:%M"),
+         "to": next_to.strftime("%Y-%m-%d %H:%M")},
+    ])
+
+    html = client.get("/").data.decode()
+
+    assert t_from.strftime("%d.%m.%Y") in html, "Aktueller Termin fehlt"
+    assert next_from.strftime("%d.%m.%Y") not in html, "Falscher Termin angezeigt"
