@@ -80,11 +80,30 @@ main{flex:1 0 auto;}
 }
 
 /* ------------ Homepage Flipper-Highlights ----------------------- */
-#homeFlipperGrid .card-img-top{
-  object-fit:contain;    /* komplette Bilder anzeigen */
+#homeFlipperGrid .img-stack{
+  position:relative;
   height:200px;         /* einheitliche Höhe */
+  overflow:hidden;
+}
+#homeFlipperGrid .img-stack .bg-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;     /* füllt Box komplett */
+  filter:blur(20px);
+  transform:scale(1.1); /* etwas vergrößern damit keine Ränder */
+}
+#homeFlipperGrid .card-img-top{
+  position:relative;
+  z-index:1;
+  object-fit:contain;   /* komplette Bilder anzeigen */
+  width:100%;
+  height:100%;
   padding:.5rem;        /* etwas Abstand zum Kartenrand */
-  background:#fff;      /* neutraler Hintergrund */
+  border:1px solid rgba(255,255,255,.8); /* dezente weiße Umrandung */
+  box-sizing:border-box;
+  background:transparent;
 }
 #homeFlipperGrid .card{
   border:1px solid rgba(var(--bs-primary-rgb),.25);

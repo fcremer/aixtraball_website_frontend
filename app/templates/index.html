@@ -50,7 +50,10 @@
       <div class="col-6 col-md-4 col-lg-2">
         <a href="{{ url_for('flipper_all') }}" class="text-decoration-none text-reset">
           <div class="card h-100 shadow-sm">
-            <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
+            <div class="img-stack">
+              <img src="{{ f.image | asset }}" class="bg-img" alt="" aria-hidden="true">
+              <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
+            </div>
             <div class="card-body p-2">
               <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
             </div>
