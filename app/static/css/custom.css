@@ -78,6 +78,49 @@ main{flex:1 0 auto;}
   height:300px;
   width:100%;
 }
+
+/* ------------ Homepage Flipper-Highlights ----------------------- */
+#homeFlipperGrid .img-stack{
+  position:relative;
+  height:200px;         /* einheitliche Höhe */
+  overflow:hidden;
+}
+#homeFlipperGrid .img-stack .bg-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;      /* füllt Box komplett */
+  filter:blur(5px) brightness(1.1) saturate(1.2); /* stärkerer Blur für Ambilight */
+  transform:scale(1.3);  /* größer, damit Farben die Karte ausfüllen */
+}
+#homeFlipperGrid .card-img-top{
+  position:relative;
+  z-index:1;
+  object-fit:contain;   /* komplette Bilder anzeigen */
+  width:100%;
+  height:100%;
+  padding:.5rem;        /* etwas Abstand zum Kartenrand */
+  border:1px solid rgba(255,255,255,.8); /* dezente weiße Umrandung */
+  box-sizing:border-box;
+  background:transparent;
+}
+#homeFlipperGrid .card{
+  border:1px solid rgba(var(--bs-primary-rgb),.25);
+  background:linear-gradient(#fff,rgba(var(--bs-primary-rgb),.03));
+  box-shadow:0 .125rem .5rem rgba(var(--bs-primary-rgb),.1);
+  transition:transform .2s,box-shadow .2s;
+}
+#homeFlipperGrid .card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 .5rem 1rem rgba(var(--bs-primary-rgb),.15);
+}
+#homeFlipperGrid .card-body{
+  background:rgba(var(--bs-primary-rgb),.03);
+}
+#homeFlipperGrid .card-title{
+  color:var(--bs-primary);
+}
 .card-body p:last-child{margin-bottom:0;}
 
 /* --------------------------------------------------

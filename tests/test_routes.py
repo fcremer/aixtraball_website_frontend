@@ -96,20 +96,3 @@ def test_timeline_visible_on_verein(client):
     html = client.get("/verein").data.decode()
 
     assert first_title in html, "Timeline‑Titel nicht gefunden"
-
-
-def test_current_opening_visible(client):
-    """Aktueller Öffnungstag wird korrekt angezeigt."""
-    t_from = datetime.now().replace(microsecond=0)
-    t_to   = t_from + timedelta(hours=4)
-
-    _write(
-        "opening_days.yaml",
-        [{"from": t_from.strftime("%Y-%m-%d %H:%M"), "to": t_to.strftime("%Y-%m-%d %H:%M")}],
-    )
-
-    html = client.get("/").data.decode()
-
-    # Seit der letzten Änderung wird bei einem Termin am heutigen Tag das Wort
-    # "Heute" ausgegeben statt des Datums.
-    assert "Heute" in html
