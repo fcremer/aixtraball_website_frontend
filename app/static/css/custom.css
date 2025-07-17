@@ -13,6 +13,10 @@
   --bs-link-hover-color:#A52317;
 }
 
+/* Logo default visibility */
+.logo-dark { display:none; }
+.logo-light { display:inline-block; }
+
 /* --------------------------------------------------
    Basis‑Layout
 -------------------------------------------------- */
@@ -478,3 +482,29 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
   .navbar-toggler:focus{
     box-shadow:none;
   }
+
+/* --------------------------------------------------
+   Dark Mode Overrides
+-------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  body {
+    background:#121212;
+    color:#f8f9fa;
+  }
+  .navbar,
+  .navbar.navbar-light,
+  .glassnav {
+    background:#121212!important;
+  }
+  .navbar .nav-link,
+  .navbar-brand {
+    color:#f8f9fa!important;
+  }
+  .bg-light,
+  footer.bg-light {
+    background:#1e1e1e!important;
+    border-color:#333!important;
+  }
+  .logo-light { display:none; }
+  .logo-dark { display:inline-block; }
+}
