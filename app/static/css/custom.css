@@ -14,8 +14,8 @@
 }
 
 /* Logo default visibility */
-.logo-dark { display:none; }
-.logo-light { display:inline-block; }
+.logo-dark { display:none !important; }
+.logo-light { display:inline-block !important; }
 
 /* --------------------------------------------------
    Basis‑Layout
@@ -505,6 +505,40 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
     background:#1e1e1e!important;
     border-color:#333!important;
   }
-  .logo-light { display:none; }
-  .logo-dark { display:inline-block; }
+  .card,
+  .accordion-item {
+    background:#1e1e1e;
+    color:#f8f9fa;
+    border-color:#333;
+  }
+  .accordion-button {
+    background:#1e1e1e;
+    color:#f8f9fa;
+  }
+  .accordion-button:not(.collapsed) {
+    background:rgba(var(--bs-primary-rgb),.25);
+    color:#f8f9fa;
+  }
+  .member-info {
+    background:#1e1e1e;
+    color:#f8f9fa;
+    border-color:#444;
+  }
+  .form-control {
+    background:#1e1e1e;
+    color:#f8f9fa;
+    border-color:#333;
+  }
+  .btn-outline-danger {
+    color:#f8f9fa;
+    border-color:#f8f9fa;
+  }
+  .btn-outline-danger:hover,
+  .btn-outline-danger:focus {
+    background:#f8f9fa;
+    color:#121212;
+    border-color:#f8f9fa;
+  }
+  .logo-light { display:none !important; }
+  .logo-dark { display:inline-block !important; }
 }
