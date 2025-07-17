@@ -91,7 +91,7 @@ main{flex:1 0 auto;}
   width:100%;
   height:100%;
   object-fit:cover;      /* füllt Box komplett */
-  filter:blur(40px) brightness(1.1) saturate(1.2); /* stärkerer Blur für Ambilight */
+  filter:blur(5px) brightness(1.1) saturate(1.2); /* stärkerer Blur für Ambilight */
   transform:scale(1.3);  /* größer, damit Farben die Karte ausfüllen */
 }
 #homeFlipperGrid .card-img-top{
