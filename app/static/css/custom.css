@@ -78,6 +78,14 @@ main{flex:1 0 auto;}
   height:300px;
   width:100%;
 }
+
+/* ------------ Homepage Flipper-Highlights ----------------------- */
+#homeFlipperGrid .card-img-top{
+  object-fit:contain;    /* komplette Bilder anzeigen */
+  height:200px;         /* einheitliche Höhe */
+  padding:.5rem;        /* etwas Abstand zum Kartenrand */
+  background:#fff;      /* neutraler Hintergrund */
+}
 .card-body p:last-child{margin-bottom:0;}
 
 /* --------------------------------------------------
