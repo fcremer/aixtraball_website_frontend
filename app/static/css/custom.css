@@ -423,6 +423,11 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
   height: 20px;
   filter: brightness(0) saturate(0%) opacity(0.6);
 }
+@media (prefers-color-scheme: dark) {
+  .footer-logo {
+    filter: none;
+  }
+}
 
 
 
