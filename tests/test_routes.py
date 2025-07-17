@@ -100,7 +100,9 @@ def test_timeline_visible_on_verein(client):
 
 def test_current_opening_visible(client):
     """Aktueller Öffnungstag wird korrekt angezeigt."""
-    t_from = datetime.now().replace(microsecond=0)
+    from datetime import time
+
+    t_from = datetime.combine(datetime.today().date(), time(10, 0))  # Sicher heute, 10:00 Uhr
     t_to   = t_from + timedelta(hours=4)
 
     _write(
