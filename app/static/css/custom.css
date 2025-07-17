@@ -13,6 +13,10 @@
   --bs-link-hover-color:#A52317;
 }
 
+/* Logo default visibility */
+.logo-dark { display:none !important; }
+.logo-light { display:inline-block !important; }
+
 /* --------------------------------------------------
    Basis‑Layout
 -------------------------------------------------- */
@@ -478,3 +482,63 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
   .navbar-toggler:focus{
     box-shadow:none;
   }
+
+/* --------------------------------------------------
+   Dark Mode Overrides
+-------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  body {
+    background:#222;
+    color:#f8f9fa;
+  }
+  .navbar,
+  .navbar.navbar-light,
+  .glassnav {
+    background:#222!important;
+  }
+  .navbar .nav-link,
+  .navbar-brand {
+    color:#f8f9fa!important;
+  }
+  .bg-light,
+  footer.bg-light {
+    background:#2b2b2b!important;
+    border-color:#444!important;
+  }
+  .card,
+  .accordion-item {
+    background:#2b2b2b;
+    color:#f8f9fa;
+    border-color:#444;
+  }
+  .accordion-button {
+    background:#2b2b2b;
+    color:#f8f9fa;
+  }
+  .accordion-button:not(.collapsed) {
+    background:rgba(var(--bs-primary-rgb),.25);
+    color:#f8f9fa;
+  }
+  .member-info {
+    background:#2b2b2b;
+    color:#f8f9fa;
+    border-color:#555;
+  }
+  .form-control {
+    background:#2b2b2b;
+    color:#f8f9fa;
+    border-color:#444;
+  }
+  .btn-outline-danger {
+    color:#f8f9fa;
+    border-color:#f8f9fa;
+  }
+  .btn-outline-danger:hover,
+  .btn-outline-danger:focus {
+    background:#f8f9fa;
+    color:#222;
+    border-color:#f8f9fa;
+  }
+  .logo-light { display:none !important; }
+  .logo-dark { display:inline-block !important; }
+}
