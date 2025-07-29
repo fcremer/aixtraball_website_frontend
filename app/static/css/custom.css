@@ -487,58 +487,58 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
    Dark Mode Overrides
 -------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
-  body {
+  body:not(.light-mode) {
     background:#121212;
     color:#f8f9fa;
   }
-  .navbar,
-  .navbar.navbar-light,
-  .glassnav {
+  body:not(.light-mode) .navbar,
+  body:not(.light-mode) .navbar.navbar-light,
+  body:not(.light-mode) .glassnav {
     background:#121212!important;
   }
-  .navbar .nav-link,
-  .navbar-brand {
+  body:not(.light-mode) .navbar .nav-link,
+  body:not(.light-mode) .navbar-brand {
     color:#f8f9fa!important;
   }
-  .bg-light,
-  footer.bg-light {
+  body:not(.light-mode) .bg-light,
+  body:not(.light-mode) footer.bg-light {
     background:#1e1e1e!important;
     border-color:#333!important;
   }
-  .card,
-  .accordion-item {
+  body:not(.light-mode) .card,
+  body:not(.light-mode) .accordion-item {
     background:#1e1e1e;
     color:#f8f9fa;
     border-color:#333;
   }
-  .accordion-button {
+  body:not(.light-mode) .accordion-button {
     background:#1e1e1e;
     color:#f8f9fa;
   }
-  .accordion-button:not(.collapsed) {
+  body:not(.light-mode) .accordion-button:not(.collapsed) {
     background:rgba(var(--bs-primary-rgb),.25);
     color:#f8f9fa;
   }
-  .member-info {
+  body:not(.light-mode) .member-info {
     background:#1e1e1e;
     color:#f8f9fa;
     border-color:#444;
   }
-  .form-control {
+  body:not(.light-mode) .form-control {
     background:#1e1e1e;
     color:#f8f9fa;
     border-color:#333;
   }
-  .btn-outline-danger {
+  body:not(.light-mode) .btn-outline-danger {
     color:#f8f9fa;
     border-color:#f8f9fa;
   }
-  .btn-outline-danger:hover,
-  .btn-outline-danger:focus {
+  body:not(.light-mode) .btn-outline-danger:hover,
+  body:not(.light-mode) .btn-outline-danger:focus {
     background:#f8f9fa;
     color:#121212;
     border-color:#f8f9fa;
   }
-  .logo-light { display:none !important; }
-  .logo-dark { display:inline-block !important; }
+  body:not(.light-mode) .logo-light { display:none !important; }
+  body:not(.light-mode) .logo-dark { display:inline-block !important; }
 }
