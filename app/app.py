@@ -43,9 +43,14 @@ def get_next_opening():
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
     for o in openings:
         o["from_dt"] = parser.parse(o["from"]).astimezone(tz.gettz("Europe/Berlin"))
-    future = [o for o in openings if o["from_dt"] > now]
+        o["to_dt"] = parser.parse(o["to"]).astimezone(tz.gettz("Europe/Berlin"))
+
+    future = [o for o in openings if o["to_dt"] > now]
     future.sort(key=lambda x: x["from_dt"])
-    return future[0] if future else None
+    opening = future[0] if future else None
+    if opening:
+        opening["is_today"] = opening["from_dt"].date() == now.date()
+    return opening
 
 # --------------------------------------------------
 # Jinja‑Filter
@@ -74,13 +79,15 @@ def index():
     news_teaser   = sorted(load_yaml("news.yaml"),
                            key=lambda x: x["date"],
                            reverse=True)[:2]
+    now = datetime.now(tz=tz.gettz("Europe/Berlin"))
 
     return render_template(
         "index.html",
         slides       = load_yaml("slides.yaml"),
         opening      = get_next_opening(),
         home_flippers= home_flippers,
-        latest_news  = news_teaser
+        latest_news  = news_teaser,
+        now          = now
     )
 
 @app.route("/preise")
