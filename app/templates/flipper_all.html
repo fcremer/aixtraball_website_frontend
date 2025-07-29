@@ -298,13 +298,12 @@
 
     /* Dark Mode adjustments for decade backgrounds */
     @media (prefers-color-scheme: dark) {
-      /* invert background images while keeping content colors */
-      .decade-section {
-        filter: invert(1) hue-rotate(180deg);
-      }
+      /* invert and darken decade backgrounds to remove white edges */
+      .decade-section,
       .decade-section::before,
-      .decade-section .decade-overlay {
-        filter: invert(1) hue-rotate(180deg);
+      .decade-section .decade-overlay,
+      .flipper-detail-hero::before {
+        filter: invert(1) hue-rotate(180deg) brightness(0.6) contrast(1.2);
       }
     }
   </style>
