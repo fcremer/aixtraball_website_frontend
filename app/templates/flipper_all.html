@@ -281,7 +281,7 @@
       transition:opacity .8s ease;
       opacity:1;
   }
-    .flipper-overlay .flipper-content{
+  .flipper-overlay .flipper-content{
       padding:1rem 1.5rem;
       padding-bottom:33vh;      /* Platz für Detailbild, passt sich an Höhe an */
     }
@@ -295,6 +295,18 @@
     padding-bottom: 1.5rem !important;
   }
 }
+
+    /* Dark Mode adjustments for decade backgrounds */
+    @media (prefers-color-scheme: dark) {
+      /* invert background images while keeping content colors */
+      .decade-section {
+        filter: invert(1) hue-rotate(180deg);
+      }
+      .decade-section::before,
+      .decade-section .decade-overlay {
+        filter: invert(1) hue-rotate(180deg);
+      }
+    }
   </style>
 {% endblock %}
 
