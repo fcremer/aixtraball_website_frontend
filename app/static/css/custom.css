@@ -25,6 +25,7 @@ html,body{
   margin:0;
   overflow-x:hidden;              /* verhindert horizontales Scrollen */
 }
+html{scroll-behavior:smooth;}
 body{
   display:flex;
   flex-direction:column;
@@ -32,16 +33,14 @@ body{
   color:#212529;
   padding-top:70px;               /* Platz für fixe Navbar */
   min-height:100vh;
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  opacity:0;
+  transition:opacity .6s ease-in-out;
 }
+body.page-loaded{opacity:1;}
 main{flex:1 0 auto;}
-
-/* --------------------------------------------------
-   Navbar
--------------------------------------------------- */
-.navbar{background:#ffffff!important;}
-.navbar .nav-link,
-.navbar-brand{color:#212529!important;}
-.navbar .nav-link:hover{color:var(--bs-primary)!important;}
 
 /* --------------------------------------------------
    Buttons & Links
@@ -54,6 +53,11 @@ main{flex:1 0 auto;}
 .btn-primary:focus{
   background:#A52317;
   border-color:#A52317;
+}
+a,
+.btn,
+.card{
+  transition:color .3s ease,background-color .3s ease,border-color .3s ease,box-shadow .3s ease,transform .3s ease;
 }
 
 /* --------------------------------------------------
@@ -430,15 +434,20 @@ footer a:hover{color:var(--bs-primary);text-decoration:underline;}
    Navbar
 -------------------------------------------------- */
 .navbar {
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+  background-color:#fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.1);
+  transition:background-color .3s ease, box-shadow .3s ease;
+}
+.navbar.scrolled {
+  background-color:rgba(255,255,255,.9);
+  box-shadow:0 2px 6px rgba(0,0,0,.1);
 }
 .navbar .nav-link {
-  color: #555;
-  transition: color 0.3s ease;
+  color:#555;
+  transition:color .3s ease;
 }
 .navbar .nav-link:hover {
-  color: var(--bs-primary) !important;
+  color:var(--bs-primary)!important;
 }
 
 
