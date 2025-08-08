@@ -179,7 +179,8 @@ a,
 }
 
 /* -------- Section reveal animation --------------- */
-.reveal{opacity:0;transform:translateY(40px);transition:opacity .6s ease,transform .6s ease;}
+.reveal{opacity:0;transform:translateY(-40px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.reveal-bottom{transform:translateY(100%);}
 .reveal-visible{opacity:1;transform:none;}
 
 /* ==============================================================
