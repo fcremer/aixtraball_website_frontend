@@ -5,7 +5,7 @@
     <h1 class="mb-4 text-center">Kontakt</h1>
     <div class="row justify-content-center">
       <div class="col-lg-6">
-        <form method="post">
+        <form id="contactForm" method="post">
           <div class="mb-3">
             <label for="name" class="form-label">Name*</label>
             <input type="text" class="form-control" id="name" name="name" required>
@@ -24,4 +24,22 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('contactForm');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const message = document.getElementById('message').value;
+      const subject = encodeURIComponent('Kontakt via Website');
+      const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
+      window.location.href = `mailto:info@aixtraball.de?subject=${subject}&body=${body}`;
+    });
+  });
+</script>
 {% endblock %}
