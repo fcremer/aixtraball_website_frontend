@@ -9,17 +9,20 @@ app/app.py  –  Haupt-Backend der Vereins‑Website
 
 from pathlib import Path
 from datetime import datetime
+from functools import wraps
 from itertools import groupby
 from flask import Response
 
+import os
 import random
 import yaml
 
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
-    url_for, request
+    url_for, request, session, abort
 )
+from werkzeug.security import check_password_hash, generate_password_hash
 
 # --------------------------------------------------
 # Grundkonfiguration
@@ -28,6 +31,19 @@ app = Flask(__name__)
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
+
+app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
+ADMIN_PASS_HASH = generate_password_hash(os.environ.get("ADMIN_PASS", "aixtra"))
+
+YAML_CONFIGS = {
+    "flippers": {"file": "flippers.yaml", "fields": ["name", "image", "link", "year"]},
+    "opening_days": {"file": "opening_days.yaml", "fields": ["from", "to"]},
+    "members": {"file": "members.yaml", "fields": ["name", "role", "image"]},
+    "timeline": {"file": "timeline.yaml", "fields": ["date", "title", "description"]},
+    "news": {"file": "news.yaml", "fields": ["title", "date", "slug", "preview_image"]},
+}
 
 # --------------------------------------------------
 # Hilfsfunktionen
@@ -68,6 +84,68 @@ def asset(path: str):
     if path.startswith(("http://", "https://", "//")):
         return path
     return url_for("static", filename=path)
+
+# --------------------------------------------------
+# Admin‑Helfer
+# --------------------------------------------------
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get("admin"):
+            return redirect(url_for("login", next=request.url))
+        return f(*args, **kwargs)
+    return wrapper
+
+# --------------------------------------------------
+# Admin‑Routen
+# --------------------------------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        user = request.form.get("username", "")
+        pw   = request.form.get("password", "")
+        if user == ADMIN_USER and check_password_hash(ADMIN_PASS_HASH, pw):
+            session["admin"] = True
+            return redirect(url_for("admin_dashboard"))
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("admin", None)
+    return redirect(url_for("index"))
+
+@app.route("/admin")
+@login_required
+def admin_dashboard():
+    return render_template("admin/index.html", configs=YAML_CONFIGS)
+
+@app.route("/admin/edit/<name>", methods=["GET", "POST"])
+@login_required
+def admin_edit(name):
+    cfg = YAML_CONFIGS.get(name)
+    if not cfg:
+        abort(404)
+    filepath = CONFIG_DIR / cfg["file"]
+    data = []
+    if filepath.exists():
+        with open(filepath, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or []
+    fields = cfg["fields"]
+    if request.method == "POST":
+        indices = sorted({k.split('-',1)[0] for k in request.form})
+        new_data = []
+        for idx in indices:
+            item = {}
+            for field in fields:
+                val = request.form.get(f"{idx}-{field}", "").strip()
+                if val:
+                    item[field] = val
+            if item:
+                new_data.append(item)
+        with open(filepath, "w", encoding="utf-8") as f:
+            yaml.safe_dump(new_data, f, allow_unicode=True, sort_keys=False)
+        return redirect(url_for("admin_dashboard"))
+    return render_template("admin/edit.html", name=name, fields=fields, data=data)
 
 # --------------------------------------------------
 # Routen
