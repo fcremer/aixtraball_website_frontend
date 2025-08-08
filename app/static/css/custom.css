@@ -100,6 +100,14 @@ a,
 .hero-overlay h1,
 .hero-overlay p{ text-shadow:0 2px 4px rgba(0,0,0,.6); }
 
+.hero-overlay h1{
+  font-size:clamp(1.75rem,5vw,2.5rem);
+}
+
+.hero-overlay p{
+  font-size:clamp(1rem,3vw,1.25rem);
+}
+
 @keyframes heroZoom{
   from{transform:scale(1.1);}to{transform:scale(1);}
 }
