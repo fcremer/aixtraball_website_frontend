@@ -112,7 +112,14 @@
       });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    const nextOpening = document.querySelector('#next-opening-section .reveal');
+    if (nextOpening) {
+      requestAnimationFrame(() => nextOpening.classList.add('reveal-visible'));
+    }
+
+    document.querySelectorAll('.reveal').forEach(el => {
+      if (el !== nextOpening) observer.observe(el);
+    });
   });
 </script>
 {% endblock %}
