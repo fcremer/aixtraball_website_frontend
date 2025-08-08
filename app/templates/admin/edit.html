@@ -6,10 +6,11 @@
   <form method="post">
     <div id="items">
       {% for item in data %}
+      {% set outerloop = loop %}
       <div class="row g-2 mb-3 item-row">
         {% for field in fields %}
         <div class="col">
-          <input type="text" class="form-control" name="{{ loop.parent.index0 }}-{{ field }}" value="{{ item.get(field, '') }}" placeholder="{{ field }}">
+          <input type="text" class="form-control" name="{{ outerloop.index0 }}-{{ field }}" value="{{ item.get(field, '') }}" placeholder="{{ field }}">
         </div>
         {% endfor %}
       </div>
