@@ -2,14 +2,21 @@ name: CI & Docker Publish
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: aixtraball_website_frontend           
-  WEBSITE_DIR: aixtraball_website    
+  IMAGE_NAME: aixtraball_website_frontend
+  WEBSITE_DIR: aixtraball_website
+
+concurrency:
+  group: ci-docker-publish
+  cancel-in-progress: false
 
 jobs:
 
@@ -34,7 +41,7 @@ jobs:
 
   docker:
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
 
     steps:
@@ -59,6 +66,18 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
+          pull: true         # neueste Base-Images ziehen
+          no-cache: true     # keine alten Layer nutzen
           tags: |
             ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          format: table
+          exit-code: "0"           # "1" setzen, wenn Build bei Funden fehlschlagen soll
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
