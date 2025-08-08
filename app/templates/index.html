@@ -22,12 +22,11 @@
   <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center">
     <h1 class="display-4 fw-bold mb-3">Dein Flipperverein in der Städteregion Aachen</h1>
     <p class="lead mb-4">Retro-Gaming trifft Community – jeden letzten Sonntag für dich geöffnet!</p>
-    <a href="{{ url_for('flipper_all') }}" class="btn btn-primary btn-lg">Jetzt entdecken</a>
   </div>
 </section>
 
 {# ID hinzugefügt, bg-light entfernt, Padding leicht reduziert (py-4 statt py-5) #}
-<section id="next-opening-section" class="py-4 reveal">
+<section id="next-opening-section" class="py-4 reveal reveal-bottom">
   <div class="container text-center">
     {% if opening %}
       {# Optional: Icon hinzugefügt (benötigt Bootstrap Icons o.ä.) #}
