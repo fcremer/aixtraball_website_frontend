@@ -32,10 +32,27 @@ CONFIG_DIR = BASE_DIR / "config"
 # --------------------------------------------------
 # Hilfsfunktionen
 # --------------------------------------------------
+# Einfache Dateicache für YAML-Inhalte. So müssen häufig
+# verwendete Dateien nicht bei jeder Anfrage erneut von der
+# Festplatte gelesen werden. Ändert sich die Datei, wird sie
+# automatisch neu geladen, da das Änderungsdatum geprüft wird.
+# Cache-Struktur: Dateiname -> (mtime, geladene Daten)
+_yaml_cache: dict[str, tuple[float, object]] = {}
+
 def load_yaml(filename: str):
     """Beliebige YAML‑Datei aus dem config‑Ordner laden."""
-    with open(CONFIG_DIR / filename, encoding="utf-8") as f:
-        return yaml.safe_load(f) or []
+    path = CONFIG_DIR / filename
+    mtime = path.stat().st_mtime if path.exists() else 0
+
+    cached = _yaml_cache.get(filename)
+    if cached and cached[0] == mtime:
+        return cached[1]
+
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or []
+
+    _yaml_cache[filename] = (mtime, data)
+    return data
 
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
