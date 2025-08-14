@@ -2,10 +2,11 @@
 {% block content %}
 <div class="container py-5">
   <h1>Administration</h1>
-  <h2 class="mt-4">Konfiguration</h2>
+  <h2 class="mt-4">Inhalte</h2>
   <ul>
-    {% for f in files %}
-    <li><a href="{{ url_for('admin_edit', filename=f) }}">{{ f }}</a></li>
+    {% for f,label in files %}
+    <li><a href="{{ url_for('admin_manage', filename=f) }}">{{ label }}</a>
+        (<a href="{{ url_for('admin_edit', filename=f) }}">RAW</a>)</li>
     {% endfor %}
   </ul>
   <h2 class="mt-4">Bild hochladen</h2>

@@ -158,12 +158,12 @@ def logout():
 @login_required
 def admin():
     files = [
-        "flippers.yaml",
-        "news.yaml",
-        "opening_days.yaml",
-        "slides.yaml",
-        "members.yaml",
-        "timeline.yaml",
+        ("flippers.yaml", "Flipper"),
+        ("news.yaml", "News"),
+        ("opening_days.yaml", "Öffnungstage"),
+        ("slides.yaml", "Slides"),
+        ("members.yaml", "Mitglieder"),
+        ("timeline.yaml", "Timeline"),
     ]
     return render_template("admin.html", files=files)
 
@@ -188,6 +188,60 @@ def admin_edit(filename):
     else:
         data = []
     return render_template("admin_edit.html", filename=filename, data=data)
+
+
+@app.route("/admin/manage/<path:filename>")
+@login_required
+def admin_manage(filename):
+    data = load_yaml(filename)
+    return render_template("admin_manage.html", filename=filename, data=data)
+
+
+@app.route("/admin/manage/<path:filename>/new", methods=["GET", "POST"])
+@app.route("/admin/manage/<path:filename>/<int:index>", methods=["GET", "POST"])
+@login_required
+def admin_item(filename, index=None):
+    filepath = CONFIG_DIR / filename
+    data = load_yaml(filename)
+    template_item = data[0] if data else {}
+    if index is not None and index < len(data):
+        item = data[index]
+    else:
+        item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
+    if request.method == "POST":
+        new_item = {}
+        for key, value in item.items():
+            if isinstance(value, list):
+                text = request.form.get(key, "")
+                new_list = [l.strip() for l in text.splitlines() if l.strip()]
+                if "image" in key:
+                    for f in request.files.getlist(f"{key}_upload"):
+                        if f and f.filename:
+                            upload_dir = BASE_DIR / "static" / "images"
+                            upload_dir.mkdir(parents=True, exist_ok=True)
+                            fname = secure_filename(f.filename)
+                            f.save(upload_dir / fname)
+                            new_list.append(f"images/{fname}")
+                new_item[key] = new_list
+            else:
+                file = request.files.get(f"{key}_upload") if "image" in key else None
+                if file and file.filename:
+                    upload_dir = BASE_DIR / "static" / "images"
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    fname = secure_filename(file.filename)
+                    file.save(upload_dir / fname)
+                    new_item[key] = f"images/{fname}"
+                else:
+                    new_item[key] = request.form.get(key, "")
+        if index is None or index >= len(data):
+            data.append(new_item)
+        else:
+            data[index] = new_item
+        yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+        filepath.write_text(yaml_content, encoding="utf-8")
+        flash("Gespeichert", "success")
+        return redirect(url_for("admin_manage", filename=filename))
+    return render_template("admin_item.html", filename=filename, item=item, index=index)
 
 
 @app.route("/admin/upload", methods=["POST"])

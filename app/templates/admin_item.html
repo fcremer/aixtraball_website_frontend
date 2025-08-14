@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>{{ filename }} - {% if index is not none %}Bearbeiten{% else %}Neu{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% for key, value in item.items() %}
+    <div class="mb-3">
+      <label class="form-label">{{ key }}</label>
+      {% if value is iterable and value is not string %}
+        {% if 'image' in key %}
+          <textarea name="{{ key }}" class="form-control" rows="3">{{ value|join('\n') }}</textarea>
+          <input type="file" name="{{ key }}_upload" multiple class="form-control mt-1">
+        {% else %}
+          <textarea name="{{ key }}" class="form-control" rows="3">{{ value|join('\n') }}</textarea>
+        {% endif %}
+      {% else %}
+        {% if 'image' in key %}
+          {% if value %}<img src="{{ url_for('static', filename=value) }}" alt="" class="img-thumbnail mb-2" style="max-height:80px;">{% endif %}
+          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control mb-1">
+          <input type="file" name="{{ key }}_upload" class="form-control">
+        {% else %}
+          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control">
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button class="btn btn-success" type="submit">Speichern</button>
+    <a class="btn btn-secondary" href="{{ url_for('admin_manage', filename=filename) }}">Zurück</a>
+  </form>
+</div>
+{% endblock %}

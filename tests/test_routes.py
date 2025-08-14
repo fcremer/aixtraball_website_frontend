@@ -147,3 +147,22 @@ def test_login_rate_limit(client):
         data={"username": "admin", "password": "wrong", "captcha": answer},
     )
     assert b"Zu viele Fehlversuche" in resp.data
+
+
+def test_admin_add_entry_via_form(client):
+    from app.app import LOGIN_ATTEMPTS
+    LOGIN_ATTEMPTS.clear()
+    html = client.get("/login").data.decode()
+    answer = _captcha_answer(html)
+    client.post("/login", data={"username": "admin", "password": "admin", "captcha": answer})
+
+    resp = client.get("/admin/manage/flippers.yaml")
+    assert resp.status_code == 200
+
+    client.post(
+        "/admin/manage/flippers.yaml/new",
+        data={"name": "Neu", "image": "images/x.jpg", "link": "https://ex"},
+        follow_redirects=True,
+    )
+    data = yaml.safe_load((CONFIG / "flippers.yaml").read_text())
+    assert any(f.get("name") == "Neu" for f in data)
