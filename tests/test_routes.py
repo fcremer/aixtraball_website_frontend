@@ -3,7 +3,7 @@ Smoke‑Tests: Überprüft, ob alle Haupt­seiten HTTP 200 liefern.
 Die YAML‑Dateien werden zur Laufzeit minimal erzeugt, damit die
 Flask‑App auch in der CI ohne Volumes funktioniert.
 """
-import pathlib, yaml, pytest
+import pathlib, yaml, pytest, re
 from datetime import datetime, timedelta
 
 # ------------------------------------------------------------------
@@ -119,3 +119,50 @@ def test_current_opening_visible(client):
 
     assert "Heute" in html, "Aktueller Termin fehlt"
     assert next_from.strftime("%d.%m.%Y") not in html, "Falscher Termin angezeigt"
+
+
+# ------------------------------------------------------------------
+# 6  Login schützt vor Brute-Force durch Limitierung
+# ------------------------------------------------------------------
+def _captcha_answer(html: str) -> str:
+    m = re.search(r"(\d+) \+ (\d+)", html)
+    assert m, "Captcha-Frage nicht gefunden"
+    return str(int(m.group(1)) + int(m.group(2)))
+
+
+def test_login_rate_limit(client):
+    """Nach 5 falschen Logins wird die weitere Anmeldung blockiert."""
+    for _ in range(5):
+        answer = _captcha_answer(client.get("/login").data.decode())
+        resp = client.post(
+            "/login",
+            data={"username": "admin", "password": "wrong", "captcha": answer},
+        )
+        assert b"Zugangsdaten" in resp.data
+
+    # sechster Versuch → blockiert
+    answer = _captcha_answer(client.get("/login").data.decode())
+    resp = client.post(
+        "/login",
+        data={"username": "admin", "password": "wrong", "captcha": answer},
+    )
+    assert b"Zu viele Fehlversuche" in resp.data
+
+
+def test_admin_add_entry_via_form(client):
+    from app.app import LOGIN_ATTEMPTS
+    LOGIN_ATTEMPTS.clear()
+    html = client.get("/login").data.decode()
+    answer = _captcha_answer(html)
+    client.post("/login", data={"username": "admin", "password": "admin", "captcha": answer})
+
+    resp = client.get("/admin/manage/flippers.yaml")
+    assert resp.status_code == 200
+
+    client.post(
+        "/admin/manage/flippers.yaml/new",
+        data={"name": "Neu", "image": "images/x.jpg", "link": "https://ex"},
+        follow_redirects=True,
+    )
+    data = yaml.safe_load((CONFIG / "flippers.yaml").read_text())
+    assert any(f.get("name") == "Neu" for f in data)

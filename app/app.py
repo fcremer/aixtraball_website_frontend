@@ -10,24 +10,41 @@ app/app.py  –  Haupt-Backend der Vereins‑Website
 from pathlib import Path
 from datetime import datetime
 from itertools import groupby
-from flask import Response
+from functools import wraps
+from flask import Response, session, flash
 
 import random
 import yaml
+import os
+import json
+from time import time
 
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
     url_for, request
 )
+from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 # --------------------------------------------------
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
+ADMIN_PW_HASH = os.environ.get(
+    "ADMIN_PASSWORD_HASH", generate_password_hash("admin")
+)
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
+
+# In-memory login attempt tracker: {ip: (count, first_timestamp)}
+LOGIN_ATTEMPTS = {}
+MAX_ATTEMPTS = 5
+LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 
 # --------------------------------------------------
 # Hilfsfunktionen
@@ -52,6 +69,15 @@ def get_next_opening():
         opening["is_today"] = opening["from_dt"].date() == now.date()
     return opening
 
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
+
 # --------------------------------------------------
 # Jinja‑Filter
 # --------------------------------------------------
@@ -72,6 +98,167 @@ def asset(path: str):
 # --------------------------------------------------
 # Routen
 # --------------------------------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    ip = request.remote_addr or "?"
+
+    def _generate_captcha():
+        a, b = random.randint(1, 9), random.randint(1, 9)
+        session["captcha_answer"] = str(a + b)
+        return f"{a} + {b}"
+
+    def _attempt_info():
+        info = LOGIN_ATTEMPTS.get(ip)
+        if info and time() - info[1] > LOCKOUT_SECONDS:
+            LOGIN_ATTEMPTS.pop(ip, None)
+            return None
+        return info
+
+    def _register_failure():
+        info = _attempt_info()
+        if info:
+            LOGIN_ATTEMPTS[ip] = (info[0] + 1, info[1])
+        else:
+            LOGIN_ATTEMPTS[ip] = (1, time())
+
+    if request.method == "POST":
+        info = _attempt_info()
+        if info and info[0] >= MAX_ATTEMPTS:
+            flash("Zu viele Fehlversuche. Bitte später erneut versuchen.", "danger")
+        else:
+            username = request.form.get("username", "")
+            password = request.form.get("password", "")
+            captcha = request.form.get("captcha", "")
+
+            if captcha != session.get("captcha_answer"):
+                flash("Captcha falsch", "danger")
+                _register_failure()
+            elif username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
+                session["logged_in"] = True
+                LOGIN_ATTEMPTS.pop(ip, None)
+                return redirect(url_for("admin"))
+            else:
+                flash("Ungültige Zugangsdaten", "danger")
+                _register_failure()
+        question = _generate_captcha()
+        return render_template("login.html", captcha_question=question)
+
+    # GET
+    question = _generate_captcha()
+    return render_template("login.html", captcha_question=question)
+
+
+@app.route("/logout")
+def logout():
+    session.pop("logged_in", None)
+    return redirect(url_for("index"))
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    files = [
+        ("flippers.yaml", "Flipper"),
+        ("news.yaml", "News"),
+        ("opening_days.yaml", "Öffnungstage"),
+        ("slides.yaml", "Slides"),
+        ("members.yaml", "Mitglieder"),
+        ("timeline.yaml", "Timeline"),
+    ]
+    return render_template("admin.html", files=files)
+
+
+@app.route("/admin/edit/<path:filename>", methods=["GET", "POST"])
+@login_required
+def admin_edit(filename):
+    filepath = CONFIG_DIR / filename
+    if request.method == "POST":
+        json_data = request.form.get("content", "")
+        try:
+            data = json.loads(json_data) if json_data else {}
+            yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+            filepath.write_text(yaml_content, encoding="utf-8")
+            flash("Gespeichert", "success")
+        except Exception as e:
+            flash(f"Fehler beim Speichern: {e}", "danger")
+        return redirect(url_for("admin_edit", filename=filename))
+    if filepath.exists():
+        with open(filepath, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or []
+    else:
+        data = []
+    return render_template("admin_edit.html", filename=filename, data=data)
+
+
+@app.route("/admin/manage/<path:filename>")
+@login_required
+def admin_manage(filename):
+    data = load_yaml(filename)
+    return render_template("admin_manage.html", filename=filename, data=data)
+
+
+@app.route("/admin/manage/<path:filename>/new", methods=["GET", "POST"])
+@app.route("/admin/manage/<path:filename>/<int:index>", methods=["GET", "POST"])
+@login_required
+def admin_item(filename, index=None):
+    filepath = CONFIG_DIR / filename
+    data = load_yaml(filename)
+    template_item = data[0] if data else {}
+    if index is not None and index < len(data):
+        item = data[index]
+    else:
+        item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
+    if request.method == "POST":
+        new_item = {}
+        for key, value in item.items():
+            if isinstance(value, list):
+                text = request.form.get(key, "")
+                new_list = [l.strip() for l in text.splitlines() if l.strip()]
+                if "image" in key:
+                    for f in request.files.getlist(f"{key}_upload"):
+                        if f and f.filename:
+                            upload_dir = BASE_DIR / "static" / "images"
+                            upload_dir.mkdir(parents=True, exist_ok=True)
+                            fname = secure_filename(f.filename)
+                            f.save(upload_dir / fname)
+                            new_list.append(f"images/{fname}")
+                new_item[key] = new_list
+            else:
+                file = request.files.get(f"{key}_upload") if "image" in key else None
+                if file and file.filename:
+                    upload_dir = BASE_DIR / "static" / "images"
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    fname = secure_filename(file.filename)
+                    file.save(upload_dir / fname)
+                    new_item[key] = f"images/{fname}"
+                else:
+                    new_item[key] = request.form.get(key, "")
+        if index is None or index >= len(data):
+            data.append(new_item)
+        else:
+            data[index] = new_item
+        yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+        filepath.write_text(yaml_content, encoding="utf-8")
+        flash("Gespeichert", "success")
+        return redirect(url_for("admin_manage", filename=filename))
+    return render_template("admin_item.html", filename=filename, item=item, index=index)
+
+
+@app.route("/admin/upload", methods=["POST"])
+@login_required
+def admin_upload():
+    file = request.files.get("image")
+    if file and file.filename:
+        upload_dir = BASE_DIR / "static" / "images"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        filename = secure_filename(file.filename)
+        file.save(upload_dir / filename)
+        flash("Bild hochgeladen", "success")
+    else:
+        flash("Keine Datei ausgewählt", "warning")
+    return redirect(url_for("admin"))
+
+
 @app.route("/")
 def index():
     flippers      = load_yaml("flippers.yaml")
