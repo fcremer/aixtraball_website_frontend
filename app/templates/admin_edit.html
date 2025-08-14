@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>{{ filename }}</h1>
+  <form method="post">
+    <div class="mb-3">
+      <textarea name="content" class="form-control" rows="20">{{ content }}</textarea>
+    </div>
+    <button class="btn btn-primary" type="submit">Speichern</button>
+    <a href="{{ url_for('admin') }}" class="btn btn-secondary">Zurück</a>
+  </form>
+</div>
+{% endblock %}

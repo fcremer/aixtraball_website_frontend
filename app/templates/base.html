@@ -66,12 +66,27 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('preise') }}">Preise &amp; Besuch</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('kontakt') }}">Kontakt</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('impressum') }}">Impressum</a></li>
+          {% if session.get('logged_in') %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('admin') }}">Admin</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+          {% else %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+          {% endif %}
         </ul>
       </div>
     </div>
   </nav>
 
   <main class="flex-shrink-0">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mt-3">
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ category }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 

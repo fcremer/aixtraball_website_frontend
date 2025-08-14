@@ -10,21 +10,31 @@ app/app.py  –  Haupt-Backend der Vereins‑Website
 from pathlib import Path
 from datetime import datetime
 from itertools import groupby
-from flask import Response
+from functools import wraps
+from flask import Response, session, flash
 
 import random
 import yaml
+import os
 
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
     url_for, request
 )
+from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 # --------------------------------------------------
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
+ADMIN_PW_HASH = os.environ.get(
+    "ADMIN_PASSWORD_HASH", generate_password_hash("admin")
+)
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
@@ -52,6 +62,15 @@ def get_next_opening():
         opening["is_today"] = opening["from_dt"].date() == now.date()
     return opening
 
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+    return wrapped
+
 # --------------------------------------------------
 # Jinja‑Filter
 # --------------------------------------------------
@@ -72,6 +91,66 @@ def asset(path: str):
 # --------------------------------------------------
 # Routen
 # --------------------------------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        if username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
+            session["logged_in"] = True
+            return redirect(url_for("admin"))
+        flash("Ungültige Zugangsdaten", "danger")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.pop("logged_in", None)
+    return redirect(url_for("index"))
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    files = [
+        "flippers.yaml",
+        "news.yaml",
+        "opening_days.yaml",
+        "slides.yaml",
+        "members.yaml",
+        "timeline.yaml",
+    ]
+    return render_template("admin.html", files=files)
+
+
+@app.route("/admin/edit/<path:filename>", methods=["GET", "POST"])
+@login_required
+def admin_edit(filename):
+    filepath = CONFIG_DIR / filename
+    if request.method == "POST":
+        content = request.form.get("content", "")
+        filepath.write_text(content, encoding="utf-8")
+        flash("Gespeichert", "success")
+        return redirect(url_for("admin_edit", filename=filename))
+    content = filepath.read_text(encoding="utf-8") if filepath.exists() else ""
+    return render_template("admin_edit.html", filename=filename, content=content)
+
+
+@app.route("/admin/upload", methods=["POST"])
+@login_required
+def admin_upload():
+    file = request.files.get("image")
+    if file and file.filename:
+        upload_dir = BASE_DIR / "static" / "images"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        filename = secure_filename(file.filename)
+        file.save(upload_dir / filename)
+        flash("Bild hochgeladen", "success")
+    else:
+        flash("Keine Datei ausgewählt", "warning")
+    return redirect(url_for("admin"))
+
+
 @app.route("/")
 def index():
     flippers      = load_yaml("flippers.yaml")
