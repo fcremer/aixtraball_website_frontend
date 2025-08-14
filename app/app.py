@@ -17,6 +17,7 @@ import random
 import yaml
 import os
 import json
+from time import time
 
 from dateutil import parser, tz
 from flask import (
@@ -39,6 +40,11 @@ ADMIN_PW_HASH = os.environ.get(
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
+
+# In-memory login attempt tracker: {ip: (count, first_timestamp)}
+LOGIN_ATTEMPTS = {}
+MAX_ATTEMPTS = 5
+LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 
 # --------------------------------------------------
 # Hilfsfunktionen
@@ -94,14 +100,52 @@ def asset(path: str):
 # --------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    ip = request.remote_addr or "?"
+
+    def _generate_captcha():
+        a, b = random.randint(1, 9), random.randint(1, 9)
+        session["captcha_answer"] = str(a + b)
+        return f"{a} + {b}"
+
+    def _attempt_info():
+        info = LOGIN_ATTEMPTS.get(ip)
+        if info and time() - info[1] > LOCKOUT_SECONDS:
+            LOGIN_ATTEMPTS.pop(ip, None)
+            return None
+        return info
+
+    def _register_failure():
+        info = _attempt_info()
+        if info:
+            LOGIN_ATTEMPTS[ip] = (info[0] + 1, info[1])
+        else:
+            LOGIN_ATTEMPTS[ip] = (1, time())
+
     if request.method == "POST":
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        if username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
-            session["logged_in"] = True
-            return redirect(url_for("admin"))
-        flash("Ungültige Zugangsdaten", "danger")
-    return render_template("login.html")
+        info = _attempt_info()
+        if info and info[0] >= MAX_ATTEMPTS:
+            flash("Zu viele Fehlversuche. Bitte später erneut versuchen.", "danger")
+        else:
+            username = request.form.get("username", "")
+            password = request.form.get("password", "")
+            captcha = request.form.get("captcha", "")
+
+            if captcha != session.get("captcha_answer"):
+                flash("Captcha falsch", "danger")
+                _register_failure()
+            elif username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
+                session["logged_in"] = True
+                LOGIN_ATTEMPTS.pop(ip, None)
+                return redirect(url_for("admin"))
+            else:
+                flash("Ungültige Zugangsdaten", "danger")
+                _register_failure()
+        question = _generate_captcha()
+        return render_template("login.html", captcha_question=question)
+
+    # GET
+    question = _generate_captcha()
+    return render_template("login.html", captcha_question=question)
 
 
 @app.route("/logout")
