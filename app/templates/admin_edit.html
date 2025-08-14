@@ -1,13 +1,32 @@
 {% extends "base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
   <h1>{{ filename }}</h1>
-  <form method="post">
-    <div class="mb-3">
-      <textarea name="content" class="form-control" rows="20">{{ content }}</textarea>
-    </div>
-    <button class="btn btn-primary" type="submit">Speichern</button>
-    <a href="{{ url_for('admin') }}" class="btn btn-secondary">Zurück</a>
+  <form method="post" id="editor-form">
+    <div id="editor" style="height: 500px;"></div>
+    <input type="hidden" name="content" id="json-input">
+    <button class="btn btn-primary mt-3" type="submit">Speichern</button>
+    <a href="{{ url_for('admin') }}" class="btn btn-secondary mt-3">Zurück</a>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('editor');
+  const editor = new JSONEditor(container, {mode: 'tree'});
+  const initialData = {{ data | tojson }};
+  editor.set(initialData);
+  document.getElementById('editor-form').addEventListener('submit', function() {
+    document.getElementById('json-input').value = JSON.stringify(editor.get());
+  });
+});
+</script>
 {% endblock %}

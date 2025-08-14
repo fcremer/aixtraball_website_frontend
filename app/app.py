@@ -16,6 +16,7 @@ from flask import Response, session, flash
 import random
 import yaml
 import os
+import json
 
 from dateutil import parser, tz
 from flask import (
@@ -128,12 +129,21 @@ def admin():
 def admin_edit(filename):
     filepath = CONFIG_DIR / filename
     if request.method == "POST":
-        content = request.form.get("content", "")
-        filepath.write_text(content, encoding="utf-8")
-        flash("Gespeichert", "success")
+        json_data = request.form.get("content", "")
+        try:
+            data = json.loads(json_data) if json_data else {}
+            yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+            filepath.write_text(yaml_content, encoding="utf-8")
+            flash("Gespeichert", "success")
+        except Exception as e:
+            flash(f"Fehler beim Speichern: {e}", "danger")
         return redirect(url_for("admin_edit", filename=filename))
-    content = filepath.read_text(encoding="utf-8") if filepath.exists() else ""
-    return render_template("admin_edit.html", filename=filename, content=content)
+    if filepath.exists():
+        with open(filepath, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or []
+    else:
+        data = []
+    return render_template("admin_edit.html", filename=filename, data=data)
 
 
 @app.route("/admin/upload", methods=["POST"])
