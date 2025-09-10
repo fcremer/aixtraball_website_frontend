@@ -28,7 +28,7 @@
         {% if news %}
           {% for article in news %}
             <div class="card mb-4 shadow-sm">
-              <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}">
+              <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}" loading="lazy" decoding="async">
               <div class="card-body">
                 <span class="badge bg-secondary mb-2">{{ article.category }}</span>
                 <h3 class="card-title">{{ article.title }}</h3>

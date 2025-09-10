@@ -350,7 +350,7 @@
             <h3 class="h5 mt-2">{{ f.name }}</h3>
             {% if f.image %}
             <a href="#" class="flipper-trigger d-block">
-              <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}">
+              <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}" loading="lazy" decoding="async">
             </a>
             {% endif %}
             {% if f.link %}

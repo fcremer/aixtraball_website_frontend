@@ -8,7 +8,7 @@
       <div class="row g-4 mb-3">
         <div class="col-md-8">
           <a href="{{ article.images[0] | asset }}" class="glightbox" data-gallery="news-gallery">
-            <img src="{{ article.images[0] | asset }}" class="img-fluid rounded mb-3" alt="{{ article.title }}">
+            <img src="{{ article.images[0] | asset }}" class="img-fluid rounded mb-3" alt="{{ article.title }}" loading="lazy" decoding="async">
           </a>
           {{ article.content | safe }}
         </div>
@@ -18,7 +18,7 @@
             {% for img in article.images[1:] %}
               <div class="col">
                 <a href="{{ img | asset }}" class="glightbox" data-gallery="news-gallery">
-                  <img src="{{ img | asset }}" class="img-fluid rounded" alt="{{ article.title }}">
+                  <img src="{{ img | asset }}" class="img-fluid rounded" alt="{{ article.title }}" loading="lazy" decoding="async">
                 </a>
               </div>
             {% endfor %}

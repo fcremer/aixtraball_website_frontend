@@ -66,10 +66,22 @@ LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 # --------------------------------------------------
 # Hilfsfunktionen
 # --------------------------------------------------
+YAML_CACHE = {}
+
 def load_yaml(filename: str):
-    """Beliebige YAML‑Datei aus dem config‑Ordner laden."""
-    with open(CONFIG_DIR / filename, encoding="utf-8") as f:
-        return yaml.safe_load(f) or []
+    """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache)."""
+    path = CONFIG_DIR / filename
+    try:
+        mtime = path.stat().st_mtime
+    except FileNotFoundError:
+        return []
+    cached = YAML_CACHE.get(filename)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or []
+    YAML_CACHE[filename] = (mtime, data)
+    return data
 
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
