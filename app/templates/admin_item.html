@@ -1,31 +1,149 @@
 {% extends "base.html" %}
+
+{% block head_extra %}
+<link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+{% endblock %}
+
+{% set body_class = 'admin' %}
 {% block content %}
-<div class="container py-5">
-  <h1>{{ filename }} - {% if index is not none %}Bearbeiten{% else %}Neu{% endif %}</h1>
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0">{{ filename }} – {% if index is not none %}Bearbeiten{% else %}Neu{% endif %}</h1>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_manage', filename=filename) }}">
+      <i class="bi bi-arrow-left"></i> Zurück
+    </a>
+  </div>
+
   <form method="post" enctype="multipart/form-data">
     {% for key, value in item.items() %}
     <div class="mb-3">
       <label class="form-label">{{ key }}</label>
       {% if value is iterable and value is not string %}
         {% if 'image' in key %}
-          <textarea name="{{ key }}" class="form-control" rows="3">{{ value|join('\n') }}</textarea>
+          <textarea name="{{ key }}" class="form-control" rows="3" placeholder="Eine Zeile pro Bildpfad">{{ value|join('\n') }}</textarea>
           <input type="file" name="{{ key }}_upload" multiple class="form-control mt-1">
+          <div class="form-hint">Mehrere Bilder möglich. Bestehende Pfade bleiben erhalten.</div>
+          <button type="button" class="btn btn-sm btn-outline-primary mt-2 pick-existing" data-field="{{ key }}" data-type="list">
+            <i class="bi bi-images"></i> Aus vorhandenen wählen
+          </button>
         {% else %}
-          <textarea name="{{ key }}" class="form-control" rows="3">{{ value|join('\n') }}</textarea>
+          <textarea name="{{ key }}" class="form-control" rows="3" placeholder="Eine Zeile pro Eintrag">{{ value|join('\n') }}</textarea>
         {% endif %}
       {% else %}
         {% if 'image' in key %}
-          {% if value %}<img src="{{ url_for('static', filename=value) }}" alt="" class="img-thumbnail mb-2" style="max-height:80px;">{% endif %}
-          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control mb-1">
+          {% if value %}<img src="{{ url_for('static', filename=value) }}" alt="" class="img-thumbnail mb-2" style="max-height:92px;" loading="lazy">{% endif %}
+          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control mb-1" placeholder="images/…">
           <input type="file" name="{{ key }}_upload" class="form-control">
+          <button type="button" class="btn btn-sm btn-outline-primary mt-2 pick-existing" data-field="{{ key }}" data-type="single">
+            <i class="bi bi-images"></i> Aus vorhandenen wählen
+          </button>
         {% else %}
-          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control">
+          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control" placeholder="Wert eingeben">
         {% endif %}
       {% endif %}
     </div>
     {% endfor %}
-    <button class="btn btn-success" type="submit">Speichern</button>
-    <a class="btn btn-secondary" href="{{ url_for('admin_manage', filename=filename) }}">Zurück</a>
+    <div class="sticky-actions d-flex gap-2">
+      <button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Speichern</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('admin_manage', filename=filename) }}">Abbrechen</a>
+    </div>
   </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    let imagesCache = null;
+    let target = null; // {name, type}
+
+    const modalEl = document.getElementById('imagePickerModal');
+    let bsModal = null;
+    function ensureModal() {
+      if (bsModal) return bsModal;
+      bsModal = new bootstrap.Modal(modalEl);
+      return bsModal;
+    }
+
+    async function loadImages() {
+      if (imagesCache) return imagesCache;
+      const resp = await fetch('{{ url_for('admin_images') }}');
+      imagesCache = await resp.json();
+      return imagesCache;
+    }
+
+    async function openPicker(t) {
+      target = t;
+      const grid = document.getElementById('imageGrid');
+      const search = document.getElementById('imageSearch');
+      grid.innerHTML = '<div class="text-muted">Lade Bilder…</div>';
+      const items = await loadImages();
+      const render = (q='') => {
+        const needle = q.trim().toLowerCase();
+        const sel = items.filter(it => !needle || it.name.toLowerCase().includes(needle) || it.path.toLowerCase().includes(needle));
+        grid.innerHTML = sel.map(it => `
+          <div class="image-tile" data-path="${it.path}">
+            <img src="${it.url}" alt="${it.name}">
+            <div class="caption" title="${it.path}">${it.name}</div>
+          </div>
+        `).join('');
+      };
+      render('');
+      search.value = '';
+      search.oninput = () => render(search.value);
+      grid.onclick = (e) => {
+        const tile = e.target.closest('.image-tile');
+        if (!tile) return;
+        const path = tile.getAttribute('data-path');
+        if (target) {
+          const name = target.name;
+          const type = target.type;
+          if (type === 'single') {
+            const input = document.querySelector(`[name="${name}"]`);
+            if (input) input.value = path;
+          } else if (type === 'list') {
+            const ta = document.querySelector(`textarea[name="${name}"]`);
+            if (ta) {
+              const lines = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+              if (!lines.includes(path)) lines.push(path);
+              ta.value = lines.join('\n');
+            }
+          }
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(path).catch(()=>{});
+        }
+        ensureModal().hide();
+      };
+      ensureModal().show();
+    }
+
+    document.querySelectorAll('.pick-existing').forEach(btn => {
+      btn.addEventListener('click', () => {
+        openPicker({name: btn.dataset.field, type: btn.dataset.type});
+      });
+    });
+  });
+</script>
+
+<!-- Image Picker Modal -->
+<div class="modal fade" id="imagePickerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-images me-2"></i>Bild auswählen</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" id="imageSearch" class="form-control" placeholder="Suchen…">
+        </div>
+        <div id="imageGrid" class="image-grid"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

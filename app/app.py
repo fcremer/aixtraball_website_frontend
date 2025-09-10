@@ -11,7 +11,7 @@ from pathlib import Path
 from datetime import datetime
 from itertools import groupby
 from functools import wraps
-from flask import Response, session, flash
+from flask import Response, session, flash, jsonify
 
 import random
 import yaml
@@ -24,6 +24,10 @@ from flask import (
     Flask, render_template, redirect,
     url_for, request
 )
+try:
+    from flask_compress import Compress
+except Exception:
+    Compress = None
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -32,6 +36,19 @@ from werkzeug.utils import secure_filename
 # --------------------------------------------------
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+# Performance: cache static files long and enable simple cache-busting
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365  # 1 year
+try:
+    static_css_dir = (Path(__file__).resolve().parent / "static" / "css")
+    latest_css_mtime = max((p.stat().st_mtime for p in static_css_dir.glob("*.css")), default=time())
+    app.config['ASSET_VERSION'] = str(int(latest_css_mtime))
+except Exception:
+    app.config['ASSET_VERSION'] = str(int(time()))
+
+# Enable gzip compression if available
+if Compress is not None:
+    Compress(app)
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PW_HASH = os.environ.get(
@@ -259,6 +276,28 @@ def admin_upload():
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/images.json")
+@login_required
+def admin_images():
+    """List available images under static/images as JSON."""
+    images_dir = BASE_DIR / "static" / "images"
+    exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+    items = []
+    if images_dir.exists():
+        for p in images_dir.rglob("*"):
+            if p.is_file() and p.suffix.lower() in exts:
+                rel = p.relative_to(BASE_DIR / "static").as_posix()
+                items.append({
+                    "path": rel,  # e.g., images/foo.jpg
+                    "url": url_for('static', filename=rel),
+                    "name": p.name,
+                    "mtime": int(p.stat().st_mtime)
+                })
+    # newest first
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    return jsonify(items)
+
+
 @app.route("/")
 def index():
     flippers      = load_yaml("flippers.yaml")
@@ -290,7 +329,6 @@ def verein():
     # Timeline‑Milestones laden
     timeline = load_yaml("timeline.yaml")
     # chronologisch sortiert – falls im YAML durcheinander
-    print(timeline)
     timeline.sort(key=lambda x: parser.parse(x["date"]))
     return render_template(
         "verein.html",

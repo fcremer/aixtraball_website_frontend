@@ -7,4 +7,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 5000
-CMD ["python", "/app/app.py"]
+# Production server
+ENV PYTHONUNBUFFERED=1
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:app"]
