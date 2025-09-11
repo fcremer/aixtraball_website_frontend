@@ -2,20 +2,20 @@
 
 {% block head_extra %}
   <style>
-    /* Akzent-Rot auch hier für Headings und Links */
+    /* Akzent-Rot nur im Impressum-Content, Navbar bleibt unverändert */
     .heading-primary { color: #A52317 !important; }
-    a { color: #A52317 !important; }
-    a:hover { color: #A52317; }
+    .legal a { color: var(--bs-primary); }
+    .legal a:hover { color: #A52317; }
 
-    /* Rote Schrift für geöffnete Accordion-Toggles */
-    .accordion-button:not(.collapsed) {
+    /* Rote Schrift für geöffnete Accordion-Toggles (nur innen) */
+    .legal .accordion-button:not(.collapsed) {
       color: #A52317 !important;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-<section class="py-5">
+<section class="py-5 legal">
   <div class="container">
 
     <h1 class="heading-primary mb-4 text-center">Impressum &amp; Datenschutz</h1>

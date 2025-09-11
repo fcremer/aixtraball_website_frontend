@@ -1,11 +1,18 @@
 {% extends 'base.html' %}
+{% block title %}Aixtraball e.V. – Die Flipperhalle in Aachen{% endblock %}
+{% block meta_description %}Öffnungstage, über 50 Flipper, Vermietung, Turniere & News. Besuche Aixtraball in Würselen bei Aachen.{% endblock %}
+{% block head_extra %}
+  {% if slides and slides[0] %}
+    <link rel="preload" as="image" href="{{ slides[0].image | asset }}" imagesrcset="{{ slides[0].image | asset }}" />
+  {% endif %}
+{% endblock %}
 {% block content %}
 <section class="hero">
   <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-inner">
       {% for slide in slides %}
         <div class="carousel-item {% if loop.first %}active{% endif %}">
-          <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt }}">
+          <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt }}" decoding="async" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
         </div>
       {% endfor %}
     </div>
@@ -62,8 +69,8 @@
         <a href="{{ url_for('flipper_all') }}" class="text-decoration-none text-reset">
           <div class="card h-100 shadow-sm">
             <div class="img-stack">
-              <img src="{{ f.image | asset }}" class="bg-img" alt="" aria-hidden="true">
-              <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}">
+              <img src="{{ f.image | asset }}" class="bg-img" alt="" aria-hidden="true" loading="lazy" decoding="async">
+              <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}" loading="lazy" decoding="async">
             </div>
             <div class="card-body p-2">
               <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
@@ -84,7 +91,7 @@
       {% for article in latest_news %}
       <div class="col-md-6">
         <div class="card h-100 shadow-sm">
-          <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}">
+          <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}" loading="lazy" decoding="async">
           <div class="card-body">
             <h5 class="card-title">{{ article.title }}</h5>
             <p class="card-text">{{ article.excerpt }}</p>

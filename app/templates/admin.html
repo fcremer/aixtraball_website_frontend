@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+{% endblock %}
+
+{% set body_class = 'admin' %}
+{% block content %}
+<div class="container py-4">
+  <div class="admin-hero">
+    <i class="bi bi-speedometer2 fs-2"></i>
+    <div>
+      <h1 class="h3 mb-0">Administration</h1>
+      <div class="text-muted">Inhalte verwalten, Dateien hochladen</div>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    {% for f,label in files %}
+    <div class="admin-card">
+      <div class="d-flex align-items-start justify-content-between">
+        <div>
+          <p class="title">{{ label }}</p>
+          <p class="meta mb-2">{{ f }}</p>
+        </div>
+        <i class="bi bi-folder2-open text-primary fs-4"></i>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-primary" href="{{ url_for('admin_manage', filename=f) }}">
+          <i class="bi bi-list-task me-1"></i> Verwalten
+        </a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_edit', filename=f) }}">
+          <i class="bi bi-code-slash me-1"></i> RAW
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="admin-card">
+      <div class="d-flex align-items-start justify-content-between mb-1">
+        <p class="title">Bild hochladen</p>
+        <i class="bi bi-cloud-arrow-up text-primary fs-4"></i>
+      </div>
+      <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="mt-1">
+        <div class="mb-2">
+          <input type="file" name="image" class="form-control" required>
+          <div class="form-hint">Wird nach /static/images gespeichert</div>
+        </div>
+        <button class="btn btn-sm btn-primary" type="submit">Hochladen</button>
+      </form>
+      <hr class="my-3">
+      <button type="button" id="openGlobalPicker" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-images"></i> Vorhandene Bilder anzeigen
+      </button>
+      <div class="form-hint mt-2">Beim Klick wird der Bildpfad in die Zwischenablage kopiert.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    let imagesCache = null;
+    const btn = document.getElementById('openGlobalPicker');
+    if (!btn) return;
+    const modalEl = document.getElementById('imagePickerModal');
+    let bsModal = null;
+    function ensureModal(){ if (bsModal) return bsModal; bsModal = new bootstrap.Modal(modalEl); return bsModal; }
+    async function loadImages(){ if (imagesCache) return imagesCache; const r = await fetch('{{ url_for('admin_images') }}'); imagesCache = await r.json(); return imagesCache; }
+    btn.addEventListener('click', async () => {
+      const grid = document.getElementById('imageGrid');
+      const search = document.getElementById('imageSearch');
+      grid.innerHTML = '<div class="text-muted">Lade Bilder…</div>';
+      const items = await loadImages();
+      const render = (q='') => {
+        const needle = q.trim().toLowerCase();
+        const sel = items.filter(it => !needle || it.name.toLowerCase().includes(needle) || it.path.toLowerCase().includes(needle));
+        grid.innerHTML = sel.map(it => `
+          <div class="image-tile" data-path="${it.path}">
+            <img src="${it.url}" alt="${it.name}">
+            <div class="caption" title="${it.path}">${it.name}</div>
+          </div>
+        `).join('');
+      };
+      render('');
+      search.value = '';
+      search.oninput = () => render(search.value);
+      grid.onclick = (e) => {
+        const tile = e.target.closest('.image-tile');
+        if (!tile) return;
+        const path = tile.getAttribute('data-path');
+        if (navigator.clipboard) navigator.clipboard.writeText(path).catch(()=>{});
+        ensureModal().hide();
+      };
+      ensureModal().show();
+    });
+  });
+</script>
+
+<!-- Shared Image Picker Modal -->
+<div class="modal fade" id="imagePickerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-images me-2"></i>Bild auswählen</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" id="imageSearch" class="form-control" placeholder="Suchen…">
+        </div>
+        <div id="imageGrid" class="image-grid"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
