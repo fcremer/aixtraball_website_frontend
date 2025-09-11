@@ -9,6 +9,7 @@
 <div class="container py-4">
   <h1>{{ filename }}</h1>
   <form method="post" id="editor-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
     <div id="editor" style="height: 500px;"></div>
     <input type="hidden" name="content" id="json-input">
     <button class="btn btn-primary mt-3" type="submit">Speichern</button>

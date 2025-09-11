@@ -12,7 +12,7 @@ from datetime import datetime, date as date_cls
 import copy
 from itertools import groupby
 from functools import wraps
-from flask import Response, session, flash, jsonify
+from flask import Response, session, flash, jsonify, abort
 
 import random
 import yaml
@@ -30,6 +30,7 @@ try:
 except Exception:
     Compress = None
 import hmac
+import secrets
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -51,6 +52,59 @@ except Exception:
 # Enable gzip compression if available
 if Compress is not None:
     Compress(app)
+
+# -----------------------------
+# Security: session & headers
+# -----------------------------
+app.config.setdefault('SESSION_COOKIE_HTTPONLY', True)
+app.config.setdefault('SESSION_COOKIE_SAMESITE', 'Lax')
+app.config.setdefault('SESSION_COOKIE_SECURE', True)
+
+@app.after_request
+def set_security_headers(resp: Response):
+    resp.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    resp.headers.setdefault('X-Frame-Options', 'DENY')
+    resp.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    resp.headers.setdefault('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' https: 'unsafe-inline'; "
+        "style-src 'self' https: 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https: data:; "
+        "connect-src 'self'; "
+        "frame-src https:; "
+        "base-uri 'self'; "
+        "form-action 'self' mailto:"
+    )
+    resp.headers.setdefault('Content-Security-Policy', csp)
+    return resp
+
+# -----------------------------
+# Security: CSRF protection
+# -----------------------------
+def _ensure_csrf_token() -> str:
+    token = session.get('csrf_token')
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session['csrf_token'] = token
+    return token
+
+@app.context_processor
+def inject_csrf():
+    return {'csrf_token': _ensure_csrf_token()}
+
+@app.before_request
+def csrf_protect():
+    if request.method == 'POST':
+        token = session.get('csrf_token')
+        form_token = request.form.get('_csrf_token')
+        if not token or not hmac.compare_digest(form_token or '', token):
+            app.logger.warning(
+                "CSRF check failed: path=%s ip=%s", request.path,
+                (request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '?')
+            )
+            return Response('Bad Request', status=400)
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 # Plaintext password support (preferred if set). Fallback to legacy hash.
@@ -133,7 +187,7 @@ def asset(path: str):
 # --------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    ip = request.remote_addr or "?"
+    ip = (request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or "?")
 
     def _generate_captcha():
         a, b = random.randint(1, 9), random.randint(1, 9)
@@ -182,6 +236,8 @@ def login():
                 elif ADMIN_PW_HASH:
                     valid_pw = check_password_hash(ADMIN_PW_HASH, password)
                 else:
+                    # Warn if default admin is active
+                    app.logger.warning("ADMIN_PASSWORD not set – default 'admin' active. Set ADMIN_PASSWORD env var!")
                     valid_pw = hmac.compare_digest(password, "admin")
 
                 if valid_pw:
@@ -292,8 +348,12 @@ def admin_item(filename, index=None):
                             upload_dir = BASE_DIR / "static" / "images"
                             upload_dir.mkdir(parents=True, exist_ok=True)
                             fname = secure_filename(f.filename)
-                            f.save(upload_dir / fname)
-                            new_list.append(f"images/{fname}")
+                            # only allow safe image extensions
+                            if Path(fname).suffix.lower() in {'.png','.jpg','.jpeg','.gif','.webp','.svg'}:
+                                f.save(upload_dir / fname)
+                                new_list.append(f"images/{fname}")
+                            else:
+                                flash(f"Dateityp nicht erlaubt: {fname}", "warning")
                 new_item[key] = new_list
             else:
                 file = request.files.get(f"{key}_upload") if "image" in key else None
@@ -301,8 +361,11 @@ def admin_item(filename, index=None):
                     upload_dir = BASE_DIR / "static" / "images"
                     upload_dir.mkdir(parents=True, exist_ok=True)
                     fname = secure_filename(file.filename)
-                    file.save(upload_dir / fname)
-                    new_item[key] = f"images/{fname}"
+                    if Path(fname).suffix.lower() in {'.png','.jpg','.jpeg','.gif','.webp','.svg'}:
+                        file.save(upload_dir / fname)
+                        new_item[key] = f"images/{fname}"
+                    else:
+                        flash(f"Dateityp nicht erlaubt: {fname}", "warning")
                 else:
                     new_item[key] = request.form.get(key, "")
         if filename == "news.yaml":
@@ -333,8 +396,11 @@ def admin_upload():
         upload_dir = BASE_DIR / "static" / "images"
         upload_dir.mkdir(parents=True, exist_ok=True)
         filename = secure_filename(file.filename)
-        file.save(upload_dir / filename)
-        flash("Bild hochgeladen", "success")
+        if Path(filename).suffix.lower() in {'.png','.jpg','.jpeg','.gif','.webp','.svg'}:
+            file.save(upload_dir / filename)
+            flash("Bild hochgeladen", "success")
+        else:
+            flash("Ungültiger Dateityp", "warning")
     else:
         flash("Keine Datei ausgewählt", "warning")
     return redirect(url_for("admin"))

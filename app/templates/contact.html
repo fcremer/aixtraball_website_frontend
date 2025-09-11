@@ -33,6 +33,7 @@
           <div class="card-body p-4">
             <h2 class="h4 mb-3">Schreib uns</h2>
             <form method="post" novalidate>
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
               <div class="form-honeypot">
                 <label>Website</label>
                 <input type="text" name="website" tabindex="-1" autocomplete="off">

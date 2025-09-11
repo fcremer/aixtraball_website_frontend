@@ -11,6 +11,7 @@
               <h1 class="h4 mt-2 mb-0">Admin Login</h1>
             </div>
             <form method="post">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
               <div class="mb-3">
                 <label class="form-label">Benutzername</label>
                 <input type="text" class="form-control" name="username" required autocomplete="username">

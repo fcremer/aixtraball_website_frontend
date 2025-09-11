@@ -15,6 +15,7 @@
   </div>
 
   <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="__index" value="{% if index is not none %}{{ index }}{% endif %}">
     {% for key, value in item.items() %}
     {% if not (filename == 'news.yaml' and key.startswith('_')) %}
