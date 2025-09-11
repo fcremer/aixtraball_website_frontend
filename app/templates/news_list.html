@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% block title %}News – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Aktuelle Meldungen, Ankündigungen und Berichte vom Aixtraball e.V.{% endblock %}
 {% block head_extra %}
   <style>
     /* Hero-Bild für News-Seite */
@@ -10,6 +12,17 @@
       background: rgba(var(--bs-primary-rgb), .65);
     }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {% for article in news[:10] %}
+      {"@type": "ListItem", "position": {{ loop.index }}, "url": "{{ url_for('news_detail', slug=article.slug, _external=True) }}"}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+  </script>
 {% endblock %}
 {% block content %}
 <!-- Hero-Banner wie auf Flipper-All -->

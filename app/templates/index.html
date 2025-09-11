@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% block title %}Aixtraball e.V. – Die Flipperhalle in Aachen{% endblock %}
+{% block meta_description %}Öffnungstage, über 50 Flipper, Vermietung, Turniere & News. Besuche Aixtraball in Würselen bei Aachen.{% endblock %}
 {% block head_extra %}
   {% if slides and slides[0] %}
     <link rel="preload" as="image" href="{{ slides[0].image | asset }}" imagesrcset="{{ slides[0].image | asset }}" />

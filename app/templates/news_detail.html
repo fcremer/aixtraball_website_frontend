@@ -1,4 +1,33 @@
 {% extends 'base.html' %}
+{% block title %}{{ article.title }} – News – Aixtraball{% endblock %}
+{% block meta_description %}{{ article.excerpt or "Neuigkeiten vom Aixtraball e.V." }}{% endblock %}
+{% block head_extra %}
+<meta property="og:image" content="{{ (article.images[0] | asset) if article.images else url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
+<meta name="twitter:image" content="{{ (article.images[0] | asset) if article.images else url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": {{ (article.title or '') | tojson }},
+  "datePublished": {{ (article.date or '') | tojson }},
+  "dateModified": {{ (article.date or '') | tojson }},
+  "author": {"@type": "Organization", "name": "Aixtraball e.V."},
+  "publisher": {"@type": "Organization", "name": "Aixtraball e.V.", "logo": {"@type":"ImageObject","url": "{{ url_for('static', filename='images/logo.png', _external=True) }}"}},
+  "image": {{ (article.images[0] | asset) | tojson if article.images else (url_for('static', filename='images/slides/hall.jpg', _external=True) | tojson) }},
+  "mainEntityOfPage": "{{ request.base_url }}"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "News", "item": "{{ url_for('news_list', _external=True) }}"},
+    {"@type": "ListItem", "position": 2, "name": {{ (article.title or '') | tojson }}, "item": "{{ request.base_url }}"}
+  ]
+}
+</script>
+{% endblock %}
 {% block content %}
 <section class="py-5">
   <div class="container">

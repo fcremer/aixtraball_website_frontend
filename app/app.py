@@ -573,8 +573,17 @@ def sitemap():
     ]
     # alle News‑Artikel
     for n in load_yaml("news.yaml"):
-        pages.append({"loc": url_for('news_detail', slug=n["slug"], _external=True),
-                      "lastmod": n["date"]})
+        # Ensure lastmod is ISO‑8601 date string
+        raw = n.get("date", "")
+        try:
+            dt = parser.parse(raw)
+            lastmod = dt.date().isoformat()
+        except Exception:
+            lastmod = None
+        entry = {"loc": url_for('news_detail', slug=n["slug"], _external=True)}
+        if lastmod:
+            entry["lastmod"] = lastmod
+        pages.append(entry)
     xml = render_template("sitemap.xml.j2", pages=pages)
     return Response(xml, mimetype="application/xml")
 
