@@ -6,7 +6,9 @@
   .contact-card{border:1px solid rgba(0,0,0,.06); box-shadow:0 .5rem 1rem rgba(0,0,0,.06);} 
   .contact-info .bi{color: var(--bs-primary);} 
   .form-honeypot{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
+  .osm-map{height:300px; border-radius:.5rem; overflow:hidden;}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 
 {% block content %}
@@ -74,7 +76,7 @@
             <h2 class="h5 mb-3">So erreichst du uns</h2>
             <p class="mb-2"><i class="bi bi-geo-alt me-2"></i> Merzbrück 210, 52146 Würselen</p>
             <p class="mb-2"><i class="bi bi-envelope me-2"></i> <a href="mailto:info@aixtraball.de">info@aixtraball.de</a></p>
-            <p class="mb-2"><i class="bi bi-phone"></i>. 0177 491 34 56</a></p>
+            <p class="mb-2"><i class="bi bi-phone me-2"></i><a href="tel:+491774913456">0177&nbsp;491&nbsp;34&nbsp;56</a></p>
             {% if opening %}
               <hr>
               <p class="mb-1"><i class="bi bi-calendar-event me-2"></i> Nächster Öffnungstag:</p>
@@ -84,10 +86,29 @@
                 <p class="mb-0">{{ opening.from_dt | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr</p>
               {% endif %}
             {% endif %}
+
+            <div id="map" class="osm-map mt-3"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+<script defer>
+  document.addEventListener('DOMContentLoaded', function(){
+    var el = document.getElementById('map');
+    if (!el || !window.L) return;
+    var lat = 50.8194, lon = 6.1879; // Merzbrück 210, 52146 Würselen (approx.)
+    var map = L.map(el).setView([lat, lon], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    L.marker([lat, lon]).addTo(map).bindPopup('Aixtraball e.V.<br>Merzbrück 210, 52146 Würselen');
+  });
+</script>
 {% endblock %}
