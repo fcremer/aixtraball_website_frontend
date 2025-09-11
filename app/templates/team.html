@@ -4,6 +4,15 @@
         href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
 
   <style>
+    /* Thumbs carousel on top */
+    .thumbs-bar { background:#fff; border-bottom:1px solid rgba(0,0,0,.06); }
+    .thumbs-bar .swiper { padding: .75rem 2.5rem; }
+    .thumb-slide { width: 90px; cursor: pointer; }
+    .thumb-slide .thumb-img { width: 100%; height: 90px; object-fit: cover; object-position: left center; border-radius: .5rem; border:2px solid transparent; display:block; }
+    .thumb-slide .thumb-name { font-size:.8rem; text-align:center; margin-top:.35rem; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; }
+    .memberThumbs .swiper-slide-thumb-active .thumb-img { border-color: var(--bs-primary); box-shadow: 0 .25rem .5rem rgba(0,0,0,.08); }
+    .memberThumbs .swiper-button-prev, .memberThumbs .swiper-button-next { color: var(--bs-primary); }
+    @media (max-width: 575.98px){ .thumb-slide { width: 72px; } .thumb-slide .thumb-img { height: 72px; } }
     /* Hero-Bild für Team-Seite */
     .hero-flipper {
       background: url('{{ url_for("static", filename="/images/else/background_person.jpg") }}') center/cover;
@@ -160,6 +169,26 @@
 {% endblock %}
 
 {% block content %}
+<!-- Overview: Thumbnails carousel -->
+<div class="thumbs-bar">
+  <div class="container position-relative">
+    <div class="swiper memberThumbs">
+      <div class="swiper-wrapper">
+        {% for m in members %}
+        <div class="swiper-slide thumb-slide">
+          <img class="thumb-img" src="{{ m.image | asset }}" alt="{{ m.name }}" loading="lazy" decoding="async">
+          {% set parts = m.name.split(' ') %}
+          <div class="thumb-name">{{ parts[0] }}{% if parts|length > 1 %}<br>{{ parts[1:]|join(' ') }}{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="swiper-button-prev thumbs-prev"></div>
+      <div class="swiper-button-next thumbs-next"></div>
+    </div>
+  </div>
+  
+</div>
+
 <!-- Vollbild‑Swiper für Mitglieder -->
 <div class="swiper memberSwiper">
   <div class="swiper-wrapper">
@@ -189,6 +218,22 @@
   <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const thumbs = new Swiper('.memberThumbs', {
+        slidesPerView: 'auto',
+        spaceBetween: 10,
+        freeMode: true,
+        watchSlidesProgress: true,
+        navigation: {
+          nextEl: '.memberThumbs .thumbs-next',
+          prevEl: '.memberThumbs .thumbs-prev'
+        },
+        breakpoints: {
+          0:   { spaceBetween: 8 },
+          576: { spaceBetween: 10 },
+          992: { spaceBetween: 12 }
+        }
+      });
+
       const swiper = new Swiper('.memberSwiper',{
         effect:'slide',
         slidesPerView:1,
@@ -201,7 +246,8 @@
           el:'.memberSwiper .swiper-pagination',
           clickable:true
         },
-        keyboard:{ enabled:true }
+        keyboard:{ enabled:true },
+        thumbs: { swiper: thumbs }
       });
 
       // Ensure no residual fade classes / inline opacity
