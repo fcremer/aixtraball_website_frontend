@@ -458,11 +458,51 @@ def news_detail(slug):
 
 @app.route("/kontakt", methods=["GET", "POST"])
 def kontakt():
+    def _save_submission(payload: dict):
+        path = CONFIG_DIR / "contact_submissions.yaml"
+        try:
+            existing = []
+            if path.exists():
+                with open(path, encoding="utf-8") as f:
+                    existing = yaml.safe_load(f) or []
+            existing.append(payload)
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.safe_dump(existing, f, allow_unicode=True, sort_keys=False)
+        except Exception as e:
+            raise e
+
     if request.method == "POST":
-        # Hier könnte ein echter Mail‑Service angebunden werden.
-        return redirect("mailto:info@aixtraball.de")
-    return render_template("contact.html",
-                           opening=get_next_opening())
+        # Honeypot
+        if request.form.get("website"):
+            # silently ignore as success
+            flash("Nachricht gesendet.", "success")
+            return redirect(url_for("kontakt"))
+
+        name    = request.form.get("name", "").strip()
+        email   = request.form.get("email", "").strip()
+        message = request.form.get("message", "").strip()
+        consent = request.form.get("consent") == "on"
+
+        if not (name and email and message and consent):
+            flash("Bitte alle Pflichtfelder ausfüllen und zustimmen.", "warning")
+            return redirect(url_for("kontakt"))
+
+        payload = {
+            "name": name,
+            "email": email,
+            "message": message,
+            "timestamp": datetime.now(tz=tz.gettz("Europe/Berlin")).isoformat(),
+            "ip": request.remote_addr,
+            "ua": request.headers.get("User-Agent", "")
+        }
+        try:
+            _save_submission(payload)
+            flash("Danke! Wir melden uns zeitnah bei dir.", "success")
+        except Exception as e:
+            flash(f"Fehler beim Senden: {e}", "danger")
+        return redirect(url_for("kontakt"))
+
+    return render_template("contact.html", opening=get_next_opening())
 
 @app.route("/impressum")
 def impressum():
