@@ -29,6 +29,7 @@ try:
     from flask_compress import Compress
 except Exception:
     Compress = None
+import hmac
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -52,9 +53,9 @@ if Compress is not None:
     Compress(app)
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
-ADMIN_PW_HASH = os.environ.get(
-    "ADMIN_PASSWORD_HASH", generate_password_hash("admin")
-)
+# Plaintext password support (preferred if set). Fallback to legacy hash.
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # e.g. set via docker-compose/.env
+ADMIN_PW_HASH = os.environ.get("ADMIN_PASSWORD_HASH")  # legacy support
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
@@ -173,10 +174,27 @@ def login():
                     "Login failed (captcha): ip=%s user=%s ua=%s",
                     ip, username, request.headers.get("User-Agent", "")
                 )
-            elif username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
-                session["logged_in"] = True
-                LOGIN_ATTEMPTS.pop(ip, None)
-                return redirect(url_for("admin"))
+            elif username == ADMIN_USER:
+                # Password validation priority: plain ADMIN_PASSWORD > ADMIN_PASSWORD_HASH > default "admin"
+                valid_pw = False
+                if ADMIN_PASSWORD is not None:
+                    valid_pw = hmac.compare_digest(password, ADMIN_PASSWORD)
+                elif ADMIN_PW_HASH:
+                    valid_pw = check_password_hash(ADMIN_PW_HASH, password)
+                else:
+                    valid_pw = hmac.compare_digest(password, "admin")
+
+                if valid_pw:
+                    session["logged_in"] = True
+                    LOGIN_ATTEMPTS.pop(ip, None)
+                    return redirect(url_for("admin"))
+                else:
+                    flash("Ungültige Zugangsdaten", "danger")
+                    _register_failure()
+                    app.logger.warning(
+                        "Login failed (credentials): ip=%s user=%s ua=%s",
+                        ip, username, request.headers.get("User-Agent", "")
+                    )
             else:
                 flash("Ungültige Zugangsdaten", "danger")
                 _register_failure()
