@@ -157,6 +157,10 @@ def login():
         info = _attempt_info()
         if info and info[0] >= MAX_ATTEMPTS:
             flash("Zu viele Fehlversuche. Bitte später erneut versuchen.", "danger")
+            app.logger.warning(
+                "Login blocked (rate limit): ip=%s attempts=%s ua=%s",
+                ip, info[0], request.headers.get("User-Agent", "")
+            )
         else:
             username = request.form.get("username", "")
             password = request.form.get("password", "")
@@ -165,6 +169,10 @@ def login():
             if captcha != session.get("captcha_answer"):
                 flash("Captcha falsch", "danger")
                 _register_failure()
+                app.logger.warning(
+                    "Login failed (captcha): ip=%s user=%s ua=%s",
+                    ip, username, request.headers.get("User-Agent", "")
+                )
             elif username == ADMIN_USER and check_password_hash(ADMIN_PW_HASH, password):
                 session["logged_in"] = True
                 LOGIN_ATTEMPTS.pop(ip, None)
@@ -172,6 +180,10 @@ def login():
             else:
                 flash("Ungültige Zugangsdaten", "danger")
                 _register_failure()
+                app.logger.warning(
+                    "Login failed (credentials): ip=%s user=%s ua=%s",
+                    ip, username, request.headers.get("User-Agent", "")
+                )
         question = _generate_captcha()
         return render_template("login.html", captcha_question=question)
 
