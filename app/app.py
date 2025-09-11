@@ -8,7 +8,8 @@ app/app.py  –  Haupt-Backend der Vereins‑Website
 """
 
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date as date_cls
+import copy
 from itertools import groupby
 from functools import wraps
 from flask import Response, session, flash, jsonify
@@ -69,7 +70,9 @@ LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 YAML_CACHE = {}
 
 def load_yaml(filename: str):
-    """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache)."""
+    """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache).
+    Returns a deep copy to prevent accidental mutation of cached data.
+    """
     path = CONFIG_DIR / filename
     try:
         mtime = path.stat().st_mtime
@@ -77,11 +80,11 @@ def load_yaml(filename: str):
         return []
     cached = YAML_CACHE.get(filename)
     if cached and cached[0] == mtime:
-        return cached[1]
+        return copy.deepcopy(cached[1])
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f) or []
     YAML_CACHE[filename] = (mtime, data)
-    return data
+    return copy.deepcopy(data)
 
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
@@ -238,8 +241,18 @@ def admin_item(filename, index=None):
     else:
         item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
     if request.method == "POST":
+        # Determine effective index: prefer hidden form value if present
+        form_index = request.form.get("__index")
+        try:
+            effective_index = int(form_index) if form_index not in (None, "") else index
+        except ValueError:
+            effective_index = index
         new_item = {}
-        for key, value in item.items():
+        # For news.yaml ignore private fields like _date
+        iter_items = item.items()
+        if filename == "news.yaml":
+            iter_items = [(k, v) for k, v in item.items() if not k.startswith("_")]
+        for key, value in iter_items:
             if isinstance(value, list):
                 text = request.form.get(key, "")
                 new_list = [l.strip() for l in text.splitlines() if l.strip()]
@@ -262,12 +275,21 @@ def admin_item(filename, index=None):
                     new_item[key] = f"images/{fname}"
                 else:
                     new_item[key] = request.form.get(key, "")
-        if index is None or index >= len(data):
+        if filename == "news.yaml":
+            # Ensure we don't carry over legacy helper fields
+            new_item.pop("_date", None)
+            new_item.pop("_year", None)
+        if effective_index is None or effective_index < 0 or effective_index >= len(data):
             data.append(new_item)
         else:
-            data[index] = new_item
+            data[effective_index] = new_item
         yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
         filepath.write_text(yaml_content, encoding="utf-8")
+        # Invalidate YAML cache for this file; next read will reload from disk
+        try:
+            YAML_CACHE.pop(filename, None)
+        except Exception:
+            pass
         flash("Gespeichert", "success")
         return redirect(url_for("admin_manage", filename=filename))
     return render_template("admin_item.html", filename=filename, item=item, index=index)
@@ -314,8 +336,21 @@ def admin_images():
 def index():
     flippers      = load_yaml("flippers.yaml")
     home_flippers = random.sample(flippers, min(len(flippers), 6))
+    # Parse dates for robust sorting (avoid mixing strings/datetimes)
+    def _parse_date(n):
+        val = n.get("date", "")
+        try:
+            if isinstance(val, datetime):
+                return val
+            if isinstance(val, date_cls):
+                return datetime.combine(val, datetime.min.time())
+            if isinstance(val, str):
+                return parser.parse(val)
+        except Exception:
+            pass
+        return datetime.min
     news_teaser   = sorted(load_yaml("news.yaml"),
-                           key=lambda x: x["date"],
+                           key=_parse_date,
                            reverse=True)[:2]
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
 
@@ -395,7 +430,7 @@ def news_list():
     # -----------------------
     # URL‑Parameter auslesen
     # -----------------------
-    year                = request.args.get("year", type=int)
+    years_param         = request.args.getlist("year")
     selected_categories = request.args.getlist("category")
     q                   = request.args.get("q", "").strip()
 
@@ -404,23 +439,35 @@ def news_list():
     # -----------------------
     from datetime import datetime
     for n in raw_news:
-        date_str = n.get("date", "")
-        try:
-            dt = parser.parse(date_str)
-        except Exception:
-            # Fallback to minimal date if parsing fails
+        raw = n.get("date", "")
+        # Normalize to datetime for internal use
+        if isinstance(raw, datetime):
+            dt = raw
+        elif isinstance(raw, date_cls):
+            dt = datetime.combine(raw, datetime.min.time())
+        elif isinstance(raw, str):
+            try:
+                dt = parser.parse(raw)
+            except Exception:
+                dt = datetime.min
+        else:
             dt = datetime.min
-        # store datetime for sorting and template compatibility
-        n["date"] = dt
-        # extract year if valid date
+        # keep original 'date' string untouched; store parsed helper fields
+        n["_dt"] = dt
         n["_year"] = dt.year if dt != datetime.min else None
 
     # -----------------------
     # Filter anwenden
     # -----------------------
     news = raw_news
-    if year:
-        news = [n for n in news if n.get("_year") == year]
+    # Filter by one or multiple years chosen via checkboxes
+    if years_param:
+        try:
+            years_sel = {int(y) for y in years_param if str(y).strip()}
+        except ValueError:
+            years_sel = set()
+        if years_sel:
+            news = [n for n in news if n.get("_year") in years_sel]
     if selected_categories:
         news = [n for n in news if n.get("category") in selected_categories]
     if q:
@@ -430,7 +477,7 @@ def news_list():
     # -----------------------
     # Sortierung
     # -----------------------
-    news.sort(key=lambda x: x["date"], reverse=True)
+    news.sort(key=lambda x: x.get("_dt", datetime.min), reverse=True)
 
     # -----------------------
     # Dropdown‑Werte berechnen

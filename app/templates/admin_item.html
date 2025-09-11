@@ -15,7 +15,9 @@
   </div>
 
   <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="__index" value="{% if index is not none %}{{ index }}{% endif %}">
     {% for key, value in item.items() %}
+    {% if not (filename == 'news.yaml' and key.startswith('_')) %}
     <div class="mb-3">
       <label class="form-label">{{ key }}</label>
       {% if value is iterable and value is not string %}
@@ -42,6 +44,7 @@
         {% endif %}
       {% endif %}
     </div>
+    {% endif %}
     {% endfor %}
     <div class="sticky-actions d-flex gap-2">
       <button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Speichern</button>
