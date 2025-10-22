@@ -1,41 +1,39 @@
 # ============================================
 #   Stage 1 – Builder
-#   Baut alle Python-Wheels mit Compiler-Tools
+#   Builds ALL wheels incl. dependencies
 # ============================================
 FROM python:3.14-slim-bookworm AS builder
 
-# Security-/Build-Defaults
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Build-Tools (werden später nicht ins Runtime-Image übernommen)
+# Toolchain needed to build native wheels (removed in runtime)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential gcc g++ python3-dev pkg-config cmake \
  && rm -rf /var/lib/apt/lists/*
 
-# Requirements vorab kopieren, damit Docker-Layer besser cachen
+# Copy requirements first for better caching
 COPY requirements.txt .
 
-# Pip & Wheel aktualisieren und Wheels bauen
+# Upgrade pip/wheel and build wheels for the ENTIRE dependency tree
+# (IMPORTANT: no --no-deps here, so transitive deps like 'brotli' get built, too)
 RUN python -m pip install --upgrade pip wheel \
- && python -m pip wheel --no-deps --wheel-dir /wheels -r requirements.txt
+ && python -m pip wheel --wheel-dir /wheels -r requirements.txt
 
 
 # ============================================
 #   Stage 2 – Runtime
-#   Enthält nur die minimal nötige Laufzeit
+#   Minimal image, offline install from wheels
 # ============================================
 FROM python:3.14-slim-bookworm AS runtime
 
-# Minimal benötigte Pakete (TLS-Zertifikate etc.)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Security-orientierte Python-Defaults
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
@@ -43,38 +41,38 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     UMASK=027
 
-# Non-root Benutzer anlegen
 ARG APP_USER=appuser
 ARG APP_UID=10001
 RUN useradd -u ${APP_UID} -m -s /usr/sbin/nologin ${APP_USER}
 
-# Arbeitsverzeichnis und Berechtigungen
 WORKDIR /app
 RUN mkdir -p /opt/venv /var/log/app /tmp/app \
  && chown -R ${APP_USER}:${APP_USER} /app /opt/venv /var/log/app /tmp/app
 
-# Virtuelle Umgebung (Isolierung)
+# Isolated venv
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 
-# Wheels aus dem Builder übernehmen und installieren (nur .whl)
+# Copy requirements and prebuilt wheels
+COPY requirements.txt .
 COPY --from=builder /wheels /wheels
-RUN python -m pip install --no-cache-dir --no-compile /wheels/*.whl \
+
+# OFFLINE install strictly from /wheels (no network, no source builds)
+RUN python -m pip install \
+      --no-index --find-links=/wheels \
+      --only-binary=:all: \
+      -r requirements.txt \
  && rm -rf /wheels
 
-# Applikation kopieren und Berechtigungen setzen
+# App code
 COPY --chown=${APP_USER}:${APP_USER} app /app
-# Optional: falls gunicorn.conf.py separat liegt
-# COPY --chown=${APP_USER}:${APP_USER} gunicorn.conf.py /app/gunicorn.conf.py
+# COPY --chown=${APP_USER}:${APP_USER} gunicorn.conf.py /app/gunicorn.conf.py  # if needed
 
-# Exposed Port und Healthcheck
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=2).read()" || exit 1
 
-# Non-root User aktivieren
 USER ${APP_UID}:${APP_UID}
 
-# Gunicorn Startbefehl (sicher & reproduzierbar)
 ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:5000 --workers=2 --threads=2 --worker-tmp-dir=/tmp/app --access-logfile=- --error-logfile=- --graceful-timeout=30 --timeout=30"
 CMD ["gunicorn", "-c", "/app/gunicorn.conf.py", "app:app"]
