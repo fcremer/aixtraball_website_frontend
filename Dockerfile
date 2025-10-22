@@ -1,25 +1,13 @@
-# ---- builder: baut Wheels isoliert ----
 FROM python:3.14-slim-bookworm AS builder
-
-# Sicherheits/Build-Basics
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
-
-# Nur, falls native Wheels nötig sind (z. B. psycopg2, lxml, numpy …)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc \
-    && rm -rf /var/lib/apt/lists/*
-
+ENV PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
-# Nur die Requirements, damit Layer-Caching greift
-COPY requirements.txt .
+# Build-Tools für native Wheels (nur im builder!)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential gcc g++ python3-dev pkg-config cmake \
+ && rm -rf /var/lib/apt/lists/*
 
-# Optional: strenge Pinning/Verifikation (setzt Hashes in requirements.txt voraus)
-# RUN python -m pip install --upgrade pip pip-tools \
-#  && python -m pip install --require-hashes -r requirements.txt -t /wheels
-# Alternativ (ohne Hash-Zwang), erzeugt Wheels:
+COPY requirements.txt .
 RUN python -m pip install --upgrade pip wheel \
  && python -m pip wheel --no-deps --wheel-dir /wheels -r requirements.txt
 
