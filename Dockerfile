@@ -69,8 +69,6 @@ COPY --chown=${APP_USER}:${APP_USER} app /app
 # COPY --chown=${APP_USER}:${APP_USER} gunicorn.conf.py /app/gunicorn.conf.py  # if needed
 
 EXPOSE 5000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=2).read()" || exit 1
 
 USER ${APP_UID}:${APP_UID}
 
