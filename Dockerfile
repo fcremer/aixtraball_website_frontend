@@ -7,9 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 # Nur, falls native Wheels nötig sind (z. B. psycopg2, lxml, numpy …)
-# RUN apt-get update \
-#  && apt-get install -y --no-install-recommends build-essential gcc \
-#  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
