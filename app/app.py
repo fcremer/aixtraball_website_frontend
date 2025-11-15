@@ -67,6 +67,76 @@ MAX_ATTEMPTS = 5
 LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 
 # --------------------------------------------------
+# News/Datetime helpers
+# --------------------------------------------------
+def _parse_local_datetime(value):
+    """Return naive datetime localized to Europe/Berlin or None."""
+    if not value:
+        return None
+    dt = None
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, date_cls):
+        dt = datetime.combine(value, datetime.min.time())
+    elif isinstance(value, str):
+        try:
+            dt = parser.parse(value)
+        except Exception:
+            dt = None
+    if not dt:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(LOCAL_TZ).replace(tzinfo=None)
+    return dt
+
+
+def _local_now():
+    """Return naive datetime representing current local time."""
+    return datetime.now(tz=LOCAL_TZ).replace(tzinfo=None)
+
+
+def _prepare_news_item(item: dict):
+    """Attach helper fields (_dt, _year, visibility window) to a news item."""
+    dt = _parse_local_datetime(item.get("date"))
+    if dt:
+        item["_dt"] = dt
+        item["_year"] = dt.year
+    else:
+        item["_dt"] = datetime.min
+        item["_year"] = None
+    if "_visible_from" not in item:
+        item["_visible_from"] = _parse_local_datetime(item.get("visible_from"))
+    if "_visible_until" not in item:
+        until_raw = item.get("visible_until") or item.get("visible_to")
+        item["_visible_until"] = _parse_local_datetime(until_raw)
+    return item
+
+
+def news_is_visible(item: dict, now=None) -> bool:
+    """Check if a news entry should currently be visible."""
+    if "_visible_from" not in item or "_visible_until" not in item or "_dt" not in item:
+        _prepare_news_item(item)
+    now_val = now or _local_now()
+    start = item.get("_visible_from")
+    end = item.get("_visible_until")
+    if start and now_val < start:
+        return False
+    if end and now_val > end:
+        return False
+    return True
+
+
+def load_news_items(include_hidden=False, now=None):
+    """Load news with helper metadata and optional visibility filtering."""
+    items = load_yaml("news.yaml")
+    for item in items:
+        _prepare_news_item(item)
+    if include_hidden:
+        return items
+    now_val = now or _local_now()
+    return [item for item in items if news_is_visible(item, now_val)]
+
+# --------------------------------------------------
 # Hilfsfunktionen
 # --------------------------------------------------
 YAML_CACHE = {}
@@ -388,21 +458,9 @@ def admin_images():
 def index():
     flippers      = load_yaml("flippers.yaml")
     home_flippers = random.sample(flippers, min(len(flippers), 6))
-    # Parse dates for robust sorting (avoid mixing strings/datetimes)
-    def _parse_date(n):
-        val = n.get("date", "")
-        try:
-            if isinstance(val, datetime):
-                return val
-            if isinstance(val, date_cls):
-                return datetime.combine(val, datetime.min.time())
-            if isinstance(val, str):
-                return parser.parse(val)
-        except Exception:
-            pass
-        return datetime.min
-    news_teaser   = sorted(load_yaml("news.yaml"),
-                           key=_parse_date,
+    news_items    = load_news_items()
+    news_teaser   = sorted(news_items,
+                           key=lambda n: n.get("_dt", datetime.min),
                            reverse=True)[:2]
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
 
@@ -477,7 +535,7 @@ def flipper_all():
 @app.route("/news")
 def news_list():
     """News‑Liste mit Filterung nach Jahr, Kategorie und Suchbegriff."""
-    raw_news = load_yaml("news.yaml")
+    visible_news = load_news_items()
 
     # -----------------------
     # URL‑Parameter auslesen
@@ -489,29 +547,11 @@ def news_list():
     # -----------------------
     # Zusatzinfos vorbereiten
     # -----------------------
-    from datetime import datetime
-    for n in raw_news:
-        raw = n.get("date", "")
-        # Normalize to datetime for internal use
-        if isinstance(raw, datetime):
-            dt = raw
-        elif isinstance(raw, date_cls):
-            dt = datetime.combine(raw, datetime.min.time())
-        elif isinstance(raw, str):
-            try:
-                dt = parser.parse(raw)
-            except Exception:
-                dt = datetime.min
-        else:
-            dt = datetime.min
-        # keep original 'date' string untouched; store parsed helper fields
-        n["_dt"] = dt
-        n["_year"] = dt.year if dt != datetime.min else None
+    news = list(visible_news)
 
     # -----------------------
     # Filter anwenden
     # -----------------------
-    news = raw_news
     # Filter by one or multiple years chosen via checkboxes
     if years_param:
         try:
@@ -534,8 +574,8 @@ def news_list():
     # -----------------------
     # Dropdown‑Werte berechnen
     # -----------------------
-    years = sorted({n.get("_year") for n in raw_news if n.get("_year")}, reverse=True)
-    categories = sorted({n.get("category") for n in raw_news if n.get("category")})
+    years = sorted({n.get("_year") for n in visible_news if n.get("_year")}, reverse=True)
+    categories = sorted({n.get("category") for n in visible_news if n.get("category")})
 
     return render_template(
         "news_list.html",
@@ -547,9 +587,9 @@ def news_list():
 
 @app.route("/news/<slug>")
 def news_detail(slug):
-    news = load_yaml("news.yaml")
+    news = load_news_items(include_hidden=True)
     article = next((n for n in news if n["slug"] == slug), None)
-    if article is None:
+    if article is None or not news_is_visible(article):
         return redirect(url_for("news_list"))
     return render_template("news_detail.html",
                            article = article,
@@ -624,14 +664,9 @@ def sitemap():
         {"loc": url_for('news_list',  _external=True)}
     ]
     # alle News‑Artikel
-    for n in load_yaml("news.yaml"):
-        # Ensure lastmod is ISO‑8601 date string
-        raw = n.get("date", "")
-        try:
-            dt = parser.parse(raw)
-            lastmod = dt.date().isoformat()
-        except Exception:
-            lastmod = None
+    for n in load_news_items():
+        dt = n.get("_dt")
+        lastmod = dt.date().isoformat() if dt and dt != datetime.min else None
         entry = {"loc": url_for('news_detail', slug=n["slug"], _external=True)}
         if lastmod:
             entry["lastmod"] = lastmod

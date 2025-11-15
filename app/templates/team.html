@@ -29,7 +29,9 @@
       display:flex;
       align-items:center;
       background-size:cover;
-      background-position:left center;
+      background-position:left center !important;
+      background-position-x:left;
+      background-position-y:center;
       position:relative;
     }
     .member-slide::after{
@@ -58,30 +60,63 @@
     @media (max-width: 767.98px){
       .member-slide{
         flex-direction:column;
-        justify-content:flex-start;
-        background-position:left top;
-        background-size:cover;          /* volle Breite auf kleinen Geräten */
+        justify-content:flex-end;
+        align-items:stretch;
+        min-height:100vh;
+        padding:0;
+        background-color:#000;
         background-repeat:no-repeat;
+        background-size:cover;
+        background-position:left center !important;
+        background-position-x:left;
+        background-position-y:center;
       }
       .member-slide::after{
-        background:linear-gradient(180deg, rgba(255,255,255,0) 50%, #fff 98%);
+        background:linear-gradient(180deg,
+                                   rgba(0,0,0,.15) 0%,
+                                   rgba(0,0,0,.65) 55%,
+                                   rgba(0,0,0,.85) 100%);
+        z-index:0;
       }
       .member-info{
-        margin:66vh auto 1rem;     /* startet im unteren Drittel */
-        max-width:90%;
-        max-height:33vh;           /* Drittel der Höhe */
+        position:absolute;
+        bottom:0;
+        left:0;
+        right:0;
+        margin:0;
+        padding:1rem 1.25rem calc(1rem + env(safe-area-inset-bottom, 12px));
+        max-width:100%;
+        border:0;
+        border-radius:1rem 1rem 0 0;
+        background:rgba(255,255,255,.95);
+        box-shadow:0 -0.5rem 1.5rem rgba(0,0,0,.35);
+        display:flex;
+        flex-direction:column;
+        gap:.4rem;
+        min-height:45vh;
+        max-height:55vh;
+        z-index:2;
+      }
+      .member-info h2,
+      .member-info .role,
+      .member-info .bio-toggle{
+        flex-shrink:0;
+      }
+      .member-info .bio-content{
+        margin-top:.25rem;
+        flex:1;
+        min-height:0;
         overflow-y:auto;
-        -webkit-overflow-scrolling: touch; /* sanftes Scrollen auf iOS */
       }
 
       /* Pagination unterhalb der Box auf Mobile */
       .memberSwiper .swiper-pagination {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        margin: 1rem auto 0;
+        position: absolute;
+        bottom: 0.5rem;
+        left: 0;
+        width: 100%;
+        z-index: 3;
         text-align: center;
-        z-index: 1;
       }
     }
 
@@ -153,10 +188,14 @@
     .bio-toggle { display: none !important; }
     @media (max-width: 767.98px) {
       .bio-content { display: none; }
-      .bio-content.show { display: block; }
+      .bio-content.show {
+        display: block;
+        max-height:24vh;
+        overflow-y:auto;
+      }
       .bio-toggle {
         display: inline-block !important;
-        margin-top: 0.5rem;
+        margin-top: 0.25rem;
         color: var(--bs-primary);
       }
     }
