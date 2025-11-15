@@ -12,6 +12,8 @@
 {% set first_slide = slides[0] if slides else {} %}
 {% set initial_headline = first_slide.headline or default_headline %}
 {% set initial_subline  = first_slide.subline or default_subline %}
+{% set initial_logo     = first_slide.logo %}
+{% set logo_url         = url_for('static', filename='images/logo_Inv.png') %}
 <section class="hero">
   <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-inner">
@@ -20,6 +22,7 @@
         <div class="carousel-item {% if loop.first %}active{% endif %}"
              data-headline="{{ slide.headline or '' }}"
              data-subline="{{ slide.subline or '' }}"
+             data-logo="{{ 'true' if slide.logo else 'false' }}"
              data-bs-interval="{{ 10000 if slide_has_text else 5000 }}">
           <div class="hero-slide">
             <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt or '' }}">
@@ -36,10 +39,11 @@
       <span class="visually-hidden">Next</span>
     </button>
   </div>
-  <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center"
+  <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center {% if initial_logo %}show-logo{% endif %}"
        id="heroOverlay"
        data-default-headline="{{ default_headline }}"
        data-default-subline="{{ default_subline }}">
+    <img src="{{ logo_url }}" alt="Aixtraball Logo" id="heroLogo" class="hero-logo">
     <h1 class="display-4 fw-bold mb-3" id="heroHeadline">{{ initial_headline }}</h1>
     <p class="lead mb-4" id="heroSubline">{{ initial_subline }}</p>
   </div>
@@ -134,13 +138,27 @@
       }
       const defaultHeadline = heroOverlay.dataset.defaultHeadline || '';
       const defaultSubline = heroOverlay.dataset.defaultSubline || '';
+      const previousHeadline = headlineEl.textContent;
+      const previousSubline = sublineEl.textContent;
       const newHeadline = slideEl.dataset.headline || defaultHeadline;
       const newSubline = slideEl.dataset.subline || defaultSubline;
-      const changed = newHeadline !== headlineEl.textContent || newSubline !== sublineEl.textContent;
+      const useLogo = slideEl.dataset.logo === "true";
+      const previousLogoState = heroOverlay.classList.contains('show-logo');
+
+      headlineEl.textContent = newHeadline;
+      sublineEl.textContent = newSubline;
+
+      if (useLogo) {
+        heroOverlay.classList.add('show-logo');
+      } else {
+        heroOverlay.classList.remove('show-logo');
+      }
+
+      const logoStateChanged = previousLogoState !== heroOverlay.classList.contains('show-logo');
+      const contentChanged = previousHeadline !== newHeadline || previousSubline !== newSubline;
+      const changed = logoStateChanged || contentChanged;
 
       if (changed || forceAnimate) {
-        headlineEl.textContent = newHeadline;
-        sublineEl.textContent = newSubline;
         heroOverlay.classList.remove('animate');
         void heroOverlay.offsetWidth;
         heroOverlay.classList.add('animate');
