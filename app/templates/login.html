@@ -10,21 +10,50 @@
               <i class="bi bi-shield-lock fs-1 text-primary"></i>
               <h1 class="h4 mt-2 mb-0">Admin Login</h1>
             </div>
-            <form method="post">
-              <div class="mb-3">
-                <label class="form-label">Benutzername</label>
-                <input type="text" class="form-control" name="username" required autocomplete="username">
+            {% if mfa_stage %}
+              <p class="text-muted text-center">
+                Passwort bestätigt. Gib nun den 6-stelligen Code aus deiner Authenticator-App ein.
+              </p>
+              <form method="post">
+                <input type="hidden" name="stage" value="mfa">
+                <div class="mb-3">
+                  <label class="form-label">MFA-Code</label>
+                  <input type="text"
+                         class="form-control text-center"
+                         name="otp"
+                         inputmode="numeric"
+                         pattern="[0-9]*"
+                         maxlength="6"
+                         autocomplete="one-time-code"
+                         required>
+                  <div class="form-text text-center">Der Code ist nur 30&nbsp;Sekunden gültig.</div>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Bestätigen</button>
+              </form>
+              <div class="text-center mt-3">
+                <a href="{{ url_for('login', reset_mfa=1) }}" class="text-decoration-none">Zurück zur Passwort-Anmeldung</a>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Passwort</label>
-                <input type="password" class="form-control" name="password" required autocomplete="current-password">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Bitte rechne: {{ captcha_question }} = ?</label>
-                <input type="text" class="form-control" name="captcha" required inputmode="numeric" pattern="[0-9]*">
-              </div>
-              <button class="btn btn-primary w-100" type="submit">Anmelden</button>
-            </form>
+            {% else %}
+              <form method="post">
+                <input type="hidden" name="stage" value="password">
+                <div class="mb-3">
+                  <label class="form-label">Benutzername</label>
+                  <input type="text" class="form-control" name="username" required autocomplete="username">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Passwort</label>
+                  <input type="password" class="form-control" name="password" required autocomplete="current-password">
+                  {% if mfa_enabled %}
+                  <div class="form-text">Nach erfolgreichem Passwort folgt ein MFA-Code.</div>
+                  {% endif %}
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Bitte rechne: {{ captcha_question }} = ?</label>
+                  <input type="text" class="form-control" name="captcha" required inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Anmelden</button>
+              </form>
+            {% endif %}
           </div>
         </div>
       </div>
