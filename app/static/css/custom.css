@@ -98,6 +98,19 @@ a,
 .hero-overlay p{
   text-shadow:0 2px 4px rgba(0,0,0,.6);
 }
+.hero-logo{
+  display:none;
+  max-width:260px;
+  width:50vw;
+  height:auto;
+  margin-bottom:1rem;
+}
+.hero-overlay.show-logo .hero-logo{
+  display:block;
+}
+.hero-overlay.show-logo #heroHeadline{
+  margin-top:.5rem;
+}
 .hero-overlay.animate h1,
 .hero-overlay.animate p{
   animation:fadeInUp .8s forwards;
