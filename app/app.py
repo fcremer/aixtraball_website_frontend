@@ -28,6 +28,7 @@ app = Flask(__name__)
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
+LOCAL_TZ   = tz.gettz("Europe/Berlin")
 
 # --------------------------------------------------
 # Hilfsfunktionen
@@ -36,6 +37,22 @@ def load_yaml(filename: str):
     """Beliebige YAML‑Datei aus dem config‑Ordner laden."""
     with open(CONFIG_DIR / filename, encoding="utf-8") as f:
         return yaml.safe_load(f) or []
+
+def ensure_datetime(value):
+    """Stellt sicher, dass YAML-Datumswerte als datetime-Objekt vorliegen."""
+    if isinstance(value, datetime):
+        dt = value
+    elif value:
+        try:
+            dt = parser.parse(str(value))
+        except Exception:
+            dt = datetime.min
+    else:
+        dt = datetime.min
+
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=LOCAL_TZ)
+    return dt.astimezone(LOCAL_TZ)
 
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
@@ -51,6 +68,28 @@ def get_next_opening():
     if opening:
         opening["is_today"] = opening["from_dt"].date() == now.date()
     return opening
+
+def prepare_slides():
+    """Erste Slide behalten, dann gepinnte, danach zufällig den Rest."""
+    slides = load_yaml("slides.yaml")
+    if not slides:
+        return []
+
+    normalized = []
+    for slide in slides:
+        if isinstance(slide, dict):
+            normalized.append(slide)
+        else:
+            normalized.append({"image": slide})
+
+    if not normalized:
+        return []
+
+    first, rest = normalized[0], normalized[1:]
+    pinned = [s for s in rest if s.get("pinned")]
+    other = [s for s in rest if not s.get("pinned")]
+    random.shuffle(other)
+    return [first, *pinned, *other]
 
 # --------------------------------------------------
 # Jinja‑Filter
@@ -76,14 +115,15 @@ def asset(path: str):
 def index():
     flippers      = load_yaml("flippers.yaml")
     home_flippers = random.sample(flippers, min(len(flippers), 6))
-    news_teaser   = sorted(load_yaml("news.yaml"),
-                           key=lambda x: x["date"],
+    news_entries  = load_yaml("news.yaml")
+    news_teaser   = sorted(news_entries,
+                           key=lambda x: ensure_datetime(x.get("date")),
                            reverse=True)[:2]
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
 
     return render_template(
         "index.html",
-        slides       = load_yaml("slides.yaml"),
+        slides       = prepare_slides(),
         opening      = get_next_opening(),
         home_flippers= home_flippers,
         latest_news  = news_teaser,

@@ -1,11 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
+{% set default_headline = "Dein Flipperverein in der Städteregion Aachen" %}
+{% set default_subline  = "Retro-Gaming trifft Community – jeden letzten Sonntag für dich geöffnet!" %}
+{% set first_slide = slides[0] if slides else {} %}
+{% set initial_headline = first_slide.headline or default_headline %}
+{% set initial_subline  = first_slide.subline or default_subline %}
 <section class="hero">
   <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-inner">
       {% for slide in slides %}
-        <div class="carousel-item {% if loop.first %}active{% endif %}">
-          <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt }}">
+        {% set slide_has_text = slide.headline or slide.subline %}
+        <div class="carousel-item {% if loop.first %}active{% endif %}"
+             data-headline="{{ slide.headline or '' }}"
+             data-subline="{{ slide.subline or '' }}"
+             data-bs-interval="{{ 10000 if slide_has_text else 5000 }}">
+          <div class="hero-slide">
+            <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt or '' }}">
+          </div>
         </div>
       {% endfor %}
     </div>
@@ -18,10 +29,12 @@
       <span class="visually-hidden">Next</span>
     </button>
   </div>
-
-  <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center">
-    <h1 class="display-4 fw-bold mb-3">Dein Flipperverein in der Städteregion Aachen</h1>
-    <p class="lead mb-4">Retro-Gaming trifft Community – jeden letzten Sonntag für dich geöffnet!</p>
+  <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center"
+       id="heroOverlay"
+       data-default-headline="{{ default_headline }}"
+       data-default-subline="{{ default_subline }}">
+    <h1 class="display-4 fw-bold mb-3" id="heroHeadline">{{ initial_headline }}</h1>
+    <p class="lead mb-4" id="heroSubline">{{ initial_subline }}</p>
   </div>
 </section>
 
@@ -103,6 +116,39 @@
 {{ super() }}
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    const heroCarousel = document.getElementById('heroCarousel');
+    const heroOverlay = document.getElementById('heroOverlay');
+    const headlineEl = document.getElementById('heroHeadline');
+    const sublineEl = document.getElementById('heroSubline');
+
+    const updateOverlay = (slideEl, forceAnimate = false) => {
+      if (!slideEl || !heroOverlay || !headlineEl || !sublineEl) {
+        return;
+      }
+      const defaultHeadline = heroOverlay.dataset.defaultHeadline || '';
+      const defaultSubline = heroOverlay.dataset.defaultSubline || '';
+      const newHeadline = slideEl.dataset.headline || defaultHeadline;
+      const newSubline = slideEl.dataset.subline || defaultSubline;
+      const changed = newHeadline !== headlineEl.textContent || newSubline !== sublineEl.textContent;
+
+      if (changed || forceAnimate) {
+        headlineEl.textContent = newHeadline;
+        sublineEl.textContent = newSubline;
+        heroOverlay.classList.remove('animate');
+        void heroOverlay.offsetWidth;
+        heroOverlay.classList.add('animate');
+      }
+    };
+
+    if (heroCarousel) {
+      const initialSlide = heroCarousel.querySelector('.carousel-item.active');
+      updateOverlay(initialSlide, true);
+
+      heroCarousel.addEventListener('slid.bs.carousel', (event) => {
+        updateOverlay(event.relatedTarget || heroCarousel.querySelector('.carousel-item.active'));
+      });
+    }
+
     const observer = new IntersectionObserver((entries, obs) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
