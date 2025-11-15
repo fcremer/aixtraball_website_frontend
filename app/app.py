@@ -59,6 +59,7 @@ ADMIN_PW_HASH = os.environ.get("ADMIN_PASSWORD_HASH")  # legacy support
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
+LOCAL_TZ   = tz.gettz("Europe/Berlin")
 
 # In-memory login attempt tracker: {ip: (count, first_timestamp)}
 LOGIN_ATTEMPTS = {}
@@ -101,6 +102,27 @@ def get_next_opening():
     if opening:
         opening["is_today"] = opening["from_dt"].date() == now.date()
     return opening
+
+
+def prepare_slides():
+    """Return slides with ordering: first entry, pinned entries, then shuffled rest."""
+    slides = load_yaml("slides.yaml")
+    if not slides:
+        return []
+
+    normalized = []
+    for slide in slides:
+        if isinstance(slide, dict):
+            normalized.append(slide)
+        else:
+            normalized.append({"image": slide})
+
+    first = normalized[0]
+    rest = normalized[1:]
+    pinned = [s for s in rest if s.get("pinned")]
+    other = [s for s in rest if not s.get("pinned")]
+    random.shuffle(other)
+    return [first, *pinned, *other]
 
 
 def login_required(view):
@@ -386,7 +408,7 @@ def index():
 
     return render_template(
         "index.html",
-        slides       = load_yaml("slides.yaml"),
+        slides       = prepare_slides(),
         opening      = get_next_opening(),
         home_flippers= home_flippers,
         latest_news  = news_teaser,
