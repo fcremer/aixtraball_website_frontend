@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% block title %}News – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Aktuelle Meldungen, Ankündigungen und Berichte vom Aixtraball e.V.{% endblock %}
 {% block head_extra %}
   <style>
     /* Hero-Bild für News-Seite */
@@ -10,6 +12,17 @@
       background: rgba(var(--bs-primary-rgb), .65);
     }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {% for article in news[:10] %}
+      {"@type": "ListItem", "position": {{ loop.index }}, "url": "{{ url_for('news_detail', slug=article.slug, _external=True) }}"}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+  </script>
 {% endblock %}
 {% block content %}
 <!-- Hero-Banner wie auf Flipper-All -->
@@ -28,11 +41,11 @@
         {% if news %}
           {% for article in news %}
             <div class="card mb-4 shadow-sm">
-              <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}">
+              <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}" loading="lazy" decoding="async">
               <div class="card-body">
                 <span class="badge bg-secondary mb-2">{{ article.category }}</span>
                 <h3 class="card-title">{{ article.title }}</h3>
-                <p class="text-muted mb-1">{{ article.date.strftime('%d.%m.%Y') }}</p>
+                <p class="text-muted mb-1">{{ article.date | datetimeformat('%d.%m.%Y') }}</p>
                 <p class="card-text">{{ article.excerpt }}</p>
                 <a href="{{ url_for('news_detail', slug=article.slug) }}" class="btn btn-primary">Mehr erfahren</a>
               </div>

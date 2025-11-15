@@ -1,27 +1,116 @@
 {% extends 'base.html' %}
+{% block title %}Kontakt – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Kontakt zum Aixtraball e.V.: Adresse Merzbrück 210, 52146 Würselen, E‑Mail und Öffnungstage. Jetzt anfragen.{% endblock %}
+{% block head_extra %}
+<style>
+  .hero-contact{background: url('{{ url_for("static", filename="images/else/background_contact.png") }}') center/cover; min-height: 32vh;}
+  .hero-contact .overlay{background: rgba(0,0,0,.4);} 
+  .contact-card{border:1px solid rgba(0,0,0,.06); box-shadow:0 .5rem 1rem rgba(0,0,0,.06);} 
+  .contact-info .bi{color: var(--bs-primary);} 
+  .form-honeypot{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
+  .osm-map{height:300px; border-radius:.5rem; overflow:hidden;}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{% endblock %}
+
 {% block content %}
+<!-- Hero -->
+<header class="hero-contact d-flex align-items-center text-white text-center">
+  <div class="container overlay py-5">
+    <h1 class="display-5 fw-bold">Kontakt</h1>
+    <p class="lead mb-0">Frag uns alles rund um Verein, Besuch & Events</p>
+  </div>
+  
+</header>
+
+<!-- Content -->
 <section class="py-5 bg-light">
   <div class="container">
-    <h1 class="mb-4 text-center">Kontakt</h1>
-    <div class="row justify-content-center">
-      <div class="col-lg-6">
-        <form method="post">
-          <div class="mb-3">
-            <label for="name" class="form-label">Name*</label>
-            <input type="text" class="form-control" id="name" name="name" required>
+    <div class="row g-4">
+      <!-- Form -->
+      <div class="col-lg-7">
+        <div class="card contact-card">
+          <div class="card-body p-4">
+            <h2 class="h4 mb-3">Schreib uns</h2>
+            <form method="post" novalidate>
+              <div class="form-honeypot">
+                <label>Website</label>
+                <input type="text" name="website" tabindex="-1" autocomplete="off">
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="name" class="form-label">Name*</label>
+                  <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="email" class="form-label">E‑Mail*</label>
+                  <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label for="message" class="form-label">Nachricht*</label>
+                <textarea class="form-control" id="message" name="message" rows="6" required></textarea>
+              </div>
+
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" value="on" id="consent" name="consent" required>
+                <label class="form-check-label" for="consent">
+                  Ich habe die <a href="{{ url_for('impressum') }}#datenschutz" target="_blank">Datenschutzhinweise</a> gelesen und stimme der Verarbeitung zu.
+                </label>
+              </div>
+
+              <div class="d-grid d-sm-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Absenden</button>
+                <a class="btn btn-outline-secondary" href="mailto:info@aixtraball.de">Oder per E‑Mail senden</a>
+              </div>
+              <p class="text-muted small mt-2 mb-0">Wir speichern deine Anfrage ausschließlich zur Bearbeitung. Keine Weitergabe an Dritte.</p>
+            </form>
           </div>
-          <div class="mb-3">
-            <label for="email" class="form-label">E-Mail*</label>
-            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="col-lg-5">
+        <div class="card contact-card contact-info">
+          <div class="card-body p-4">
+            <h2 class="h5 mb-3">So erreichst du uns</h2>
+            <p class="mb-2"><i class="bi bi-geo-alt me-2"></i> Merzbrück 210, 52146 Würselen</p>
+            <p class="mb-2"><i class="bi bi-envelope me-2"></i> <a href="mailto:info@aixtraball.de">info@aixtraball.de</a></p>
+            <p class="mb-2"><i class="bi bi-phone me-2"></i><a href="tel:+491774913456">0177&nbsp;491&nbsp;34&nbsp;56</a></p>
+            {% if opening %}
+              <hr>
+              <p class="mb-1"><i class="bi bi-calendar-event me-2"></i> Nächster Öffnungstag:</p>
+              {% if opening.is_today %}
+                <p class="mb-0">Heute {{ opening.from_dt | datetimeformat('%H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr</p>
+              {% else %}
+                <p class="mb-0">{{ opening.from_dt | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr</p>
+              {% endif %}
+            {% endif %}
+
+            <div id="map" class="osm-map mt-3"></div>
           </div>
-          <div class="mb-3">
-            <label for="message" class="form-label">Nachricht*</label>
-            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">Absenden</button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+<script defer>
+  document.addEventListener('DOMContentLoaded', function(){
+    var el = document.getElementById('map');
+    if (!el || !window.L) return;
+    var lat = 50.8194, lon = 6.1879; // Merzbrück 210, 52146 Würselen (approx.)
+    var map = L.map(el).setView([lat, lon], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    L.marker([lat, lon]).addTo(map).bindPopup('Aixtraball e.V.<br>Merzbrück 210, 52146 Würselen');
+  });
+</script>
 {% endblock %}

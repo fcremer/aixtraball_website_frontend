@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+{% endblock %}
+
+{% set body_class = 'admin' %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h1 class="h4 mb-0">{{ filename }}</h1>
+    <a class="btn btn-primary" href="{{ url_for('admin_item', filename=filename) }}">
+      <i class="bi bi-plus-lg me-1"></i> Neu
+    </a>
+  </div>
+
+  <div class="admin-toolbar">
+    <div class="input-group admin-search">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input id="filterInput" type="search" class="form-control" placeholder="Einträge filtern…">
+    </div>
+    <div class="text-muted">{{ data|length }} Einträge</div>
+  </div>
+
+  <ul id="adminList" class="list-group admin-list">
+    {% for item in data %}
+    {% set title = item.get('name') or item.get('title') or item.get('slug') or ('Eintrag ' ~ loop.index) %}
+    <li class="list-group-item d-flex justify-content-between align-items-center" data-title="{{ title|lower }}">
+      <span class="item-title">{{ title }}</span>
+      <div class="item-actions d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_item', filename=filename, index=loop.index0) }}">
+          <i class="bi bi-pencil-square"></i> Bearbeiten
+        </a>
+      </div>
+    </li>
+    {% endfor %}
+    {% if not data %}
+    <li class="list-group-item">Keine Einträge vorhanden.</li>
+    {% endif %}
+  </ul>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('filterInput');
+    const list  = document.getElementById('adminList');
+    const items = list ? Array.from(list.children) : [];
+    if (!input || !items.length) return;
+    const filter = () => {
+      const q = input.value.trim().toLowerCase();
+      items.forEach(li => {
+        const title = li.getAttribute('data-title') || '';
+        li.style.display = title.includes(q) ? '' : 'none';
+      });
+    };
+    input.addEventListener('input', filter);
+  });
+</script>
+{% endblock %}

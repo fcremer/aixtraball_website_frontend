@@ -1,8 +1,6 @@
 __pycache__/
 *.pyc
-.DS_Store
-.gitignore
-/shared
-.venv
-build.sh
 docker-compose.yml
+build.sh
+/shared
+.DS_Store
