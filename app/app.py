@@ -104,6 +104,27 @@ def get_next_opening():
     return opening
 
 
+def prepare_slides():
+    """Return slides with ordering: first entry, pinned entries, then shuffled rest."""
+    slides = load_yaml("slides.yaml")
+    if not slides:
+        return []
+
+    normalized = []
+    for slide in slides:
+        if isinstance(slide, dict):
+            normalized.append(slide)
+        else:
+            normalized.append({"image": slide})
+
+    first = normalized[0]
+    rest = normalized[1:]
+    pinned = [s for s in rest if s.get("pinned")]
+    other = [s for s in rest if not s.get("pinned")]
+    random.shuffle(other)
+    return [first, *pinned, *other]
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
