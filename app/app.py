@@ -23,13 +23,14 @@ from time import time
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
-    url_for, request
+    url_for, request, g
 )
 try:
     from flask_compress import Compress
 except Exception:
     Compress = None
 import hmac
+import pyotp
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -56,6 +57,7 @@ ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 # Plaintext password support (preferred if set). Fallback to legacy hash.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # e.g. set via docker-compose/.env
 ADMIN_PW_HASH = os.environ.get("ADMIN_PASSWORD_HASH")  # legacy support
+ADMIN_MFA_SECRET = os.environ.get("ADMIN_MFA_SECRET")
 
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
@@ -203,6 +205,25 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped
 
+
+def _cookie_banner_required():
+    """Return True if the current request depends on cookie-backed session data."""
+    if getattr(g, "force_cookie_banner", False):
+        return True
+    try:
+        keys = set(session.keys())
+    except RuntimeError:
+        return False
+    endpoint = request.endpoint
+    if endpoint != "login":
+        keys.discard("captcha_answer")
+    return bool(keys)
+
+
+@app.context_processor
+def inject_cookie_notice_flag():
+    return {"cookie_banner_required": _cookie_banner_required}
+
 # --------------------------------------------------
 # Jinja‑Filter
 # --------------------------------------------------
@@ -226,6 +247,9 @@ def asset(path: str):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     ip = request.remote_addr or "?"
+    mfa_enabled = bool(ADMIN_MFA_SECRET)
+    if request.args.get("reset_mfa"):
+        session.pop("mfa_pending", None)
 
     def _generate_captcha():
         a, b = random.randint(1, 9), random.randint(1, 9)
@@ -246,7 +270,47 @@ def login():
         else:
             LOGIN_ATTEMPTS[ip] = (1, time())
 
+    def _has_valid_mfa_challenge():
+        if not mfa_enabled:
+            return False
+        pending = session.get("mfa_pending")
+        if not pending:
+            return False
+        if pending.get("ip") and pending["ip"] != ip:
+            session.pop("mfa_pending", None)
+            return False
+        created = pending.get("created", 0)
+        if time() - created > 300:
+            session.pop("mfa_pending", None)
+            return False
+        return True
+
     if request.method == "POST":
+        mfa_stage = _has_valid_mfa_challenge()
+        if mfa_stage:
+            otp_code = request.form.get("otp", "").strip()
+            if not otp_code:
+                flash("Bitte den MFA-Code aus deiner Authenticator-App eingeben.", "danger")
+                _register_failure()
+                app.logger.warning(
+                    "Login failed (missing mfa): ip=%s ua=%s",
+                    ip, request.headers.get("User-Agent", "")
+                )
+                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_enabled)
+            totp = pyotp.TOTP(ADMIN_MFA_SECRET)
+            if not totp.verify(otp_code, valid_window=1):
+                flash("MFA-Code ungültig oder abgelaufen.", "danger")
+                _register_failure()
+                app.logger.warning(
+                    "Login failed (mfa): ip=%s ua=%s",
+                    ip, request.headers.get("User-Agent", "")
+                )
+                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_enabled)
+            session.pop("mfa_pending", None)
+            session["logged_in"] = True
+            LOGIN_ATTEMPTS.pop(ip, None)
+            return redirect(url_for("admin"))
+
         info = _attempt_info()
         if info and info[0] >= MAX_ATTEMPTS:
             flash("Zu viele Fehlversuche. Bitte später erneut versuchen.", "danger")
@@ -277,9 +341,15 @@ def login():
                     valid_pw = hmac.compare_digest(password, "admin")
 
                 if valid_pw:
-                    session["logged_in"] = True
-                    LOGIN_ATTEMPTS.pop(ip, None)
-                    return redirect(url_for("admin"))
+                    if ADMIN_MFA_SECRET:
+                        session["mfa_pending"] = {"ip": ip, "created": time()}
+                        session.pop("captcha_answer", None)
+                        flash("Passwort korrekt. Bitte gib nun den MFA-Code ein.", "info")
+                        return redirect(url_for("login"))
+                    else:
+                        session["logged_in"] = True
+                        LOGIN_ATTEMPTS.pop(ip, None)
+                        return redirect(url_for("admin"))
                 else:
                     flash("Ungültige Zugangsdaten", "danger")
                     _register_failure()
@@ -295,11 +365,13 @@ def login():
                     ip, username, request.headers.get("User-Agent", "")
                 )
         question = _generate_captcha()
-        return render_template("login.html", captcha_question=question)
+        return render_template("login.html", captcha_question=question, mfa_enabled=mfa_enabled, mfa_stage=False)
 
     # GET
+    if _has_valid_mfa_challenge():
+        return render_template("login.html", mfa_enabled=mfa_enabled, mfa_stage=True)
     question = _generate_captcha()
-    return render_template("login.html", captcha_question=question)
+    return render_template("login.html", captcha_question=question, mfa_enabled=mfa_enabled, mfa_stage=False)
 
 
 @app.route("/logout")
@@ -591,6 +663,8 @@ def news_detail(slug):
     article = next((n for n in news if n["slug"] == slug), None)
     if article is None or not news_is_visible(article):
         return redirect(url_for("news_list"))
+    if article.get("youtube_links"):
+        g.force_cookie_banner = True
     return render_template("news_detail.html",
                            article = article,
                            opening = get_next_opening())
