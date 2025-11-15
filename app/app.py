@@ -23,7 +23,7 @@ from time import time
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
-    url_for, request
+    url_for, request, g
 )
 try:
     from flask_compress import Compress
@@ -202,6 +202,25 @@ def login_required(view):
             return redirect(url_for("login"))
         return view(*args, **kwargs)
     return wrapped
+
+
+def _cookie_banner_required():
+    """Return True if the current request depends on cookie-backed session data."""
+    if getattr(g, "force_cookie_banner", False):
+        return True
+    try:
+        keys = set(session.keys())
+    except RuntimeError:
+        return False
+    endpoint = request.endpoint
+    if endpoint != "login":
+        keys.discard("captcha_answer")
+    return bool(keys)
+
+
+@app.context_processor
+def inject_cookie_notice_flag():
+    return {"cookie_banner_required": _cookie_banner_required}
 
 # --------------------------------------------------
 # Jinja‑Filter
@@ -591,6 +610,8 @@ def news_detail(slug):
     article = next((n for n in news if n["slug"] == slug), None)
     if article is None or not news_is_visible(article):
         return redirect(url_for("news_list"))
+    if article.get("youtube_links"):
+        g.force_cookie_banner = True
     return render_template("news_detail.html",
                            article = article,
                            opening = get_next_opening())
