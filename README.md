@@ -12,6 +12,7 @@ Die Anwendung bündelt Infos zu Verein, Halle, Öffnungstagen, News, Team und Ko
 4. [Konfiguration per Umgebungsvariablen](#konfiguration-per-umgebungsvariablen)  
 5. [Datenhaltung in `shared/config`](#datenhaltung-in-sharedconfig)  
    - [Allgemeine Hinweise](#allgemeine-hinweise)  
+   - [`admins.yaml`](#adminsyaml-backend-accounts)  
    - [`slides.yaml`](#slidesyaml-startseiten-slider)  
    - [`opening_days.yaml`](#opening_daysyaml-öffnungstage)  
    - [`flippers.yaml`](#flippersyaml-flipper-inventar)  
@@ -83,6 +84,21 @@ Weitere Konfiguration (z. B. Öffnungszeiten, Inhalte) erfolgt ausschließlich
 - Bilder lassen sich via Admin-Oberfläche hochladen (`/static/images/...`). In YAML wird der Pfad relativ zu `static` angegeben, z. B. `images/team/mm.jpg`.
 
 Im Folgenden sind alle Dateien dokumentiert:
+
+#### `admins.yaml` (Backend-Accounts)
+Erlaubt beliebig viele Admin-Benutzer – jeweils mit eigenem Passwort und optionalem MFA-Secret.
+
+```yaml
+- username: "vorstand"
+  password: "bitte-ändern"        # alternativ: password_hash
+  # password_hash: "pbkdf2:sha256:..."
+  mfa_secret: "BASE32SECRET"       # optional → TOTP nach Passwort
+  roles: ["admin"]                 # reserviert für spätere Features
+  active: true                     # deaktiviert den Account bei false
+```
+
+Nur aktive Einträge mit gültigem Passwort (Plaintext oder Hash) werden akzeptiert.  
+**Fallback:** Wenn `admins.yaml` leer/fehlend ist, greift das ursprüngliche Single-User-Modell (`ADMIN_USER`, `ADMIN_PASSWORD`, ggf. `ADMIN_PASSWORD_HASH` + `ADMIN_MFA_SECRET`).
 
 #### `slides.yaml` (Startseiten-Slider)
 Steuert das Hero-Karussell auf der Startseite.
@@ -188,14 +204,16 @@ Die Datei dient als einfacher Posteingang. Änderungen sollten nur erfolgen, wen
 ---
 
 ### Admin- und MFA-Login
-- `/login`: Kombination aus Benutzername, Passwort, Captcha und – falls `ADMIN_MFA_SECRET` gesetzt – **zweiter Faktor via TOTP**.  
-  Der MFA-Code wird **erst nach erfolgreichem Passwort** abgefragt. Nutzer werden nach dem Passwortschritt auf ein reines OTP-Formular umgeleitet.
+- `/login`: Kombination aus Benutzername, Passwort, Captcha und – falls für den jeweiligen Benutzer ein `mfa_secret` hinterlegt ist – **zweiter Faktor via TOTP**.  
+  Die Zugangsdaten stammen aus `shared/config/admins.yaml`. Nur wenn diese Datei fehlt, werden die Legacy-Variablen `ADMIN_USER`/`ADMIN_PASSWORD` genutzt.  
+  Der MFA-Code wird **erst nach erfolgreichem Passwort** abgefragt; Benutzer sehen dann ein separates OTP-Formular.
 - `/admin`: Übersicht über die wichtigsten YAML-Dateien samt Editor/RAW-Ansicht und globalem Bild-Uploader.
 - Weitere Unterseiten (`/admin/manage/<file>`, `/admin/edit/<file>`) stellen Formulare für Listeninhalte bereit.
+- Detail-Formulare erkennen den jeweiligen Bereich und zeigen passende Eingabefelder (Listen, Bildlisten, Datumsangaben). Rich-Text-Felder werden automatisch mit dem lizenzfreien **Quill**-Editor geladen, sodass HTML-Kenntnisse nicht erforderlich sind.
 
 Tipps zur MFA-Einrichtung:
 1. Secret generieren, z. B. `python -c "import pyotp; print(pyotp.random_base32())"`.
-2. Secret als `ADMIN_MFA_SECRET` in `.env`/Compose exportieren.
+2. Secret in `shared/config/admins.yaml` (Feld `mfa_secret`) oder – falls nur ein Benutzer existiert – als `ADMIN_MFA_SECRET` in `.env`/Compose hinterlegen.
 3. Secret in einer Authenticator-App (Google Authenticator, Aegis, 1Password etc.) als **TOTP** anlegen (Algorithmus: SHA1, 30 s, 6 Digits – Standardwerte).
 
 ---
