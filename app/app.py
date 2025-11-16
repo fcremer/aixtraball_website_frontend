@@ -23,7 +23,7 @@ from time import time
 from dateutil import parser, tz
 from flask import (
     Flask, render_template, redirect,
-    url_for, request, g
+    url_for, request, g, abort
 )
 try:
     from flask_compress import Compress
@@ -196,6 +196,166 @@ def load_admin_accounts():
             "roles": [],
         })
     return entries
+
+
+ADMIN_SECTIONS = {
+    "slides.yaml": {
+        "title": "Startseiten-Slider",
+        "description": "Hero-Slides mit Headline, Subline und optionalem Logo.",
+        "icon": "images",
+        "allow_new": True,
+        "schema": [
+            {"name": "image", "label": "Hintergrundbild", "type": "image", "required": True, "help": "Pfad unter /static/images oder vollständige URL."},
+            {"name": "headline", "label": "Überschrift", "type": "text", "preview": True},
+            {"name": "subline", "label": "Unterzeile", "type": "text"},
+            {"name": "alt", "label": "Alt-Text", "type": "text"},
+            {"name": "pinned", "label": "Bevorzugt anzeigen", "type": "bool", "help": "Fixiert den Slide vorne im Karussell."},
+            {"name": "logo", "label": "Logo einblenden", "type": "bool"}
+        ]
+    },
+    "opening_days.yaml": {
+        "title": "Öffnungstage",
+        "description": "Alle öffentlichen Spieltage inkl. Uhrzeit.",
+        "icon": "calendar-event",
+        "allow_new": True,
+        "schema": [
+            {"name": "from", "label": "Von", "type": "datetime", "required": True, "help": "ISO-Format, z. B. 2025-07-27T11:00:00+02:00", "preview": True, "picker_format": "Y-m-d H:i:S"},
+            {"name": "to", "label": "Bis", "type": "datetime", "required": True, "help": "Selbes Format wie oben.", "picker_format": "Y-m-d H:i:S"}
+        ]
+    },
+    "flippers.yaml": {
+        "title": "Flipper-Inventar",
+        "description": "Alle Geräte inkl. Bilder, Hersteller, Features.",
+        "icon": "joystick",
+        "allow_new": True,
+        "schema": [
+            {"name": "name", "label": "Name", "type": "text", "required": True, "preview": True},
+            {"name": "image", "label": "Hauptbild", "type": "image", "required": True},
+            {"name": "image_details", "label": "Detailbilder", "type": "image_list"},
+            {"name": "link", "label": "Externer Link", "type": "url"},
+            {"name": "year", "label": "Baujahr", "type": "text"},
+            {"name": "manufacturer", "label": "Hersteller", "type": "text", "preview": True},
+            {"name": "system", "label": "System / Plattform", "type": "text"},
+            {"name": "designer", "label": "Designer", "type": "text"},
+            {"name": "software", "label": "Software", "type": "text"},
+            {"name": "artwork", "label": "Artwork", "type": "text"},
+            {"name": "sound", "label": "Sound", "type": "text"},
+            {"name": "production", "label": "Stückzahl", "type": "text"},
+            {"name": "features", "label": "Features", "type": "list", "help": "Eine Zeile pro Bulletpoint."},
+            {"name": "notable_facts", "label": "Besonderheiten", "type": "list", "help": "Eine Zeile pro Bulletpoint."}
+        ]
+    },
+    "news.yaml": {
+        "title": "News & Berichte",
+        "description": "Alle Artikel inkl. Zeitraumsteuerung und Medien.",
+        "icon": "newspaper",
+        "allow_new": True,
+        "schema": [
+            {"name": "title", "label": "Titel", "type": "text", "required": True, "preview": True},
+            {"name": "slug", "label": "URL-Slug", "type": "text", "required": True, "help": "Kleinbuchstaben, Bindestriche, eindeutig."},
+            {"name": "date", "label": "Datum", "type": "datetime", "required": True, "preview": True, "picker_format": "Y-m-d H:i:S"},
+            {"name": "visible_from", "label": "Sichtbar ab", "type": "datetime", "picker_format": "Y-m-d H:i:S"},
+            {"name": "visible_until", "label": "Sichtbar bis", "type": "datetime", "picker_format": "Y-m-d H:i:S"},
+            {"name": "category", "label": "Kategorie", "type": "text", "preview": True},
+            {"name": "preview_image", "label": "Teaserbild", "type": "image"},
+            {"name": "excerpt", "label": "Kurzbeschreibung", "type": "textarea"},
+            {"name": "content", "label": "Artikelinhalt", "type": "html"},
+            {"name": "images", "label": "Galeriebilder", "type": "image_list"},
+            {"name": "youtube_links", "label": "YouTube-Links", "type": "list", "help": "Komplette URLs; löst Cookie-Hinweis aus."}
+        ]
+    },
+    "members.yaml": {
+        "title": "Team & Vorstand",
+        "description": "Profile für Verein, Vorstand, Helfer:innen.",
+        "icon": "people",
+        "allow_new": True,
+        "schema": [
+            {"name": "name", "label": "Name", "type": "text", "required": True, "preview": True},
+            {"name": "role", "label": "Rolle", "type": "text", "preview": True},
+            {"name": "image", "label": "Profilbild", "type": "image"},
+            {"name": "bio", "label": "Kurzportrait", "type": "html"},
+            {"name": "links", "label": "Links (Label | URL)", "type": "list", "help": "Format pro Zeile: Beschriftung | https://example.de"}
+        ]
+    },
+    "timeline.yaml": {
+        "title": "Vereinsmeilensteine",
+        "description": "Chronik-Ereignisse mit optionalem Bild.",
+        "icon": "timeline",
+        "allow_new": True,
+        "schema": [
+            {"name": "date", "label": "Datum (Monat)", "type": "text", "required": True, "help": "Format YYYY-MM, z. B. 2015-07", "preview": True},
+            {"name": "title", "label": "Titel", "type": "text", "required": True, "preview": True},
+            {"name": "description", "label": "Beschreibung", "type": "html"},
+            {"name": "image", "label": "Bild", "type": "image"}
+        ]
+    },
+    "admins.yaml": {
+        "title": "Admins & MFA",
+        "description": "Logins verwalten, MFA-Secrets hinterlegen.",
+        "icon": "shield-lock",
+        "allow_new": True,
+        "schema": [
+            {"name": "username", "label": "Benutzername", "type": "text", "required": True, "preview": True},
+            {"name": "password", "label": "Passwort (Klartext)", "type": "password", "help": "Wird im Klartext gespeichert. Alternativ password_hash nutzen."},
+            {"name": "password_hash", "label": "Passwort (Hash)", "type": "textarea", "help": "Optionaler Hash aus generate_password_hash."},
+            {"name": "mfa_secret", "label": "MFA-Secret (Base32)", "type": "text"},
+            {"name": "roles", "label": "Rollen", "type": "list"},
+            {"name": "active", "label": "Aktiv", "type": "bool", "default": True, "preview": True}
+        ]
+    },
+    "contact_submissions.yaml": {
+        "title": "Kontaktanfragen",
+        "description": "Eingehende Nachrichten aus dem Formular.",
+        "icon": "envelope-open",
+        "allow_new": False,
+        "read_only": True
+    }
+}
+
+
+def get_admin_section(filename):
+    return ADMIN_SECTIONS.get(filename, {
+        "title": filename,
+        "description": "",
+        "icon": "folder",
+        "allow_new": True,
+        "schema": None
+    })
+
+
+def get_admin_schema(filename):
+    section = get_admin_section(filename)
+    return section.get("schema")
+
+
+def default_for_field(field):
+    field_type = field.get("type", "text")
+    if "default" in field:
+        return field["default"]
+    if field_type in {"image_list", "list"}:
+        return []
+    if field_type == "bool":
+        return False
+    return ""
+
+
+def normalize_field_value(field, value):
+    field_type = field.get("type", "text")
+    if value is None:
+        return default_for_field(field)
+    if field_type == "bool":
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in {"true", "1", "yes", "ja", "on"}
+        return bool(value)
+    if field_type in {"image_list", "list"}:
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            return [v.strip() for v in value.splitlines() if v.strip()]
+        return list(value)
+    return value
 
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
@@ -435,15 +595,26 @@ def logout():
 @app.route("/admin")
 @login_required
 def admin():
-    files = [
-        ("flippers.yaml", "Flipper"),
-        ("news.yaml", "News"),
-        ("opening_days.yaml", "Öffnungstage"),
-        ("slides.yaml", "Slides"),
-        ("members.yaml", "Mitglieder"),
-        ("timeline.yaml", "Timeline"),
-    ]
-    return render_template("admin.html", files=files)
+    sections = []
+    for filename, meta in ADMIN_SECTIONS.items():
+        if meta.get("hide_from_dashboard"):
+            continue
+        try:
+            data = load_yaml(filename)
+        except Exception:
+            data = []
+        count = len(data) if isinstance(data, list) else (len(data.keys()) if isinstance(data, dict) else 0)
+        sections.append({
+            "filename": filename,
+            "title": meta.get("title", filename),
+            "description": meta.get("description", ""),
+            "icon": meta.get("icon", "folder"),
+            "count": count,
+            "allow_new": meta.get("allow_new", True) and not meta.get("read_only"),
+            "read_only": meta.get("read_only", False)
+        })
+    sections.sort(key=lambda s: s["title"])
+    return render_template("admin.html", sections=sections)
 
 
 @app.route("/admin/edit/<path:filename>", methods=["GET", "POST"])
@@ -471,21 +642,55 @@ def admin_edit(filename):
 @app.route("/admin/manage/<path:filename>")
 @login_required
 def admin_manage(filename):
+    section = get_admin_section(filename)
+    schema = section.get("schema")
     data = load_yaml(filename)
-    return render_template("admin_manage.html", filename=filename, data=data)
+    preview_fields = [f for f in (schema or []) if f.get("preview")]
+    schema_map = {f["name"]: f for f in (schema or [])}
+    return render_template(
+        "admin_manage.html",
+        filename=filename,
+        data=data,
+        section=section,
+        read_only=section.get("read_only", False),
+        schema=schema,
+        preview_fields=preview_fields,
+        schema_map=schema_map
+    )
 
 
 @app.route("/admin/manage/<path:filename>/new", methods=["GET", "POST"])
 @app.route("/admin/manage/<path:filename>/<int:index>", methods=["GET", "POST"])
 @login_required
 def admin_item(filename, index=None):
+    section = get_admin_section(filename)
+    if section.get("read_only"):
+        abort(403)
+    schema = section.get("schema")
     filepath = CONFIG_DIR / filename
     data = load_yaml(filename)
     template_item = data[0] if data else {}
+    base_item = {}
     if index is not None and index < len(data):
-        item = data[index]
+        base_item = data[index]
+    if schema:
+        item = {}
+        for field in schema:
+            name = field["name"]
+            if base_item and name in base_item:
+                value = base_item.get(name)
+            elif template_item and name in template_item:
+                value = template_item.get(name)
+            else:
+                value = default_for_field(field)
+            item[name] = normalize_field_value(field, value)
+        extra_fields = {k: v for k, v in base_item.items() if k not in item}
     else:
-        item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
+        if base_item:
+            item = base_item
+        else:
+            item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
+        extra_fields = {}
     if request.method == "POST":
         # Determine effective index: prefer hidden form value if present
         form_index = request.form.get("__index")
@@ -493,38 +698,71 @@ def admin_item(filename, index=None):
             effective_index = int(form_index) if form_index not in (None, "") else index
         except ValueError:
             effective_index = index
-        new_item = {}
-        # For news.yaml ignore private fields like _date
-        iter_items = item.items()
-        if filename == "news.yaml":
-            iter_items = [(k, v) for k, v in item.items() if not k.startswith("_")]
-        for key, value in iter_items:
-            if isinstance(value, list):
-                text = request.form.get(key, "")
-                new_list = [l.strip() for l in text.splitlines() if l.strip()]
-                if "image" in key:
-                    for f in request.files.getlist(f"{key}_upload"):
-                        if f and f.filename:
-                            upload_dir = BASE_DIR / "static" / "images"
-                            upload_dir.mkdir(parents=True, exist_ok=True)
-                            fname = secure_filename(f.filename)
-                            f.save(upload_dir / fname)
-                            new_list.append(f"images/{fname}")
-                new_item[key] = new_list
-            else:
-                file = request.files.get(f"{key}_upload") if "image" in key else None
-                if file and file.filename:
-                    upload_dir = BASE_DIR / "static" / "images"
-                    upload_dir.mkdir(parents=True, exist_ok=True)
-                    fname = secure_filename(file.filename)
-                    file.save(upload_dir / fname)
-                    new_item[key] = f"images/{fname}"
+        if schema:
+            new_item = {}
+            for field in schema:
+                key = field["name"]
+                ftype = field.get("type", "text")
+                if ftype in {"list", "image_list"}:
+                    text = request.form.get(key, "")
+                    entries = [l.strip() for l in text.splitlines() if l.strip()]
+                    if ftype == "image_list":
+                        for f in request.files.getlist(f"{key}_upload"):
+                            if f and f.filename:
+                                upload_dir = BASE_DIR / "static" / "images"
+                                upload_dir.mkdir(parents=True, exist_ok=True)
+                                fname = secure_filename(f.filename)
+                                f.save(upload_dir / fname)
+                                entries.append(f"images/{fname}")
+                    new_item[key] = entries
+                elif ftype == "image":
+                    file = request.files.get(f"{key}_upload")
+                    if file and file.filename:
+                        upload_dir = BASE_DIR / "static" / "images"
+                        upload_dir.mkdir(parents=True, exist_ok=True)
+                        fname = secure_filename(file.filename)
+                        file.save(upload_dir / fname)
+                        new_item[key] = f"images/{fname}"
+                    else:
+                        new_item[key] = request.form.get(key, "").strip()
+                elif ftype == "bool":
+                    new_item[key] = request.form.get(key) == "on"
+                elif ftype == "password":
+                    value = request.form.get(key, "")
+                    new_item[key] = value
                 else:
-                    new_item[key] = request.form.get(key, "")
-        if filename == "news.yaml":
-            # Ensure we don't carry over legacy helper fields
-            new_item.pop("_date", None)
-            new_item.pop("_year", None)
+                    new_item[key] = request.form.get(key, "").strip()
+            if filename == "news.yaml":
+                new_item.pop("_date", None)
+                new_item.pop("_year", None)
+        else:
+            new_item = {}
+            iter_items = item.items()
+            if filename == "news.yaml":
+                iter_items = [(k, v) for k, v in item.items() if not k.startswith("_")]
+            for key, value in iter_items:
+                if isinstance(value, list):
+                    text = request.form.get(key, "")
+                    new_list = [l.strip() for l in text.splitlines() if l.strip()]
+                    if "image" in key:
+                        for f in request.files.getlist(f"{key}_upload"):
+                            if f and f.filename:
+                                upload_dir = BASE_DIR / "static" / "images"
+                                upload_dir.mkdir(parents=True, exist_ok=True)
+                                fname = secure_filename(f.filename)
+                                f.save(upload_dir / fname)
+                                new_list.append(f"images/{fname}")
+                    new_item[key] = new_list
+                else:
+                    file = request.files.get(f"{key}_upload") if "image" in key else None
+                    if file and file.filename:
+                        upload_dir = BASE_DIR / "static" / "images"
+                        upload_dir.mkdir(parents=True, exist_ok=True)
+                        fname = secure_filename(file.filename)
+                        file.save(upload_dir / fname)
+                        new_item[key] = f"images/{fname}"
+                    else:
+                        new_item[key] = request.form.get(key, "")
         if effective_index is None or effective_index < 0 or effective_index >= len(data):
             data.append(new_item)
         else:
@@ -538,7 +776,15 @@ def admin_item(filename, index=None):
             pass
         flash("Gespeichert", "success")
         return redirect(url_for("admin_manage", filename=filename))
-    return render_template("admin_item.html", filename=filename, item=item, index=index)
+    return render_template(
+        "admin_item.html",
+        filename=filename,
+        item=item,
+        index=index,
+        section=section,
+        schema=schema,
+        extra_fields=extra_fields
+    )
 
 
 @app.route("/admin/upload", methods=["POST"])

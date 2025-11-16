@@ -6,54 +6,50 @@
 
 {% set body_class = 'admin' %}
 {% block content %}
-<div class="container py-4">
-  <div class="admin-hero">
-    <i class="bi bi-speedometer2 fs-2"></i>
+<div class="container py-4 admin-dashboard">
+  <div class="admin-hero-card">
     <div>
-      <h1 class="h3 mb-0">Administration</h1>
-      <div class="text-muted">Inhalte verwalten, Dateien hochladen</div>
+      <p class="eyebrow text-uppercase fw-semibold mb-1 text-primary">Aixtraball Cockpit</p>
+      <h1 class="h3 mb-2">Inhalte pflegen</h1>
+      <p class="text-muted mb-0">Wähle einen Bereich aus, bearbeite Texte mit dem integrierten Editor und veröffentliche Änderungen sofort.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" id="openGlobalPicker" class="btn btn-outline-primary">
+        <i class="bi bi-images me-1"></i> Bilderbibliothek
+      </button>
     </div>
   </div>
 
-  <div class="admin-grid">
-    {% for f,label in files %}
-    <div class="admin-card">
-      <div class="d-flex align-items-start justify-content-between">
-        <div>
-          <p class="title">{{ label }}</p>
-          <p class="meta mb-2">{{ f }}</p>
+  <div class="admin-grid sections-grid single-column">
+    {% for section in sections %}
+    <article class="admin-card admin-card-section">
+      <div class="section-icon rounded-circle">
+        <i class="bi bi-{{ section.icon }}"></i>
+      </div>
+      <div class="section-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h5 mb-0">{{ section.title }}</h2>
+          <span class="badge text-bg-light">{{ section.count }} {{ section.count == 1 and 'Eintrag' or 'Einträge' }}</span>
         </div>
-        <i class="bi bi-folder2-open text-primary fs-4"></i>
+        <p class="text-muted small mb-3">{{ section.description }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-primary" href="{{ url_for('admin_manage', filename=section.filename) }}">
+            <i class="bi bi-list-task me-1"></i> Verwalten
+          </a>
+          {% if section.allow_new %}
+          <a class="btn btn-outline-primary" href="{{ url_for('admin_item', filename=section.filename) }}">
+            <i class="bi bi-plus-lg me-1"></i> Neuer Eintrag
+          </a>
+          {% else %}
+          <span class="badge rounded-pill text-bg-secondary align-self-center">Nur Ansicht</span>
+          {% endif %}
+          <a class="btn btn-link text-muted" href="{{ url_for('admin_edit', filename=section.filename) }}">
+            <i class="bi bi-code-slash me-1"></i> RAW
+          </a>
+        </div>
       </div>
-      <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-primary" href="{{ url_for('admin_manage', filename=f) }}">
-          <i class="bi bi-list-task me-1"></i> Verwalten
-        </a>
-        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_edit', filename=f) }}">
-          <i class="bi bi-code-slash me-1"></i> RAW
-        </a>
-      </div>
-    </div>
+    </article>
     {% endfor %}
-
-    <div class="admin-card">
-      <div class="d-flex align-items-start justify-content-between mb-1">
-        <p class="title">Bild hochladen</p>
-        <i class="bi bi-cloud-arrow-up text-primary fs-4"></i>
-      </div>
-      <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="mt-1">
-        <div class="mb-2">
-          <input type="file" name="image" class="form-control" required>
-          <div class="form-hint">Wird nach /static/images gespeichert</div>
-        </div>
-        <button class="btn btn-sm btn-primary" type="submit">Hochladen</button>
-      </form>
-      <hr class="my-3">
-      <button type="button" id="openGlobalPicker" class="btn btn-sm btn-outline-primary">
-        <i class="bi bi-images"></i> Vorhandene Bilder anzeigen
-      </button>
-      <div class="form-hint mt-2">Beim Klick wird der Bildpfad in die Zwischenablage kopiert.</div>
-    </div>
   </div>
 </div>
 {% endblock %}

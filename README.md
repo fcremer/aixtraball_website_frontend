@@ -209,6 +209,7 @@ Die Datei dient als einfacher Posteingang. Änderungen sollten nur erfolgen, wen
   Der MFA-Code wird **erst nach erfolgreichem Passwort** abgefragt; Benutzer sehen dann ein separates OTP-Formular.
 - `/admin`: Übersicht über die wichtigsten YAML-Dateien samt Editor/RAW-Ansicht und globalem Bild-Uploader.
 - Weitere Unterseiten (`/admin/manage/<file>`, `/admin/edit/<file>`) stellen Formulare für Listeninhalte bereit.
+- Detail-Formulare erkennen den jeweiligen Bereich und zeigen passende Eingabefelder (Listen, Bildlisten, Datumsangaben). Rich-Text-Felder werden automatisch mit dem lizenzfreien **Quill**-Editor geladen, sodass HTML-Kenntnisse nicht erforderlich sind.
 
 Tipps zur MFA-Einrichtung:
 1. Secret generieren, z. B. `python -c "import pyotp; print(pyotp.random_base32())"`.

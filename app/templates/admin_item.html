@@ -2,61 +2,211 @@
 
 {% block head_extra %}
 <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
 {% endblock %}
 
 {% set body_class = 'admin' %}
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 mb-0">{{ filename }} – {% if index is not none %}Bearbeiten{% else %}Neu{% endif %}</h1>
-    <a class="btn btn-outline-secondary" href="{{ url_for('admin_manage', filename=filename) }}">
-      <i class="bi bi-arrow-left"></i> Zurück
-    </a>
+<div class="container py-4 admin-item">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+      <div class="d-flex gap-2 flex-wrap mb-2">
+        <a class="btn btn-light btn-sm" href="{{ url_for('admin') }}">
+          <i class="bi bi-arrow-left"></i> Übersicht
+        </a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin_manage', filename=filename) }}">
+          <i class="bi bi-arrow-left-circle"></i> Zur Liste
+        </a>
+      </div>
+      <h1 class="h4 mb-1">{{ section.title }} – {% if index is not none %}Eintrag bearbeiten{% else %}neu anlegen{% endif %}</h1>
+      <p class="text-muted mb-0">{{ section.description }}</p>
+    </div>
+    <span class="badge rounded-pill text-bg-light">Datei: {{ filename }}</span>
   </div>
 
-  <form method="post" enctype="multipart/form-data">
-    <input type="hidden" name="__index" value="{% if index is not none %}{{ index }}{% endif %}">
-    {% for key, value in item.items() %}
-    {% if not (filename == 'news.yaml' and key.startswith('_')) %}
-    <div class="mb-3">
-      <label class="form-label">{{ key }}</label>
-      {% if value is iterable and value is not string %}
-        {% if 'image' in key %}
-          <textarea name="{{ key }}" class="form-control" rows="3" placeholder="Eine Zeile pro Bildpfad">{{ value|join('\n') }}</textarea>
-          <input type="file" name="{{ key }}_upload" multiple class="form-control mt-1">
-          <div class="form-hint">Mehrere Bilder möglich. Bestehende Pfade bleiben erhalten.</div>
-          <button type="button" class="btn btn-sm btn-outline-primary mt-2 pick-existing" data-field="{{ key }}" data-type="list">
-            <i class="bi bi-images"></i> Aus vorhandenen wählen
-          </button>
-        {% else %}
-          <textarea name="{{ key }}" class="form-control" rows="3" placeholder="Eine Zeile pro Eintrag">{{ value|join('\n') }}</textarea>
-        {% endif %}
+  <form method="post" enctype="multipart/form-data" class="card shadow-sm">
+    <div class="card-body">
+      <input type="hidden" name="__index" value="{% if index is not none %}{{ index }}{% endif %}">
+      {% set field_defs = schema if schema else [] %}
+      {% if field_defs %}
+        {% for field in field_defs %}
+          {% set key = field.name %}
+          {% set value = item.get(key) %}
+          {% if filename == 'news.yaml' and key.startswith('_') %}
+            {# ausgelassen #}
+          {% else %}
+          <div class="mb-4">
+            <label class="form-label fw-semibold" for="field-{{ key }}">{{ field.label or key }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</label>
+            {% if field.type in ['text','url','number','password'] %}
+              <input
+                type="{{ field.type if field.type in ['url','number','password'] else 'text' }}"
+                id="field-{{ key }}"
+                name="{{ key }}"
+                value="{{ value }}"
+                class="form-control"
+                placeholder="{{ field.placeholder or '' }}"
+                {% if field.required %}required{% endif %}>
+            {% elif field.type == 'datetime' %}
+              {% set picker_format = field.picker_format or 'Y-m-d H:i' %}
+              <input
+                type="text"
+                id="field-{{ key }}"
+                name="{{ key }}"
+                value="{{ value }}"
+                class="form-control datetime-picker"
+                placeholder="{{ field.placeholder or 'YYYY-MM-DD HH:MM' }}"
+                data-format="{{ picker_format }}"
+                data-enable-seconds="{{ 'true' if 'S' in picker_format else 'false' }}"
+                autocomplete="off">
+            {% elif field.type == 'textarea' %}
+              <textarea id="field-{{ key }}" name="{{ key }}" class="form-control" rows="4" {% if field.required %}required{% endif %}>{{ value }}</textarea>
+            {% elif field.type == 'html' %}
+              <textarea id="field-{{ key }}" name="{{ key }}" class="form-control d-none" data-wysiwyg="true">{{ value }}</textarea>
+            {% elif field.type == 'bool' %}
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="field-{{ key }}" name="{{ key }}" {% if value %}checked{% endif %}>
+                <label class="form-check-label" for="field-{{ key }}">Aktivieren</label>
+              </div>
+            {% elif field.type == 'image' %}
+              {% if value %}
+              {% set safe_path = value.startswith('http') and value or url_for('static', filename=value.lstrip('/')) %}
+              <div class="mb-2">
+                <img src="{{ safe_path }}" class="img-thumbnail" style="max-height:120px" alt="">
+              </div>
+              {% endif %}
+              <div class="input-group mb-2">
+                <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                <input type="text" class="form-control" name="{{ key }}" id="field-{{ key }}" value="{{ value }}" placeholder="images/... oder https://">
+              </div>
+              <div class="row g-2">
+                <div class="col-md">
+                  <input type="file" name="{{ key }}_upload" class="form-control">
+                </div>
+                <div class="col-md-auto">
+                  <button type="button" class="btn btn-outline-primary pick-existing w-100" data-field="{{ key }}" data-type="single">
+                    <i class="bi bi-images me-1"></i> Aus Galerie
+                  </button>
+                </div>
+              </div>
+            {% elif field.type in ['list','image_list'] %}
+              <textarea id="field-{{ key }}" name="{{ key }}" class="form-control" rows="4" placeholder="{{ field.placeholder or 'Eine Zeile pro Eintrag' }}">{{ (value or [])|join('\n') }}</textarea>
+              {% if field.type == 'image_list' %}
+              <div class="row g-2 mt-2">
+                <div class="col-md">
+                  <input type="file" name="{{ key }}_upload" multiple class="form-control">
+                </div>
+                <div class="col-md-auto">
+                  <button type="button" class="btn btn-outline-primary pick-existing w-100" data-field="{{ key }}" data-type="list">
+                    <i class="bi bi-images me-1"></i> Aus Galerie
+                  </button>
+                </div>
+              </div>
+              {% endif %}
+            {% else %}
+              <input type="text" id="field-{{ key }}" name="{{ key }}" value="{{ value }}" class="form-control">
+            {% endif %}
+            {% if field.help %}
+            <div class="form-hint mt-1">{{ field.help }}</div>
+            {% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
       {% else %}
-        {% if 'image' in key %}
-          {% if value %}<img src="{{ url_for('static', filename=value) }}" alt="" class="img-thumbnail mb-2" style="max-height:92px;" loading="lazy">{% endif %}
-          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control mb-1" placeholder="images/…">
-          <input type="file" name="{{ key }}_upload" class="form-control">
-          <button type="button" class="btn btn-sm btn-outline-primary mt-2 pick-existing" data-field="{{ key }}" data-type="single">
-            <i class="bi bi-images"></i> Aus vorhandenen wählen
-          </button>
-        {% else %}
-          <input type="text" name="{{ key }}" value="{{ value }}" class="form-control" placeholder="Wert eingeben">
-        {% endif %}
+        {% for key, value in item.items() %}
+          {% if not (filename == 'news.yaml' and key.startswith('_')) %}
+          <div class="mb-3">
+            <label class="form-label">{{ key }}</label>
+            {% if value is iterable and value is not string %}
+              <textarea name="{{ key }}" class="form-control" rows="3">{{ value|join('\n') }}</textarea>
+            {% else %}
+              <input type="text" name="{{ key }}" value="{{ value }}" class="form-control">
+            {% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      {% if extra_fields %}
+      <div class="alert alert-secondary small">
+        <strong>Technische Felder:</strong>
+        <div class="mt-2">
+          {% for key, value in extra_fields.items() %}
+            <div><code>{{ key }}</code>: {{ value }}</div>
+          {% endfor %}
+        </div>
+      </div>
       {% endif %}
     </div>
-    {% endif %}
-    {% endfor %}
-    <div class="sticky-actions d-flex gap-2">
-      <button class="btn btn-success" type="submit"><i class="bi bi-check-lg"></i> Speichern</button>
+    <div class="card-footer bg-light d-flex justify-content-end gap-2">
       <a class="btn btn-outline-secondary" href="{{ url_for('admin_manage', filename=filename) }}">Abbrechen</a>
+      <button class="btn btn-success" type="submit"><i class="bi bi-check-lg me-1"></i> Speichern</button>
     </div>
   </form>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.7/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    const quillInstances = [];
+    if (window.Quill) {
+      document.querySelectorAll('textarea[data-wysiwyg]').forEach(textarea => {
+        const editorEl = document.createElement('div');
+        editorEl.className = 'wysiwyg-editor';
+        textarea.parentNode.insertBefore(editorEl, textarea.nextSibling);
+        const quill = new Quill(editorEl, {
+          theme: 'snow',
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ['bold', 'italic', 'underline'],
+              [{ list: 'ordered' }, { list: 'bullet' }],
+              [{ align: [] }],
+              ['link', 'clean']
+            ]
+          }
+        });
+        if (textarea.value) {
+          quill.clipboard.dangerouslyPasteHTML(textarea.value);
+        }
+        quillInstances.push({ quill, textarea });
+        textarea.style.display = 'none';
+      });
+      const form = document.querySelector('.admin-item form');
+      if (form) {
+        form.addEventListener('submit', () => {
+          quillInstances.forEach(instance => {
+            instance.textarea.value = instance.quill.root.innerHTML.trim();
+          });
+        });
+      }
+    }
+
+    if (window.flatpickr) {
+      document.querySelectorAll('.datetime-picker').forEach(input => {
+        const format = input.dataset.format || 'Y-m-d H:i';
+        const enableSeconds = input.dataset.enableSeconds === 'true';
+        let defaultDate = null;
+        if (input.value) {
+          const parsed = Date.parse(input.value);
+          if (!isNaN(parsed)) {
+            defaultDate = new Date(parsed);
+          }
+        }
+        flatpickr(input, {
+          enableTime: true,
+          enableSeconds,
+          time_24hr: true,
+          allowInput: true,
+          dateFormat: format,
+          defaultDate: defaultDate || undefined
+        });
+      });
+    }
+
     let imagesCache = null;
     let target = null; // {name, type}
 
