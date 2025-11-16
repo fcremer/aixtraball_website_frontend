@@ -209,5 +209,3 @@ pytest
 Voraussetzung ist, dass ein virtuelles Environment mit den Requirements existiert und – falls Tests Inhalte benötigen – die YAML-Dateien wie im Repo vorhanden sind.
 
 ---
-
-Fragen, Feature-Wünsche oder Bugreports bitte direkt im Repo anlegen oder über das Admin-Team kommunizieren. Viel Spaß beim Pflegen der Aixtraball-Webseite! 🎱
