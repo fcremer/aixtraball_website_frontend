@@ -12,7 +12,8 @@
             </div>
             {% if mfa_stage %}
               <p class="text-muted text-center">
-                Passwort bestätigt. Gib nun den 6-stelligen Code aus deiner Authenticator-App ein.
+                Passwort bestätigt{% if pending_user %} für <strong>{{ pending_user }}</strong>{% endif %}.
+                Gib nun den 6-stelligen Code aus deiner Authenticator-App ein.
               </p>
               <form method="post">
                 <input type="hidden" name="stage" value="mfa">

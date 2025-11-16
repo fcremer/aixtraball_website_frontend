@@ -160,6 +160,43 @@ def load_yaml(filename: str):
     YAML_CACHE[filename] = (mtime, data)
     return copy.deepcopy(data)
 
+
+def load_admin_accounts():
+    """Return normalized admin definitions from admins.yaml or env fallback."""
+    entries = []
+    try:
+        raw = load_yaml("admins.yaml")
+    except Exception:
+        raw = []
+    for entry in raw:
+        username = (entry or {}).get("username")
+        if not username:
+            continue
+        if entry.get("active", True) is False:
+            continue
+        entries.append({
+            "username": username,
+            "password": entry.get("password"),
+            "password_hash": entry.get("password_hash"),
+            "mfa_secret": entry.get("mfa_secret"),
+            "roles": entry.get("roles") or [],
+        })
+    if not entries:
+        if ADMIN_PASSWORD is not None:
+            fallback_password = ADMIN_PASSWORD
+        elif ADMIN_PW_HASH:
+            fallback_password = None
+        else:
+            fallback_password = "admin"
+        entries.append({
+            "username": ADMIN_USER,
+            "password": fallback_password,
+            "password_hash": ADMIN_PW_HASH,
+            "mfa_secret": ADMIN_MFA_SECRET,
+            "roles": [],
+        })
+    return entries
+
 def get_next_opening():
     """Nächsten Öffnungstag aus opening_days.yaml ermitteln."""
     openings = load_yaml("opening_days.yaml")
@@ -247,7 +284,8 @@ def asset(path: str):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     ip = request.remote_addr or "?"
-    mfa_enabled = bool(ADMIN_MFA_SECRET)
+    admin_accounts = load_admin_accounts()
+    mfa_available = any(acc.get("mfa_secret") for acc in admin_accounts if acc.get("mfa_secret"))
     if request.args.get("reset_mfa"):
         session.pop("mfa_pending", None)
 
@@ -270,24 +308,47 @@ def login():
         else:
             LOGIN_ATTEMPTS[ip] = (1, time())
 
-    def _has_valid_mfa_challenge():
-        if not mfa_enabled:
-            return False
+    def _find_admin(username):
+        for admin in admin_accounts:
+            if admin["username"] == username:
+                pwd = admin.get("password")
+                pwd_hash = admin.get("password_hash")
+                if not (pwd or pwd_hash):
+                    continue
+                return admin
+        return None
+
+    def _get_pending_admin():
+        if not mfa_available:
+            return None
         pending = session.get("mfa_pending")
         if not pending:
-            return False
+            return None
         if pending.get("ip") and pending["ip"] != ip:
             session.pop("mfa_pending", None)
-            return False
+            return None
         created = pending.get("created", 0)
         if time() - created > 300:
             session.pop("mfa_pending", None)
+            return None
+        admin = _find_admin(pending.get("username"))
+        if not admin or not admin.get("mfa_secret"):
+            session.pop("mfa_pending", None)
+            return None
+        return admin
+
+    def _password_valid(admin, supplied_password):
+        if not supplied_password:
             return False
-        return True
+        if admin.get("password") is not None:
+            return hmac.compare_digest(supplied_password, admin["password"])
+        if admin.get("password_hash"):
+            return check_password_hash(admin["password_hash"], supplied_password)
+        return False
 
     if request.method == "POST":
-        mfa_stage = _has_valid_mfa_challenge()
-        if mfa_stage:
+        pending_admin = _get_pending_admin()
+        if pending_admin:
             otp_code = request.form.get("otp", "").strip()
             if not otp_code:
                 flash("Bitte den MFA-Code aus deiner Authenticator-App eingeben.", "danger")
@@ -296,8 +357,8 @@ def login():
                     "Login failed (missing mfa): ip=%s ua=%s",
                     ip, request.headers.get("User-Agent", "")
                 )
-                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_enabled)
-            totp = pyotp.TOTP(ADMIN_MFA_SECRET)
+                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_available, pending_user=pending_admin["username"])
+            totp = pyotp.TOTP(pending_admin["mfa_secret"])
             if not totp.verify(otp_code, valid_window=1):
                 flash("MFA-Code ungültig oder abgelaufen.", "danger")
                 _register_failure()
@@ -305,9 +366,10 @@ def login():
                     "Login failed (mfa): ip=%s ua=%s",
                     ip, request.headers.get("User-Agent", "")
                 )
-                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_enabled)
+                return render_template("login.html", mfa_stage=True, mfa_enabled=mfa_available, pending_user=pending_admin["username"])
             session.pop("mfa_pending", None)
             session["logged_in"] = True
+            session["admin_username"] = pending_admin["username"]
             LOGIN_ATTEMPTS.pop(ip, None)
             return redirect(url_for("admin"))
 
@@ -330,33 +392,22 @@ def login():
                     "Login failed (captcha): ip=%s user=%s ua=%s",
                     ip, username, request.headers.get("User-Agent", "")
                 )
-            elif username == ADMIN_USER:
-                # Password validation priority: plain ADMIN_PASSWORD > ADMIN_PASSWORD_HASH > default "admin"
+            admin_obj = _find_admin(username)
+            if admin_obj:
+                valid_pw = _password_valid(admin_obj, password)
+            else:
                 valid_pw = False
-                if ADMIN_PASSWORD is not None:
-                    valid_pw = hmac.compare_digest(password, ADMIN_PASSWORD)
-                elif ADMIN_PW_HASH:
-                    valid_pw = check_password_hash(ADMIN_PW_HASH, password)
-                else:
-                    valid_pw = hmac.compare_digest(password, "admin")
 
-                if valid_pw:
-                    if ADMIN_MFA_SECRET:
-                        session["mfa_pending"] = {"ip": ip, "created": time()}
-                        session.pop("captcha_answer", None)
-                        flash("Passwort korrekt. Bitte gib nun den MFA-Code ein.", "info")
-                        return redirect(url_for("login"))
-                    else:
-                        session["logged_in"] = True
-                        LOGIN_ATTEMPTS.pop(ip, None)
-                        return redirect(url_for("admin"))
-                else:
-                    flash("Ungültige Zugangsdaten", "danger")
-                    _register_failure()
-                    app.logger.warning(
-                        "Login failed (credentials): ip=%s user=%s ua=%s",
-                        ip, username, request.headers.get("User-Agent", "")
-                    )
+            if admin_obj and valid_pw:
+                if admin_obj.get("mfa_secret"):
+                    session["mfa_pending"] = {"ip": ip, "created": time(), "username": admin_obj["username"]}
+                    session.pop("captcha_answer", None)
+                    flash("Passwort korrekt. Bitte gib nun den MFA-Code ein.", "info")
+                    return redirect(url_for("login"))
+                session["logged_in"] = True
+                session["admin_username"] = admin_obj["username"]
+                LOGIN_ATTEMPTS.pop(ip, None)
+                return redirect(url_for("admin"))
             else:
                 flash("Ungültige Zugangsdaten", "danger")
                 _register_failure()
@@ -365,13 +416,14 @@ def login():
                     ip, username, request.headers.get("User-Agent", "")
                 )
         question = _generate_captcha()
-        return render_template("login.html", captcha_question=question, mfa_enabled=mfa_enabled, mfa_stage=False)
+        return render_template("login.html", captcha_question=question, mfa_enabled=mfa_available, mfa_stage=False)
 
     # GET
-    if _has_valid_mfa_challenge():
-        return render_template("login.html", mfa_enabled=mfa_enabled, mfa_stage=True)
+    pending_admin = _get_pending_admin()
+    if pending_admin:
+        return render_template("login.html", mfa_enabled=mfa_available, mfa_stage=True, pending_user=pending_admin["username"])
     question = _generate_captcha()
-    return render_template("login.html", captcha_question=question, mfa_enabled=mfa_enabled, mfa_stage=False)
+    return render_template("login.html", captcha_question=question, mfa_enabled=mfa_available, mfa_stage=False)
 
 
 @app.route("/logout")
