@@ -669,7 +669,6 @@ def admin_item(filename, index=None):
     schema = section.get("schema")
     filepath = CONFIG_DIR / filename
     data = load_yaml(filename)
-    template_item = data[0] if data else {}
     base_item = {}
     if index is not None and index < len(data):
         base_item = data[index]
@@ -679,8 +678,6 @@ def admin_item(filename, index=None):
             name = field["name"]
             if base_item and name in base_item:
                 value = base_item.get(name)
-            elif template_item and name in template_item:
-                value = template_item.get(name)
             else:
                 value = default_for_field(field)
             item[name] = normalize_field_value(field, value)
@@ -689,7 +686,7 @@ def admin_item(filename, index=None):
         if base_item:
             item = base_item
         else:
-            item = {k: ("" if not isinstance(v, list) else []) for k, v in template_item.items()}
+            item = {}
         extra_fields = {}
     if request.method == "POST":
         # Determine effective index: prefer hidden form value if present
