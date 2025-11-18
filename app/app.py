@@ -273,7 +273,7 @@ ADMIN_SECTIONS = {
             {"name": "name", "label": "Name", "type": "text", "required": True, "preview": True},
             {"name": "role", "label": "Rolle", "type": "text", "preview": True},
             {"name": "image", "label": "Profilbild", "type": "image"},
-            {"name": "bio", "label": "Kurzportrait", "type": "html"},
+            {"name": "bio", "label": "Kurzportrait", "type": "textarea", "help": "Einfacher Text, ohne HTML."},
             {"name": "links", "label": "Links (Label | URL)", "type": "list", "help": "Format pro Zeile: Beschriftung | https://example.de"}
         ]
     },
