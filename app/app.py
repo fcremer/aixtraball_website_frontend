@@ -62,6 +62,7 @@ ADMIN_MFA_SECRET = os.environ.get("ADMIN_MFA_SECRET")
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
 LOCAL_TZ   = tz.gettz("Europe/Berlin")
+STATIC_DIR = BASE_DIR / "static"
 
 # In-memory login attempt tracker: {ip: (count, first_timestamp)}
 LOGIN_ATTEMPTS = {}
@@ -784,6 +785,29 @@ def admin_item(filename, index=None):
     )
 
 
+@app.route("/admin/manage/<path:filename>/<int:index>/delete", methods=["POST"])
+@login_required
+def admin_delete(filename, index):
+    section = get_admin_section(filename)
+    if section.get("read_only"):
+        abort(403)
+    data = load_yaml(filename)
+    if not isinstance(data, list) or index < 0 or index >= len(data):
+        abort(404)
+    removed = data.pop(index)
+    schema = section.get("schema")
+    cleanup_entry_media(removed, schema)
+    filepath = CONFIG_DIR / filename
+    yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+    filepath.write_text(yaml_content, encoding="utf-8")
+    try:
+        YAML_CACHE.pop(filename, None)
+    except Exception:
+        pass
+    flash("Eintrag gelöscht.", "success")
+    return redirect(url_for("admin_manage", filename=filename))
+
+
 @app.route("/admin/upload", methods=["POST"])
 @login_required
 def admin_upload():
@@ -1048,3 +1072,38 @@ def sitemap():
 # --------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+def _remove_static_file(path_value):
+    if not path_value or not isinstance(path_value, str):
+        return
+    if path_value.startswith(("http://", "https://", "//")):
+        return
+    rel = path_value.lstrip("/")
+    target = STATIC_DIR / rel
+    try:
+        if target.is_file():
+            target.unlink()
+    except Exception as exc:
+        app.logger.warning("Could not delete media %s: %s", target, exc)
+
+
+def cleanup_entry_media(entry, schema):
+    if not schema or not isinstance(entry, dict):
+        return
+    for field in schema:
+        name = field.get("name")
+        ftype = field.get("type")
+        if not name or name not in entry:
+            continue
+        value = entry.get(name)
+        if ftype == "image" and isinstance(value, str):
+            _remove_static_file(value)
+        elif ftype == "image_list":
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str):
+                        _remove_static_file(item)
+        elif ftype == "list" and field.get("cleanup") == "image":
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str):
+                        _remove_static_file(item)
