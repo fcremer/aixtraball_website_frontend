@@ -60,6 +60,8 @@ Der Compose-Stack stellt die App auf Port `8081` bereit (siehe `docker-compose.y
 
 Dadurch können dieselben Dateien lokal mit Git versioniert und im Container live bearbeitet werden.
 
+Alle geheimen Variablen (Admin-Zugang, SMTP etc.) lassen sich bequem über eine `.env`-Datei steuern. Eine Vorlage liegt als `.env.example` bei – einfach kopieren (`cp .env.example .env`), die Werte anpassen und `docker compose` übernimmt sie automatisch.
+
 ---
 
 ### Konfiguration per Umgebungsvariablen
@@ -71,6 +73,13 @@ Dadurch können dieselben Dateien lokal mit Git versioniert und im Container liv
 | `ADMIN_PASSWORD_HASH` | Legacy-Unterstützung für gehashte Passwörter via `werkzeug.security`. |
 | `ADMIN_MFA_SECRET` | Base32-Secret für TOTP (z. B. mit `python -c "import pyotp; print(pyotp.random_base32())"` erzeugen). Wenn gesetzt, wird nach erfolgreicher Passworteingabe zusätzlich ein 6-stelliger MFA-Code verlangt. |
 | `TZ` | Zeitzone (wird z. B. im Dockerfile auf `Europe/Berlin` gesetzt). |
+| `SMTP_HOST` | Hostname des SMTP-Servers für das Kontaktformular. |
+| `SMTP_PORT` | Port des SMTP-Servers (Standard: `587`). |
+| `SMTP_USERNAME` | Benutzername für die SMTP-Authentifizierung. |
+| `SMTP_PASSWORD` | Passwort für den SMTP-Benutzer. |
+| `SMTP_SENDER` | Optionale Absenderadresse (Fallback: `SMTP_USERNAME`). |
+| `SMTP_RECIPIENTS` | Kommagetrennte Liste der Empfängeradressen (Fallback: Absender). |
+| `SMTP_USE_TLS` | `true`/`false` – aktiviert StartTLS (Standard: `true`). |
 
 Weitere Konfiguration (z. B. Öffnungszeiten, Inhalte) erfolgt ausschließlich über die YAML-Dateien.
 
@@ -196,6 +205,7 @@ Schema:
   ua: User-Agent
 ```
 Die Datei dient als einfacher Posteingang. Änderungen sollten nur erfolgen, wenn Einträge archiviert oder gelöscht werden sollen – die Anwendung liest sie sonst nicht.
+Zusätzlich werden alle Einsendungen per E-Mail an die in den SMTP-Variablen definierten Empfänger geschickt; die Datei dient lediglich als internes Archiv.
 
 ---
 

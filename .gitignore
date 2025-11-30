@@ -3,4 +3,5 @@ __pycache__/
 docker-compose.yml
 build.sh
 /shared
+.env
 .DS_Store
