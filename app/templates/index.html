@@ -104,9 +104,10 @@
 <section class="py-5 bg-light reveal">
   <div class="container">
     <h2 class="fw-bold text-center mb-4">News</h2>
+    {% set news_col_class = 'col-12' if stack_news_cards else 'col-md-6' %}
     <div class="row g-4">
       {% for article in latest_news %}
-      <div class="col-md-6">
+      <div class="{{ news_col_class }}">
         <div class="card h-100 shadow-sm">
           <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}" loading="lazy" decoding="async">
           <div class="card-body">

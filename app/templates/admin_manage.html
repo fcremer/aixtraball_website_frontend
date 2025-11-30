@@ -27,6 +27,29 @@
     </div>
   </div>
 
+  {% if filename == 'news.yaml' %}
+  <div class="card shadow-sm mb-4">
+    <form method="post" action="{{ url_for('admin_news_settings') }}" class="card-body row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold" for="homepage-limit-input">News auf der Startseite</label>
+        <input type="number"
+               class="form-control"
+               id="homepage-limit-input"
+               name="homepage_limit"
+               min="0"
+               step="1"
+               value="{{ news_settings.homepage_limit }}">
+        <div class="form-hint mt-1 text-muted">Ab drei Einträgen werden die Karten automatisch untereinander angezeigt.</div>
+      </div>
+      <div class="col-md-auto">
+        <button type="submit" class="btn btn-success mt-3 mt-md-0">
+          <i class="bi bi-sliders2-vertical me-1"></i> Einstellungen speichern
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
   {% if read_only %}
     <div class="alert alert-info d-flex align-items-start gap-2">
       <i class="bi bi-info-circle fs-4"></i>
