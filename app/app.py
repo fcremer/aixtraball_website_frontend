@@ -18,6 +18,8 @@ import random
 import yaml
 import os
 import json
+import smtplib
+from email.message import EmailMessage
 from time import time
 
 from dateutil import parser, tz
@@ -59,10 +61,34 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # e.g. set via docker-compose
 ADMIN_PW_HASH = os.environ.get("ADMIN_PASSWORD_HASH")  # legacy support
 ADMIN_MFA_SECRET = os.environ.get("ADMIN_MFA_SECRET")
 
+
+def _env_bool(value, default=False):
+    if value in (None, ""):
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(value, default):
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 BASE_DIR   = Path(__file__).resolve().parent
 CONFIG_DIR = BASE_DIR / "config"
 LOCAL_TZ   = tz.gettz("Europe/Berlin")
 STATIC_DIR = BASE_DIR / "static"
+
+SMTP_HOST       = os.environ.get("SMTP_HOST")
+SMTP_PORT       = _env_int(os.environ.get("SMTP_PORT"), 587)
+SMTP_USERNAME   = os.environ.get("SMTP_USERNAME")
+SMTP_PASSWORD   = os.environ.get("SMTP_PASSWORD")
+SMTP_SENDER     = os.environ.get("SMTP_SENDER")
+SMTP_RECIPIENTS = os.environ.get("SMTP_RECIPIENTS")
+SMTP_USE_TLS    = _env_bool(os.environ.get("SMTP_USE_TLS"), True)
 
 NEWS_SETTINGS_FILE = "news_settings.yaml"
 DEFAULT_NEWS_SETTINGS = {
@@ -73,6 +99,11 @@ DEFAULT_NEWS_SETTINGS = {
 LOGIN_ATTEMPTS = {}
 MAX_ATTEMPTS = 5
 LOCKOUT_SECONDS = 15 * 60  # 15 minutes
+
+
+class SMTPConfigurationError(RuntimeError):
+    """Raised when SMTP is not configured properly."""
+
 
 # --------------------------------------------------
 # News/Datetime helpers
@@ -157,6 +188,51 @@ def load_news_settings():
             except (ValueError, TypeError):
                 pass
     return settings
+
+
+def _resolve_smtp_recipients():
+    raw = SMTP_RECIPIENTS or SMTP_SENDER or SMTP_USERNAME
+    if not raw:
+        return []
+    normalized = raw.replace(";", ",")
+    return [addr.strip() for addr in normalized.split(",") if addr.strip()]
+
+
+def send_contact_email(payload: dict):
+    """Send contact form payload via SMTP."""
+    if app.config.get("TESTING"):
+        return
+    if not (SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD):
+        raise SMTPConfigurationError("SMTP credentials are incomplete.")
+    recipients = _resolve_smtp_recipients()
+    if not recipients:
+        raise SMTPConfigurationError("No SMTP recipients configured.")
+    sender = SMTP_SENDER or SMTP_USERNAME
+    msg = EmailMessage()
+    msg["Subject"] = f"Neue Kontaktanfrage von {payload.get('name') or 'Unbekannt'}"
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipients)
+    reply_to = payload.get("email")
+    if reply_to:
+        msg["Reply-To"] = reply_to
+    body_lines = [
+        "Neue Nachricht über das Kontaktformular:",
+        "",
+        f"Name: {payload.get('name') or '-'}",
+        f"E-Mail: {payload.get('email') or '-'}",
+        f"Zeit: {payload.get('timestamp') or '-'}",
+        f"IP: {payload.get('ip') or '-'}",
+        "",
+        payload.get("message") or ""
+    ]
+    msg.set_content("\n".join(body_lines).strip() + "\n")
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+        server.ehlo()
+        if SMTP_USE_TLS:
+            server.starttls()
+            server.ehlo()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
 
 
 def save_news_settings(new_settings: dict):
@@ -1079,10 +1155,22 @@ def kontakt():
             "ua": request.headers.get("User-Agent", "")
         }
         try:
+            send_contact_email(payload)
+        except SMTPConfigurationError as exc:
+            app.logger.error("Kontaktformular: SMTP-Konfiguration fehlt: %s", exc)
+            flash("Der Mail-Versand ist derzeit nicht konfiguriert. Bitte versuchen Sie es später erneut.", "danger")
+            return redirect(url_for("kontakt"))
+        except Exception as exc:
+            app.logger.exception("Kontaktformular: Versand fehlgeschlagen")
+            flash("Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.", "danger")
+            return redirect(url_for("kontakt"))
+        try:
             _save_submission(payload)
-            flash("Danke! Wir melden uns zeitnah bei dir.", "success")
         except Exception as e:
-            flash(f"Fehler beim Senden: {e}", "danger")
+            app.logger.exception("Kontaktformular: Speicherung fehlgeschlagen")
+            flash(f"Nachricht gesendet, aber Archivierung fehlgeschlagen: {e}", "warning")
+        else:
+            flash("Danke! Wir melden uns zeitnah bei dir.", "success")
         return redirect(url_for("kontakt"))
 
     return render_template("contact.html", opening=get_next_opening())
