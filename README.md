@@ -159,6 +159,9 @@ Wichtige Felder:
 
 Beim Speichern füllt der Server zusätzliche Felder wie `_dt` und `_year`, die in der YAML belassen werden können, aber beim Erstellen neuer Artikel ignoriert werden.
 
+#### `news_settings.yaml` (News-Einstellungen)
+Globale Schalter für den News-Bereich. Aktuell existiert nur `homepage_limit`, das steuert, wie viele Einträge auf der Startseite sichtbar sind (Standard: `2`). Über das Admin-Interface unter „News“ lässt sich der Wert bequem anpassen; sobald mehr als zwei Teaser angezeigt werden, werden sie automatisch untereinander dargestellt.
+
 #### `members.yaml` (Team & Vorstand)
 Schema pro Mitglied:
 ```yaml

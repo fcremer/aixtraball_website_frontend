@@ -64,6 +64,11 @@ CONFIG_DIR = BASE_DIR / "config"
 LOCAL_TZ   = tz.gettz("Europe/Berlin")
 STATIC_DIR = BASE_DIR / "static"
 
+NEWS_SETTINGS_FILE = "news_settings.yaml"
+DEFAULT_NEWS_SETTINGS = {
+    "homepage_limit": 2,
+}
+
 # In-memory login attempt tracker: {ip: (count, first_timestamp)}
 LOGIN_ATTEMPTS = {}
 MAX_ATTEMPTS = 5
@@ -138,6 +143,31 @@ def load_news_items(include_hidden=False, now=None):
         return items
     now_val = now or _local_now()
     return [item for item in items if news_is_visible(item, now_val)]
+
+
+def load_news_settings():
+    """Return sanitized news settings with defaults for missing values."""
+    raw = load_yaml(NEWS_SETTINGS_FILE)
+    settings = DEFAULT_NEWS_SETTINGS.copy()
+    if isinstance(raw, dict):
+        limit_raw = raw.get("homepage_limit")
+        if limit_raw is not None:
+            try:
+                settings["homepage_limit"] = max(0, int(limit_raw))
+            except (ValueError, TypeError):
+                pass
+    return settings
+
+
+def save_news_settings(new_settings: dict):
+    """Persist news settings and invalidate cache."""
+    filepath = CONFIG_DIR / NEWS_SETTINGS_FILE
+    yaml_content = yaml.safe_dump(new_settings, allow_unicode=True, sort_keys=False)
+    filepath.write_text(yaml_content, encoding="utf-8")
+    try:
+        YAML_CACHE.pop(NEWS_SETTINGS_FILE, None)
+    except Exception:
+        pass
 
 # --------------------------------------------------
 # Hilfsfunktionen
@@ -648,6 +678,7 @@ def admin_manage(filename):
     data = load_yaml(filename)
     preview_fields = [f for f in (schema or []) if f.get("preview")]
     schema_map = {f["name"]: f for f in (schema or [])}
+    news_settings = load_news_settings() if filename == "news.yaml" else None
     return render_template(
         "admin_manage.html",
         filename=filename,
@@ -656,8 +687,24 @@ def admin_manage(filename):
         read_only=section.get("read_only", False),
         schema=schema,
         preview_fields=preview_fields,
-        schema_map=schema_map
+        schema_map=schema_map,
+        news_settings=news_settings
     )
+
+
+@app.route("/admin/manage/news/settings", methods=["POST"])
+@login_required
+def admin_news_settings():
+    limit_raw = request.form.get("homepage_limit", "").strip()
+    try:
+        limit = int(limit_raw)
+    except (ValueError, TypeError):
+        flash("Bitte eine gültige Zahl angeben.", "warning")
+        return redirect(url_for("admin_manage", filename="news.yaml"))
+    limit = max(0, limit)
+    save_news_settings({"homepage_limit": limit})
+    flash("News-Einstellungen gespeichert.", "success")
+    return redirect(url_for("admin_manage", filename="news.yaml"))
 
 
 @app.route("/admin/manage/<path:filename>/new", methods=["GET", "POST"])
@@ -850,9 +897,12 @@ def index():
     flippers      = load_yaml("flippers.yaml")
     home_flippers = random.sample(flippers, min(len(flippers), 6))
     news_items    = load_news_items()
-    news_teaser   = sorted(news_items,
+    news_settings = load_news_settings()
+    news_limit    = news_settings.get("homepage_limit", DEFAULT_NEWS_SETTINGS["homepage_limit"])
+    sorted_news   = sorted(news_items,
                            key=lambda n: n.get("_dt", datetime.min),
-                           reverse=True)[:2]
+                           reverse=True)
+    news_teaser   = sorted_news[:news_limit] if news_limit else []
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
 
     return render_template(
@@ -861,7 +911,8 @@ def index():
         opening      = get_next_opening(),
         home_flippers= home_flippers,
         latest_news  = news_teaser,
-        now          = now
+        now          = now,
+        stack_news_cards=len(news_teaser) > 2
     )
 
 @app.route("/preise")
