@@ -99,6 +99,10 @@ DEFAULT_NEWS_SETTINGS = {
 LOGIN_ATTEMPTS = {}
 MAX_ATTEMPTS = 5
 LOCKOUT_SECONDS = 15 * 60  # 15 minutes
+# In-memory contact attempt tracker: {ip: (count, first_timestamp)}
+CONTACT_ATTEMPTS = {}
+CONTACT_MAX_ATTEMPTS = _env_int(os.environ.get("CONTACT_MAX_ATTEMPTS"), 5)
+CONTACT_WINDOW_SECONDS = _env_int(os.environ.get("CONTACT_WINDOW_SECONDS"), 10 * 60)
 
 
 class SMTPConfigurationError(RuntimeError):
@@ -1117,6 +1121,8 @@ def news_detail(slug):
 
 @app.route("/kontakt", methods=["GET", "POST"])
 def kontakt():
+    ip = request.remote_addr or "?"
+
     def _save_submission(payload: dict):
         path = CONFIG_DIR / "contact_submissions.yaml"
         try:
@@ -1130,6 +1136,29 @@ def kontakt():
         except Exception as e:
             raise e
 
+    def _generate_captcha():
+        a, b = random.randint(1, 9), random.randint(1, 9)
+        session["captcha_answer"] = str(a + b)
+        return f"{a} + {b}"
+
+    def _attempt_info():
+        info = CONTACT_ATTEMPTS.get(ip)
+        if info and time() - info[1] > CONTACT_WINDOW_SECONDS:
+            CONTACT_ATTEMPTS.pop(ip, None)
+            return None
+        return info
+
+    def _register_attempt():
+        info = _attempt_info()
+        if info:
+            CONTACT_ATTEMPTS[ip] = (info[0] + 1, info[1])
+        else:
+            CONTACT_ATTEMPTS[ip] = (1, time())
+
+    def _is_rate_limited():
+        info = _attempt_info()
+        return info and info[0] >= CONTACT_MAX_ATTEMPTS
+
     if request.method == "POST":
         # Honeypot
         if request.form.get("website"):
@@ -1137,13 +1166,30 @@ def kontakt():
             flash("Nachricht gesendet.", "success")
             return redirect(url_for("kontakt"))
 
+        if _is_rate_limited():
+            flash("Zu viele Anfragen. Bitte später erneut versuchen.", "danger")
+            app.logger.warning(
+                "Kontaktformular: Rate limit ausgelöst: ip=%s ua=%s",
+                ip, request.headers.get("User-Agent", "")
+            )
+            return redirect(url_for("kontakt"))
+        _register_attempt()
+
         name    = request.form.get("name", "").strip()
         email   = request.form.get("email", "").strip()
         message = request.form.get("message", "").strip()
         consent = request.form.get("consent") == "on"
+        captcha = request.form.get("captcha", "").strip()
 
-        if not (name and email and message and consent):
+        if not (name and email and message and consent and captcha):
             flash("Bitte alle Pflichtfelder ausfüllen und zustimmen.", "warning")
+            return redirect(url_for("kontakt"))
+        if captcha != session.get("captcha_answer"):
+            flash("Captcha falsch", "warning")
+            app.logger.warning(
+                "Kontaktformular: Captcha falsch: ip=%s ua=%s",
+                ip, request.headers.get("User-Agent", "")
+            )
             return redirect(url_for("kontakt"))
 
         payload = {
@@ -1164,6 +1210,7 @@ def kontakt():
             app.logger.exception("Kontaktformular: Versand fehlgeschlagen")
             flash("Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.", "danger")
             return redirect(url_for("kontakt"))
+        session.pop("captcha_answer", None)
         try:
             _save_submission(payload)
         except Exception as e:
@@ -1173,7 +1220,8 @@ def kontakt():
             flash("Danke! Wir melden uns zeitnah bei dir.", "success")
         return redirect(url_for("kontakt"))
 
-    return render_template("contact.html", opening=get_next_opening())
+    question = _generate_captcha()
+    return render_template("contact.html", opening=get_next_opening(), captcha_question=question)
 
 @app.route("/impressum")
 def impressum():
