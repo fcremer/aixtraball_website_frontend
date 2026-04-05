@@ -38,6 +38,8 @@ jobs:
 
       - name: Run unit tests
         run: pytest
+        env:
+          SECRET_KEY: "ci-testing-only-not-a-real-secret"
 
   docker:
     needs: test

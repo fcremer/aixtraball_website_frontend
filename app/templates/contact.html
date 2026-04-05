@@ -68,7 +68,10 @@
               </div>
 
               <div class="d-grid d-sm-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Absenden</button>
+                <button type="submit" class="btn btn-primary" id="contactSubmitBtn">
+                  <span class="spinner-border spinner-border-sm me-2 d-none" id="contactSpinner" aria-hidden="true"></span>
+                  Absenden
+                </button>
               </div>
               <p class="text-muted small mt-2 mb-0">Wir speichern deine Anfrage ausschließlich zur Bearbeitung. Keine Weitergabe an Dritte.</p>
             </form>
@@ -104,6 +107,19 @@
 {% endblock %}
 
 {% block scripts %}
+<script defer>
+  document.addEventListener('DOMContentLoaded', function() {
+    var form = document.querySelector('form[method="post"]');
+    if (form) {
+      form.addEventListener('submit', function() {
+        var spinner = document.getElementById('contactSpinner');
+        var btn = document.getElementById('contactSubmitBtn');
+        if (spinner) spinner.classList.remove('d-none');
+        if (btn) btn.disabled = true;
+      });
+    }
+  });
+</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <script defer>
   document.addEventListener('DOMContentLoaded', function(){

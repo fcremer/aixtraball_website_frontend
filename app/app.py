@@ -305,7 +305,7 @@ def send_contact_email(payload: dict):
 
 def save_news_settings(new_settings: dict):
     """Persist news settings and invalidate cache."""
-    filepath = CONFIG_DIR / NEWS_SETTINGS_FILE
+    filepath = _config_dir() / NEWS_SETTINGS_FILE
     yaml_content = yaml.safe_dump(new_settings, allow_unicode=True, sort_keys=False)
     filepath.write_text(yaml_content, encoding="utf-8")
     try:
@@ -318,11 +318,17 @@ def save_news_settings(new_settings: dict):
 # --------------------------------------------------
 YAML_CACHE = {}
 
+
+def _config_dir() -> Path:
+    """Return the active config directory (overridable via app.config for tests)."""
+    return Path(app.config.get("CONFIG_DIR", CONFIG_DIR))
+
 def load_yaml(filename: str):
     """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache).
     Returns a deep copy to prevent accidental mutation of cached data.
+    CONFIG_DIR can be overridden via app.config["CONFIG_DIR"] (used in tests).
     """
-    path = CONFIG_DIR / filename
+    path = _config_dir() / filename
     try:
         mtime = path.stat().st_mtime
     except FileNotFoundError:
@@ -829,7 +835,7 @@ def admin():
 def admin_edit(filename):
     if filename not in ADMIN_SECTIONS:
         abort(404)
-    filepath = CONFIG_DIR / filename
+    filepath = _config_dir() / filename
     if request.method == "POST":
         json_data = request.form.get("content", "")
         try:
@@ -893,7 +899,7 @@ def admin_item(filename, index=None):
     if section.get("read_only"):
         abort(403)
     schema = section.get("schema")
-    filepath = CONFIG_DIR / filename
+    filepath = _config_dir() / filename
     data = load_yaml(filename)
     base_item = {}
     if index is not None and index < len(data):
@@ -1024,7 +1030,7 @@ def admin_delete(filename, index):
     removed = data.pop(index)
     schema = section.get("schema")
     cleanup_entry_media(removed, schema)
-    filepath = CONFIG_DIR / filename
+    filepath = _config_dir() / filename
     yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
     filepath.write_text(yaml_content, encoding="utf-8")
     try:
@@ -1224,7 +1230,7 @@ def kontakt():
     ip = request.remote_addr or "?"
 
     def _save_submission(payload: dict):
-        path = CONFIG_DIR / "contact_submissions.yaml"
+        path = _config_dir() / "contact_submissions.yaml"
         try:
             existing = []
             if path.exists():
@@ -1331,7 +1337,8 @@ def impressum():
 
 @app.route("/robots.txt")
 def robots():
-    txt = "User-agent: *\nAllow: /\nSitemap: https://aixtraball.de/sitemap.xml"
+    sitemap_url = url_for('sitemap', _external=True)
+    txt = f"User-agent: *\nAllow: /\nSitemap: {sitemap_url}"
     return Response(txt, mimetype="text/plain")
 
 @app.route("/sitemap.xml")
@@ -1341,7 +1348,10 @@ def sitemap():
         {"loc": url_for('flipper_all',_external=True)},
         {"loc": url_for('verein',     _external=True)},
         {"loc": url_for('team',       _external=True)},
-        {"loc": url_for('news_list',  _external=True)}
+        {"loc": url_for('news_list',  _external=True)},
+        {"loc": url_for('preise',     _external=True)},
+        {"loc": url_for('kontakt',    _external=True)},
+        {"loc": url_for('impressum',  _external=True)},
     ]
     # alle News‑Artikel
     for n in load_news_items():

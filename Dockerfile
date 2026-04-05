@@ -2,7 +2,7 @@
 #   Stage 1 – Builder
 #   Builds ALL wheels incl. dependencies
 # ============================================
-FROM python:3.14-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -28,7 +28,7 @@ RUN python -m pip install --upgrade pip wheel \
 #   Stage 2 – Runtime
 #   Minimal image, offline install from wheels
 # ============================================
-FROM python:3.14-slim-bookworm AS runtime
+FROM python:3.13-slim-bookworm AS runtime
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
@@ -75,5 +75,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
 
 USER ${APP_UID}:${APP_UID}
 
-ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:5000 --workers=2 --threads=2 --worker-tmp-dir=/tmp/app --access-logfile=- --error-logfile=- --graceful-timeout=30 --timeout=30"
+ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:5000 --workers=2 --threads=2 --worker-tmp-dir=/tmp/app --access-logfile=- --error-logfile=- --graceful-timeout=30 --timeout=30 --max-requests=1000 --max-requests-jitter=100"
 CMD ["gunicorn", "-c", "/app/gunicorn.conf.py", "app:app"]
