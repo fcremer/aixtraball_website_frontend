@@ -31,7 +31,20 @@ try:
     from flask_compress import Compress
 except Exception:
     Compress = None
+try:
+    from flask_wtf.csrf import CSRFProtect
+    _csrf_available = True
+except Exception:
+    CSRFProtect = None
+    _csrf_available = False
+try:
+    import bleach as _bleach
+    _bleach_available = True
+except Exception:
+    _bleach = None
+    _bleach_available = False
 import hmac
+import re
 import pyotp
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -40,10 +53,20 @@ from werkzeug.utils import secure_filename
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+_secret_key = os.environ.get("SECRET_KEY")
+if not _secret_key and not app.config.get("TESTING"):
+    import sys
+    if not any(arg in sys.argv[0] for arg in ("pytest", "test")):
+        raise RuntimeError(
+            "SECRET_KEY environment variable must be set. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+app.secret_key = _secret_key or "testing-only-insecure-key"
 
 # Performance: cache static files long and enable simple cache-busting
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365  # 1 year
+# Limit upload size to 16 MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 try:
     static_css_dir = (Path(__file__).resolve().parent / "static" / "css")
     latest_css_mtime = max((p.stat().st_mtime for p in static_css_dir.glob("*.css")), default=time())
@@ -54,6 +77,47 @@ except Exception:
 # Enable gzip compression if available
 if Compress is not None:
     Compress(app)
+
+# CSRF protection
+if _csrf_available:
+    csrf = CSRFProtect(app)
+
+# HTML sanitisation allowlist (for admin-editable rich-text fields)
+_ALLOWED_TAGS = [
+    "p", "br", "strong", "em", "b", "i", "u", "s",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li", "blockquote", "pre", "code",
+    "a", "img", "figure", "figcaption", "hr", "span", "div",
+]
+_ALLOWED_ATTRS = {
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt", "width", "height", "loading", "class"],
+    "*": ["class"],
+}
+
+
+def sanitize_html(value):
+    """Sanitize HTML from admin rich-text fields using a tag/attr allowlist."""
+    if not isinstance(value, str):
+        return value
+    if _bleach_available:
+        return _bleach.clean(value, tags=_ALLOWED_TAGS, attributes=_ALLOWED_ATTRS)
+    return value
+
+
+# YouTube URL validation – only allow known YouTube domains
+_YOUTUBE_RE = re.compile(
+    r'^https?://(?:www\.)?(?:youtube\.com/watch\?(?:.*&)?v=|youtu\.be/)([\w-]{11})'
+)
+
+
+def _safe_youtube_embed(url):
+    """Convert a YouTube watch URL to a privacy-enhanced embed URL, or return ''."""
+    m = _YOUTUBE_RE.match(url or "")
+    if not m:
+        return ""
+    return f"https://www.youtube-nocookie.com/embed/{m.group(1)}"
+
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 # Plaintext password support (preferred if set). Fallback to legacy hash.
@@ -549,6 +613,38 @@ def asset(path: str):
         return path
     return url_for("static", filename=path)
 
+@app.template_filter("safe_youtube_embed")
+def safe_youtube_embed_filter(url):
+    """Convert YouTube watch URL to privacy-enhanced embed URL."""
+    return _safe_youtube_embed(url)
+
+# --------------------------------------------------
+# Security Headers
+# --------------------------------------------------
+@app.after_request
+def set_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+    # CSP: inline scripts/styles kept for Bootstrap + custom JS; frame-src for YouTube
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
+        "https://unpkg.com https://analytics.aixtraball.de; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
+        "https://fonts.googleapis.com https://unpkg.com; "
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
+        "connect-src 'self' https://analytics.aixtraball.de; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+    response.headers.setdefault("Content-Security-Policy", csp)
+    return response
+
+
 # --------------------------------------------------
 # Routen
 # --------------------------------------------------
@@ -731,6 +827,8 @@ def admin():
 @app.route("/admin/edit/<path:filename>", methods=["GET", "POST"])
 @login_required
 def admin_edit(filename):
+    if filename not in ADMIN_SECTIONS:
+        abort(404)
     filepath = CONFIG_DIR / filename
     if request.method == "POST":
         json_data = request.form.get("content", "")
@@ -855,6 +953,8 @@ def admin_item(filename, index=None):
                 elif ftype == "password":
                     value = request.form.get(key, "")
                     new_item[key] = value
+                elif ftype == "html":
+                    new_item[key] = sanitize_html(request.form.get(key, ""))
                 else:
                     new_item[key] = request.form.get(key, "").strip()
             if filename == "news.yaml":

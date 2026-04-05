@@ -66,6 +66,7 @@ from app.app import app as flask_app   # noqa: E402  (Import nach _write)
 @pytest.fixture
 def client():
     flask_app.config["TESTING"] = True
+    flask_app.config["WTF_CSRF_ENABLED"] = False
     with flask_app.test_client() as c:
         yield c
 

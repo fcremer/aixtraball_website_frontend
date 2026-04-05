@@ -16,6 +16,7 @@
                 Gib nun den 6-stelligen Code aus deiner Authenticator-App ein.
               </p>
               <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="stage" value="mfa">
                 <div class="mb-3">
                   <label class="form-label">MFA-Code</label>
@@ -36,6 +37,7 @@
               </div>
             {% else %}
               <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="stage" value="password">
                 <div class="mb-3">
                   <label class="form-label">Benutzername</label>

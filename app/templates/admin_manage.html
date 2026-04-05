@@ -30,6 +30,7 @@
   {% if filename == 'news.yaml' %}
   <div class="card shadow-sm mb-4">
     <form method="post" action="{{ url_for('admin_news_settings') }}" class="card-body row g-3 align-items-end">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="col-md-6">
         <label class="form-label fw-semibold" for="homepage-limit-input">News auf der Startseite</label>
         <input type="number"
@@ -127,6 +128,7 @@
                     class="d-inline m-0"
                     action="{{ url_for('admin_delete', filename=filename, index=loop.index0) }}"
                     onsubmit="return confirm('Diesen Eintrag wirklich löschen?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-outline-danger" type="submit">
                   <i class="bi bi-trash me-1"></i> Löschen
                 </button>

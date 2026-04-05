@@ -3,4 +3,6 @@ PyYAML
 python-dateutil
 gunicorn
 Flask-Compress
+Flask-WTF
+bleach
 PyOTP
