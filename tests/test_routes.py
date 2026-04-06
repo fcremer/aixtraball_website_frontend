@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 # ------------------------------------------------------------------
 # 1  Import Flask‑App
 # ------------------------------------------------------------------
-from app.app import app as flask_app   # noqa: E402
+from app.app import app as flask_app, YAML_CACHE, LOGIN_ATTEMPTS  # noqa: E402
 
 
 # ------------------------------------------------------------------
@@ -63,8 +63,6 @@ def client(tmp_path):
     flask_app.config["TESTING"] = True
     flask_app.config["WTF_CSRF_ENABLED"] = False
     flask_app.config["CONFIG_DIR"] = tmp_path
-    # YAML‑Cache leeren, damit Tests nicht gegenseitig stören
-    from app.app import YAML_CACHE
     YAML_CACHE.clear()
     with flask_app.test_client() as c:
         yield c
@@ -100,7 +98,6 @@ def test_timeline_visible_on_verein(client, tmp_path):
 # ------------------------------------------------------------------
 def test_current_opening_visible(client, tmp_path):
     """Wenn gerade ein Öffnungstag läuft, soll er auf der Startseite erscheinen."""
-    from app.app import YAML_CACHE
     now = datetime.now()
     t_from = now - timedelta(hours=1)
     t_to   = now + timedelta(hours=1)
@@ -153,7 +150,6 @@ def test_login_rate_limit(client):
 # 8  Admin: neuen Eintrag anlegen
 # ------------------------------------------------------------------
 def test_admin_add_entry_via_form(client, tmp_path):
-    from app.app import LOGIN_ATTEMPTS, YAML_CACHE
     LOGIN_ATTEMPTS.clear()
     html = client.get("/login").data.decode()
     answer = _captcha_answer(html)

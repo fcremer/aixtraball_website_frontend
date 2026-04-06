@@ -31,18 +31,8 @@ try:
     from flask_compress import Compress
 except Exception:
     Compress = None
-try:
-    from flask_wtf.csrf import CSRFProtect
-    _csrf_available = True
-except Exception:
-    CSRFProtect = None
-    _csrf_available = False
-try:
-    import bleach as _bleach
-    _bleach_available = True
-except Exception:
-    _bleach = None
-    _bleach_available = False
+from flask_wtf.csrf import CSRFProtect
+import bleach
 import hmac
 import re
 import pyotp
@@ -55,12 +45,10 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 _secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key and not app.config.get("TESTING"):
-    import sys
-    if not any(arg in sys.argv[0] for arg in ("pytest", "test")):
-        raise RuntimeError(
-            "SECRET_KEY environment variable must be set. "
-            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-        )
+    raise RuntimeError(
+        "SECRET_KEY environment variable must be set. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
 app.secret_key = _secret_key or "testing-only-insecure-key"
 
 # Performance: cache static files long and enable simple cache-busting
@@ -78,9 +66,7 @@ except Exception:
 if Compress is not None:
     Compress(app)
 
-# CSRF protection
-if _csrf_available:
-    csrf = CSRFProtect(app)
+csrf = CSRFProtect(app)
 
 # HTML sanitisation allowlist (for admin-editable rich-text fields)
 _ALLOWED_TAGS = [
@@ -100,9 +86,7 @@ def sanitize_html(value):
     """Sanitize HTML from admin rich-text fields using a tag/attr allowlist."""
     if not isinstance(value, str):
         return value
-    if _bleach_available:
-        return _bleach.clean(value, tags=_ALLOWED_TAGS, attributes=_ALLOWED_ATTRS)
-    return value
+    return bleach.clean(value, tags=_ALLOWED_TAGS, attributes=_ALLOWED_ATTRS)
 
 
 # YouTube URL validation – only allow known YouTube domains
@@ -112,11 +96,8 @@ _YOUTUBE_RE = re.compile(
 
 
 def _safe_youtube_embed(url):
-    """Convert a YouTube watch URL to a privacy-enhanced embed URL, or return ''."""
     m = _YOUTUBE_RE.match(url or "")
-    if not m:
-        return ""
-    return f"https://www.youtube-nocookie.com/embed/{m.group(1)}"
+    return f"https://www.youtube-nocookie.com/embed/{m.group(1)}" if m else ""
 
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
@@ -321,7 +302,7 @@ YAML_CACHE = {}
 
 def _config_dir() -> Path:
     """Return the active config directory (overridable via app.config for tests)."""
-    return Path(app.config.get("CONFIG_DIR", CONFIG_DIR))
+    return app.config.get("CONFIG_DIR", CONFIG_DIR)
 
 def load_yaml(filename: str):
     """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache).
@@ -619,35 +600,36 @@ def asset(path: str):
         return path
     return url_for("static", filename=path)
 
-@app.template_filter("safe_youtube_embed")
-def safe_youtube_embed_filter(url):
-    """Convert YouTube watch URL to privacy-enhanced embed URL."""
-    return _safe_youtube_embed(url)
+app.jinja_env.filters["safe_youtube_embed"] = _safe_youtube_embed
 
 # --------------------------------------------------
 # Security Headers
 # --------------------------------------------------
+_CSP_HEADER = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
+    "https://unpkg.com https://analytics.aixtraball.de; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
+    "https://fonts.googleapis.com https://unpkg.com; "
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+    "img-src 'self' data: https:; "
+    "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
+    "connect-src 'self' https://analytics.aixtraball.de; "
+    "base-uri 'self'; "
+    "form-action 'self';"
+)
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Content-Security-Policy": _CSP_HEADER,
+}
+
 @app.after_request
 def set_security_headers(response):
-    response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-    # CSP: inline scripts/styles kept for Bootstrap + custom JS; frame-src for YouTube
-    csp = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
-        "https://unpkg.com https://analytics.aixtraball.de; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.quilljs.com "
-        "https://fonts.googleapis.com https://unpkg.com; "
-        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
-        "img-src 'self' data: https:; "
-        "frame-src https://www.youtube-nocookie.com https://www.youtube.com; "
-        "connect-src 'self' https://analytics.aixtraball.de; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
-    response.headers.setdefault("Content-Security-Policy", csp)
+    for header, value in _SECURITY_HEADERS.items():
+        response.headers.setdefault(header, value)
     return response
 
 
