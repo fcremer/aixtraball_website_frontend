@@ -200,9 +200,14 @@
       }
     }
 
-    /* Make toggle button red when bio is expanded */
-    .bio-toggle.active-indicator {
+    /* Make toggle button red when bio is expanded (text red on transparent bg) */
+    .bio-toggle.active-indicator,
+    .bio-toggle.active-indicator:hover,
+    .bio-toggle.active-indicator:focus,
+    .bio-toggle.active-indicator:focus-visible {
       color: var(--bs-primary) !important;
+      background-color: transparent !important;
+      border-color: var(--bs-primary) !important;
     }
   </style>
 {% endblock %}

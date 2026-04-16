@@ -94,6 +94,10 @@ NEWS_SETTINGS_FILE = "news_settings.yaml"
 DEFAULT_NEWS_SETTINGS = {
     "homepage_limit": 2,
 }
+KIOSK_NEWS_LIMIT = _env_int(os.environ.get("KIOSK_NEWS_LIMIT"), 12)
+KIOSK_FLIPPER_LIMIT = _env_int(os.environ.get("KIOSK_FLIPPER_LIMIT"), 12)
+KIOSK_TIMELINE_LIMIT = _env_int(os.environ.get("KIOSK_TIMELINE_LIMIT"), 6)
+KIOSK_SPOTLIGHT_LIMIT = _env_int(os.environ.get("KIOSK_SPOTLIGHT_LIMIT"), 0)
 
 # In-memory login attempt tracker: {ip: (count, first_timestamp)}
 LOGIN_ATTEMPTS = {}
@@ -993,6 +997,184 @@ def index():
         latest_news  = news_teaser,
         now          = now,
         stack_news_cards=len(news_teaser) > 2
+    )
+
+@app.route("/kiosk")
+def kiosk():
+    rng = random.SystemRandom()
+    slides = prepare_slides()
+    if slides:
+        slides = list(slides)
+        rng.shuffle(slides)
+    logo_param = request.args.get("logo")
+    hide_logo_param = request.args.get("hide_logo")
+    show_logo = True
+    if logo_param is not None and str(logo_param).strip().lower() in {"0", "false", "no", "off"}:
+        show_logo = False
+    if hide_logo_param is not None and str(hide_logo_param).strip().lower() in {"1", "true", "yes", "on"}:
+        show_logo = False
+
+    news_items = load_news_items()
+    news_items.sort(key=lambda n: n.get("_dt", datetime.min), reverse=True)
+    latest_news = news_items[:KIOSK_NEWS_LIMIT]
+    rng.shuffle(latest_news)
+    latest_news_prepared = []
+    for article in latest_news:
+        entry = article.copy()
+        images = []
+        if entry.get("preview_image"):
+            images.append(entry["preview_image"])
+        images.extend(entry.get("images") or [])
+        seen = set()
+        unique_images = []
+        for img in images:
+            if not img or img in seen:
+                continue
+            seen.add(img)
+            unique_images.append(img)
+        if unique_images:
+            rng.shuffle(unique_images)
+        entry["kiosk_images"] = unique_images
+        latest_news_prepared.append(entry)
+    latest_news = latest_news_prepared
+
+    flippers = load_yaml("flippers.yaml")
+    kiosk_flippers = []
+    for flipper in flippers:
+        if not isinstance(flipper, dict):
+            continue
+        year_raw = flipper.get("year")
+        year_text = str(year_raw) if year_raw else ""
+        digits = "".join(ch for ch in year_text if ch.isdigit())
+        display_year = digits[:4] if len(digits) >= 4 else year_text
+        notes = []
+        detail_notes = []
+        for key in ("features", "notable_facts"):
+            items = flipper.get(key) or []
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, str) and item.strip():
+                        cleaned = item.strip()
+                        notes.append(cleaned)
+                        detail_notes.append(cleaned)
+        if not detail_notes:
+            if flipper.get("designer"):
+                detail_notes.append(f"Design: {flipper['designer']}")
+            if flipper.get("system"):
+                detail_notes.append(f"System: {flipper['system']}")
+            if flipper.get("production"):
+                detail_notes.append(f"Produktion: {flipper['production']}")
+        if not notes:
+            notes = detail_notes[:]
+        specs = []
+        if flipper.get("manufacturer"):
+            specs.append(flipper["manufacturer"])
+        if display_year:
+            specs.append(display_year)
+        if flipper.get("system"):
+            specs.append(flipper["system"])
+        entry = flipper.copy()
+        entry["display_year"] = display_year
+        entry["kiosk_notes"] = notes[:2]
+        entry["kiosk_details"] = detail_notes[:4]
+        entry["kiosk_specs"] = " · ".join(specs)
+        detail_images = []
+        if entry.get("image"):
+            detail_images.append(entry["image"])
+        detail_images.extend(entry.get("image_details") or [])
+        seen = set()
+        unique_images = []
+        for img in detail_images:
+            if not img or img in seen:
+                continue
+            seen.add(img)
+            unique_images.append(img)
+        if unique_images:
+            rng.shuffle(unique_images)
+        entry["kiosk_images"] = unique_images
+        kiosk_flippers.append(entry)
+
+    if len(kiosk_flippers) > KIOSK_FLIPPER_LIMIT:
+        kiosk_flippers = rng.sample(kiosk_flippers, KIOSK_FLIPPER_LIMIT)
+    rng.shuffle(kiosk_flippers)
+
+    timeline = load_yaml("timeline.yaml")
+    timeline_items = [item for item in timeline if isinstance(item, dict)]
+
+    def _timeline_key(item):
+        try:
+            return parser.parse(item.get("date", ""))
+        except Exception:
+            return datetime.min
+
+    timeline_items.sort(key=_timeline_key)
+    if len(timeline_items) > KIOSK_TIMELINE_LIMIT:
+        timeline_items = timeline_items[-KIOSK_TIMELINE_LIMIT:]
+
+    bg_images = [
+        slide.get("image") for slide in slides
+        if isinstance(slide, dict) and slide.get("image")
+    ]
+    if not bg_images:
+        bg_images = ["images/slides/hall.jpg"]
+
+    info_spotlights = [
+        {
+            "type": "info",
+            "eyebrow": "Vor Ort",
+            "title": "So läuft der Spieltag",
+            "text": "Die Flipper stehen bereit – such dir dein Gerät aus und leg los.",
+            "bullets": [
+                "Das Team hilft bei Regeln und Spielmodi",
+                "Highscores und Tipps direkt an den Maschinen",
+                "Fragt uns nach Turnier- oder Challenge-Runden",
+            ],
+        },
+        {
+            "type": "info",
+            "eyebrow": "Community",
+            "title": "Flipper gemeinsam erleben",
+            "text": "Ob Anfänger oder Profi: Hier zählt die Freude am Spiel.",
+            "bullets": [
+                "Austausch über Restaurationsprojekte",
+                "Gemeinsames Schrauben und Technik-Talks",
+                "Offene Abende mit Vereinsmitgliedern",
+            ],
+        },
+        {
+            "type": "info",
+            "eyebrow": "Tipp",
+            "title": "Mehr Punkte, mehr Kontrolle",
+            "text": "Ein ruhiger Stand und guter Überblick machen den Unterschied.",
+            "bullets": [
+                "Nudging ist erlaubt – aber mit Gefühl",
+                "Spielt bewusst auf Multiball-Momente",
+                "Merkt euch die besten Rampen-Kombos",
+            ],
+        },
+    ]
+    for info in info_spotlights:
+        info["image"] = rng.choice(bg_images)
+
+    kiosk_spotlights = (
+        [{"type": "news", "article": article} for article in latest_news]
+        + [{"type": "flipper", "flipper": flipper} for flipper in kiosk_flippers]
+        + info_spotlights
+    )
+    rng.shuffle(kiosk_spotlights)
+    if KIOSK_SPOTLIGHT_LIMIT > 0:
+        kiosk_spotlights = kiosk_spotlights[:KIOSK_SPOTLIGHT_LIMIT]
+
+    return render_template(
+        "kiosk.html",
+        slides=slides,
+        opening=get_next_opening(),
+        latest_news=latest_news,
+        kiosk_flippers=kiosk_flippers,
+        timeline=timeline_items,
+        kiosk_spotlights=kiosk_spotlights,
+        show_logo=show_logo,
+        body_class="kiosk-mode"
     )
 
 @app.route("/preise")

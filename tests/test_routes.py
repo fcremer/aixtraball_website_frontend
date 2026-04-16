@@ -75,7 +75,7 @@ def client():
 @pytest.mark.parametrize(
     "route",
     ["/", "/verein", "/team", "/flipper", "/news",
-     "/preise"]                     # ← neu
+     "/preise", "/kiosk"]
 )
 def test_routes_return_200(client, route):
     resp = client.get(route)
