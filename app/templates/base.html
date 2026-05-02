@@ -98,19 +98,14 @@
         <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
              alt="Aixtraball" class="nav-logo-img nav-logo-dark" height="34">
       </a>
-      <div class="d-flex align-items-center gap-2 ms-auto ms-lg-0 order-lg-last">
-        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Farbschema wechseln">
-          <span class="theme-icon-dark"><i class="bi bi-moon-stars"></i></span>
-          <span class="theme-icon-light"><i class="bi bi-sun"></i></span>
-        </button>
-        <button class="navbar-toggler" type="button"
-                data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation öffnen">
-          <span class="toggler-line"></span>
-          <span class="toggler-line"></span>
-          <span class="toggler-line"></span>
-        </button>
-      </div>
+      <button class="navbar-toggler ms-auto" type="button"
+              data-bs-toggle="collapse" data-bs-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation öffnen">
+        <span class="toggler-line"></span>
+        <span class="toggler-line"></span>
+        <span class="toggler-line"></span>
+      </button>
+
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'verein' %} active{% endif %}" href="{{ url_for('verein') }}">Der Verein</a></li>
@@ -128,6 +123,12 @@
       </div>
     </div>
   </nav>
+
+  <!-- Floating theme toggle -->
+  <button class="theme-toggle-fab" id="themeToggle" type="button" aria-label="Farbschema wechseln">
+    <span class="theme-icon-dark"><i class="bi bi-moon-stars"></i></span>
+    <span class="theme-icon-light"><i class="bi bi-sun"></i></span>
+  </button>
 
   <!-- Theme icon visibility -->
   <style>
