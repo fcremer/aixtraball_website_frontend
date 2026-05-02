@@ -5,3 +5,4 @@ build.sh
 /shared
 .env
 .DS_Store
+app/.DS_Store

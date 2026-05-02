@@ -1,35 +1,14 @@
 {#  app/templates/prices.html  #}
 {% extends "base.html" %}
 
-{% block head_extra %}
-  <style>
-    /* -------------------------------------------------------------
-       Hero‑Bild & Akzent
-       ------------------------------------------------------------- */
-    .hero-prices{
-      background:url('{{ url_for("static", filename="images/else/prices.png") }}') center/cover;
-      min-height:45vh;
-    }
-    .hero-prices .overlay{background:rgba(var(--bs-primary-rgb),.65);}
-
-    /* Preis‑Karten */
-    .price-card{
-      border:1px solid rgba(0,0,0,.1);
-      border-radius:.5rem;
-      box-shadow:0 .125rem .5rem rgba(0,0,0,.05);
-      transition:transform .2s ease;
-    }
-    .price-card:hover{transform:translateY(-3px);}
-    .price{font-size:2.25rem;font-weight:700;color:var(--bs-primary);}
-  </style>
-{% endblock %}
+{% block head_extra %}{% endblock %}
 
 {% block content %}
-<!-- Hero --------------------------------------------------------------- -->
-<header class="hero-prices d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">Preise &amp; Besuch</h1>
-    <p class="lead mb-0">Spielen, staunen &amp; wohlfühlen – ganz ohne Münzeinwurf!</p>
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/prices.png") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Eintritt &amp; Tickets</div>
+    <h1>Preise &amp; Besuch</h1>
+    <p class="lead">Spielen, staunen &amp; wohlfühlen – ganz ohne Münzeinwurf!</p>
   </div>
 </header>
 
@@ -37,7 +16,7 @@
 <section class="py-5">
   <div class="container">
     <p class="lead">
-      Du bist herzlich eingeladen, unseren Flipperverein auf dem Flugplatz Merzbrück zu besuchen!</br>
+      Du bist herzlich eingeladen, unseren Flipperverein auf dem Forschungsflugplatz Würselen-Aachen zu besuchen!</br>
       Verpasse nicht <strong>jeden letzten Sonntag im Monat</strong>, wenn unsere Türen für dich geöffnet sind.
       Genieße die Zeit mit netten Leuten und coolen Flippern. </br> Vielleicht knackst du dabei sogar die Highscores.
     </p>

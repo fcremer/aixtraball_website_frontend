@@ -1,21 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Aixtraball e.V. – Die Flipperhalle in Aachen{% endblock %}
-{% block meta_description %}Öffnungstage, über 50 Flipper, Vermietung, Turniere & News. Besuche Aixtraball in Würselen bei Aachen.{% endblock %}
+{% block meta_description %}Öffnungstage, über 45 Flipper, Vermietung, Turniere &amp; News. Besuche Aixtraball in Würselen bei Aachen.{% endblock %}
 {% block head_extra %}
   {% if slides and slides[0] %}
-    <link rel="preload" as="image" href="{{ slides[0].image | asset }}" imagesrcset="{{ slides[0].image | asset }}" />
+    <link rel="preload" as="image" href="{{ slides[0].image | asset }}">
   {% endif %}
 {% endblock %}
+
 {% block content %}
 {% set default_headline = "Dein Flipperverein in der Städteregion Aachen" %}
-{% set default_subline  = "Retro-Gaming trifft Community – jeden letzten Sonntag für dich geöffnet!" %}
+{% set default_subline  = "Über 45 Flipper-Klassiker und Neuheiten – spielen, sammeln, erleben." %}
 {% set first_slide = slides[0] if slides else {} %}
 {% set initial_headline = first_slide.headline or default_headline %}
 {% set initial_subline  = first_slide.subline or default_subline %}
 {% set initial_logo     = first_slide.logo %}
 {% set logo_url         = url_for('static', filename='images/logo_Inv.png') %}
+
+<!-- ─── HERO ─── -->
 <section class="hero">
   <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+      {% for slide in slides %}
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ loop.index0 }}"
+                {% if loop.first %}class="active" aria-current="true"{% endif %}
+                aria-label="Slide {{ loop.index }}"></button>
+      {% endfor %}
+    </div>
     <div class="carousel-inner">
       {% for slide in slides %}
         {% set slide_has_text = slide.headline or slide.subline %}
@@ -25,168 +35,273 @@
              data-logo="{{ 'true' if slide.logo else 'false' }}"
              data-bs-interval="{{ 10000 if slide_has_text else 5000 }}">
           <div class="hero-slide">
-            <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt or '' }}">
+            <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt or '' }}"
+                 {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
           </div>
         </div>
       {% endfor %}
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
       <span class="carousel-control-prev-icon"></span>
-      <span class="visually-hidden">Previous</span>
+      <span class="visually-hidden">Zurück</span>
     </button>
     <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
       <span class="carousel-control-next-icon"></span>
-      <span class="visually-hidden">Next</span>
+      <span class="visually-hidden">Vor</span>
     </button>
   </div>
-  <div class="hero-overlay d-flex flex-column justify-content-center align-items-center text-center {% if initial_logo %}show-logo{% endif %}"
+
+  <!-- Content overlay (bottom-left) -->
+  <div class="hero-overlay {% if initial_logo %}show-logo{% endif %}"
        id="heroOverlay"
        data-default-headline="{{ default_headline }}"
        data-default-subline="{{ default_subline }}">
+    <div class="hero-badge">
+      <i class="bi bi-pin-map-fill"></i> Forschungsflugplatz Würselen-Aachen
+    </div>
     <img src="{{ logo_url }}" alt="Aixtraball Logo" id="heroLogo" class="hero-logo">
-    <h1 class="display-4 fw-bold mb-3" id="heroHeadline">{{ initial_headline }}</h1>
-    <p class="lead mb-4" id="heroSubline">{{ initial_subline }}</p>
+    <h1 id="heroHeadline">{{ initial_headline }}</h1>
+    <p id="heroSubline">{{ initial_subline }}</p>
+    <div class="hero-actions">
+      <a href="#next-opening-section" class="btn btn-primary">
+        Nächster Öffnungstag <i class="bi bi-arrow-down"></i>
+      </a>
+      <a href="{{ url_for('flipper_all') }}" class="btn btn-ghost">
+        Flipper entdecken
+      </a>
+    </div>
   </div>
+
+  <a class="hero-scroll-hint" href="#next-opening-section" aria-label="Zum Inhalt scrollen">
+    <i class="bi bi-chevron-down"></i>
+  </a>
 </section>
 
-{# ID hinzugefügt, bg-light entfernt, Padding auf Container verschoben (py-4) #}
+<!-- ─── OPENING BANNER ─── -->
 <section id="next-opening-section">
-  <div class="container text-center py-4">
-    {% if opening %}
-      {# Optional: Icon hinzugefügt (benötigt Bootstrap Icons o.ä.) #}
-      <h2 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2"></i>Nächster Öffnungstag</h2>
-      {# Klasse "date-pulse" hinzugefügt #}
-      {% if opening.is_today %}
-        <p class="fs-4 date-pulse"> <i class="bi bi-arrow-right-short"></i> Heute {{ opening.from_dt | datetimeformat('%H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr <i class="bi bi-arrow-left-short"></i> </p>
-      {% else %}
-        <p class="fs-4 date-pulse"> <i class="bi bi-arrow-right-short"></i> {{ opening.from_dt | datetimeformat('%d.%m.%Y %H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr <i class="bi bi-arrow-left-short"></i> </p>
-      {% endif %}
+  {% if opening %}
+    <div class="opening-label">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 1v2M10 1v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M1 7h12" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      Nächster Öffnungstag
+    </div>
+    <div class="opening-sep"></div>
+    {% if opening.is_today %}
+      <div class="opening-date">Heute</div>
     {% else %}
-       {# Fallback-Nachricht auch angepasst für weißen Text #}
-      <p class="fs-4">Aktuell stehen keine Termine fest. Schau bald wieder vorbei!</p>
+      <div class="opening-date">{{ opening.from_dt | datetimeformat('%d.%m.%Y') }}</div>
     {% endif %}
+    <div class="opening-sep"></div>
+    <div class="opening-time">
+      {{ opening.from_dt | datetimeformat('%H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr
+    </div>
+  {% else %}
+    <div class="opening-label">
+      <i class="bi bi-calendar-x"></i> Keine Termine geplant – schau bald wieder vorbei!
+    </div>
+  {% endif %}
+</section>
+
+<!-- ─── STATS BAR ─── -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-number">{{ c.stat1_number | stat_number_html }}</div>
+    <div class="stat-label">{{ c.stat1_label }}</div>
+    <div class="stat-sub">{{ c.stat1_sub }}</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">{{ c.stat2_number | stat_number_html }}</div>
+    <div class="stat-label">{{ c.stat2_label }}</div>
+    <div class="stat-sub">{{ c.stat2_sub }}</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">{{ c.stat3_number | stat_number_html }}</div>
+    <div class="stat-label">{{ c.stat3_label }}</div>
+    <div class="stat-sub">{{ c.stat3_sub }}</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-number">{{ c.stat4_number | stat_number_html }}</div>
+    <div class="stat-label">{{ c.stat4_label }}</div>
+    <div class="stat-sub">{{ c.stat4_sub }}</div>
+  </div>
+</div>
+
+<!-- ─── RENTAL SECTION ─── -->
+<section class="rental-section reveal">
+  <div class="rental-grid">
+    <div class="rental-visual">
+      <img src="{{ c.rental_image | asset }}"
+           alt="Flipperhalle Aixtraball" loading="lazy"
+           onerror="this.style.display='none'">
+      <div class="rental-visual-badge">Exklusiv buchbar</div>
+    </div>
+    <div>
+      <div class="eyebrow">{{ c.rental_eyebrow }}</div>
+      <h2>{{ c.rental_headline | nl2br }}</h2>
+      <p class="rental-intro">{{ c.rental_intro }}</p>
+      <div class="rental-features">
+        {% for feature in c.rental_features %}
+        <div class="rental-feature">
+          <div class="rental-feature-dot"></div>
+          <div class="rental-feature-text">{{ feature | md_strong }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <a href="{{ c.rental_button_link }}" class="btn btn-primary">
+        {{ c.rental_button_text }} <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
   </div>
 </section>
 
-<section class="py-5 bg-light reveal">
-  <div class="container text-center">
-    <h2 class="fw-bold mb-3">Exklusive Anmietung der Flipperhalle</h2>
-    <p class="lead">Firmenfeier, Geburtstag oder Teamevent – unsere Halle kann komplett gemietet werden.</p>
-    <a href="mailto:vermietung@aixtraball.de" class="btn btn-primary btn-lg">Anfragen</a>
-  </div>
-</section>
-
-<section class="py-5 reveal">
-  <div class="container">      {# macht Container relativ #}
-    <h2 class="fw-bold text-center mb-4">Flipper-Highlights</h2>
-
-    <div id="homeFlipperGrid" class="row g-4">
+<!-- ─── FLIPPER HIGHLIGHTS ─── -->
+<section class="reveal">
+  <div class="home-section">
+    <div class="section-header">
+      <div>
+        <div class="eyebrow">Unsere Sammlung</div>
+        <h2 style="margin:0">Flipper-Highlights</h2>
+      </div>
+      <a href="{{ url_for('flipper_all') }}" class="btn btn-ghost">Alle Flipper ansehen</a>
+    </div>
+    <div class="highlights-grid">
       {% for f in home_flippers %}
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('flipper_all') }}" class="text-decoration-none text-reset">
-          <div class="card h-100 shadow-sm">
-            <div class="img-stack">
-              <img src="{{ f.image | asset }}" class="bg-img" alt="" aria-hidden="true" loading="lazy" decoding="async">
-              <img src="{{ f.image | asset }}" class="card-img-top" alt="{{ f.name }}" loading="lazy" decoding="async">
-            </div>
-            <div class="card-body p-2">
-              <h6 class="card-title text-center small mb-0">{{ f.name }}</h6>
+      <a href="{{ url_for('flipper_all') }}" class="highlight-card" tabindex="0" aria-label="{{ f.name }}">
+        <img src="{{ f.image | asset }}" alt="{{ f.name }}" loading="lazy"
+             onerror="this.style.display='none'">
+        <div class="highlight-info">
+          <div class="highlight-name">{{ f.name }}</div>
+          {% if f.year %}<div class="highlight-meta">{{ f.manufacturer or '' }}{% if f.manufacturer and f.year %} · {% endif %}{{ f.year }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ─── NEWS ─── -->
+{% if latest_news %}
+<section class="reveal" style="border-top:1px solid var(--border)">
+  <div class="home-section">
+    <div class="section-header">
+      <div>
+        <div class="eyebrow">Aktuell</div>
+        <h2 style="margin:0">News</h2>
+      </div>
+      <a href="{{ url_for('news_list') }}" class="btn btn-ghost">Alle News</a>
+    </div>
+
+    {% if latest_news | length == 1 %}
+      {# Single article: show as featured full-width #}
+      {% set article = latest_news[0] %}
+      <a href="{{ url_for('news_detail', slug=article.slug) }}" class="news-featured">
+        <div class="news-featured-visual">
+          <img src="{{ article.preview_image | asset }}" alt="{{ article.title }}" loading="lazy">
+        </div>
+        <div class="news-featured-body">
+          {% if article.category %}<span class="news-tag">{{ article.category }}</span>{% endif %}
+          <h3 class="news-title">{{ article.title }}</h3>
+          {% if article.excerpt %}<p class="news-excerpt">{{ article.excerpt }}</p>{% endif %}
+          <div class="news-meta">
+            {% if article._dt %}<span>{{ article._dt | datetimeformat('%d. %B %Y') }}</span>{% endif %}
+            <span><a href="{{ url_for('news_detail', slug=article.slug) }}">Weiterlesen →</a></span>
+          </div>
+        </div>
+      </a>
+
+    {% else %}
+      {# Multiple articles: featured + stack #}
+      {% set featured = latest_news[0] %}
+      {% set rest = latest_news[1:] %}
+      <div class="news-grid">
+        <a href="{{ url_for('news_detail', slug=featured.slug) }}" class="news-featured">
+          <div class="news-featured-visual">
+            <img src="{{ featured.preview_image | asset }}" alt="{{ featured.title }}" loading="lazy">
+          </div>
+          <div class="news-featured-body">
+            {% if featured.category %}<span class="news-tag">{{ featured.category }}</span>{% endif %}
+            <h3 class="news-title">{{ featured.title }}</h3>
+            {% if featured.excerpt %}<p class="news-excerpt">{{ featured.excerpt }}</p>{% endif %}
+            <div class="news-meta">
+              {% if featured._dt %}<span>{{ featured._dt | datetimeformat('%d. %B %Y') }}</span>{% endif %}
+              <span><a href="{{ url_for('news_detail', slug=featured.slug) }}">Weiterlesen →</a></span>
             </div>
           </div>
         </a>
-      </div>
-      {% endfor %}
-    </div>
-
-  </div>
-</section>
-
-<section class="py-5 bg-light reveal">
-  <div class="container">
-    <h2 class="fw-bold text-center mb-4">News</h2>
-    {% set news_col_class = 'col-12' if stack_news_cards else 'col-md-6' %}
-    <div class="row g-4">
-      {% for article in latest_news %}
-      <div class="{{ news_col_class }}">
-        <div class="card h-100 shadow-sm">
-          <img src="{{ article.preview_image | asset }}" class="card-img-top" alt="{{ article.title }}" loading="lazy" decoding="async">
-          <div class="card-body">
-            <h5 class="card-title">{{ article.title }}</h5>
-            <p class="card-text">{{ article.excerpt }}</p>
-            <a href="{{ url_for('news_detail', slug=article.slug) }}" class="btn btn-primary">Mehr erfahren</a>
-          </div>
+        <div class="news-stack">
+          {% for article in rest %}
+          <a href="{{ url_for('news_detail', slug=article.slug) }}" class="news-card">
+            <div class="news-card-visual">
+              <img src="{{ article.preview_image | asset }}" alt="{{ article.title }}" loading="lazy">
+            </div>
+            <div class="news-card-body">
+              {% if article.category %}<span class="news-tag-sm">{{ article.category }}</span>{% endif %}
+              <div class="news-card-title">{{ article.title }}</div>
+              {% if article._dt %}<div class="news-card-date">{{ article._dt | datetimeformat('%d. %m. %Y') }}</div>{% endif %}
+            </div>
+          </a>
+          {% endfor %}
         </div>
       </div>
-      {% endfor %}
-    </div>
+    {% endif %}
   </div>
 </section>
+{% endif %}
 
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const heroCarousel = document.getElementById('heroCarousel');
-    const heroOverlay = document.getElementById('heroOverlay');
-    const headlineEl = document.getElementById('heroHeadline');
-    const sublineEl = document.getElementById('heroSubline');
+  document.addEventListener('DOMContentLoaded', function() {
+    var heroCarousel = document.getElementById('heroCarousel');
+    var heroOverlay  = document.getElementById('heroOverlay');
+    var headlineEl   = document.getElementById('heroHeadline');
+    var sublineEl    = document.getElementById('heroSubline');
 
-    const updateOverlay = (slideEl, forceAnimate = false) => {
-      if (!slideEl || !heroOverlay || !headlineEl || !sublineEl) {
-        return;
-      }
-      const defaultHeadline = heroOverlay.dataset.defaultHeadline || '';
-      const defaultSubline = heroOverlay.dataset.defaultSubline || '';
-      const previousHeadline = headlineEl.textContent;
-      const previousSubline = sublineEl.textContent;
-      const newHeadline = slideEl.dataset.headline || defaultHeadline;
-      const newSubline = slideEl.dataset.subline || defaultSubline;
-      const useLogo = slideEl.dataset.logo === "true";
-      const previousLogoState = heroOverlay.classList.contains('show-logo');
+    function updateOverlay(slideEl, forceAnimate) {
+      if (!slideEl || !heroOverlay || !headlineEl || !sublineEl) return;
+      var defaultHeadline = heroOverlay.dataset.defaultHeadline || '';
+      var defaultSubline  = heroOverlay.dataset.defaultSubline  || '';
+      var newHeadline = slideEl.dataset.headline || defaultHeadline;
+      var newSubline  = slideEl.dataset.subline  || defaultSubline;
+      var useLogo     = slideEl.dataset.logo === 'true';
+      var prevLogo    = heroOverlay.classList.contains('show-logo');
+
+      var contentChanged = headlineEl.textContent !== newHeadline || sublineEl.textContent !== newSubline;
+      var logoChanged    = prevLogo !== useLogo;
 
       headlineEl.textContent = newHeadline;
-      sublineEl.textContent = newSubline;
+      sublineEl.textContent  = newSubline;
+      heroOverlay.classList.toggle('show-logo', useLogo);
 
-      if (useLogo) {
-        heroOverlay.classList.add('show-logo');
-      } else {
-        heroOverlay.classList.remove('show-logo');
-      }
-
-      const logoStateChanged = previousLogoState !== heroOverlay.classList.contains('show-logo');
-      const contentChanged = previousHeadline !== newHeadline || previousSubline !== newSubline;
-      const changed = logoStateChanged || contentChanged;
-
-      if (changed || forceAnimate) {
+      if (contentChanged || logoChanged || forceAnimate) {
         heroOverlay.classList.remove('animate');
         void heroOverlay.offsetWidth;
         heroOverlay.classList.add('animate');
       }
-    };
+    }
 
     if (heroCarousel) {
-      const initialSlide = heroCarousel.querySelector('.carousel-item.active');
-      updateOverlay(initialSlide, true);
-
-      heroCarousel.addEventListener('slid.bs.carousel', (event) => {
-        updateOverlay(event.relatedTarget || heroCarousel.querySelector('.carousel-item.active'));
+      updateOverlay(heroCarousel.querySelector('.carousel-item.active'), true);
+      heroCarousel.addEventListener('slid.bs.carousel', function(e) {
+        updateOverlay(e.relatedTarget || heroCarousel.querySelector('.carousel-item.active'));
       });
     }
 
-    const observer = new IntersectionObserver((entries, obs) => {
-      entries.forEach(entry => {
+    // Scroll reveal
+    var observer = new IntersectionObserver(function(entries, obs) {
+      entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           entry.target.classList.add('reveal-visible');
           obs.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.reveal').forEach(el => {
-      observer.observe(el);
-    });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
   });
 </script>
 {% endblock %}

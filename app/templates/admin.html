@@ -29,19 +29,29 @@
       <div class="section-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h2 class="h5 mb-0">{{ section.title }}</h2>
-          <span class="badge text-bg-light">{{ section.count }} {{ section.count == 1 and 'Eintrag' or 'Einträge' }}</span>
+          {% if section.kind == 'doc' %}
+            <span class="badge text-bg-light">{{ section.count }} Felder</span>
+          {% else %}
+            <span class="badge text-bg-light">{{ section.count }} {{ section.count == 1 and 'Eintrag' or 'Einträge' }}</span>
+          {% endif %}
         </div>
         <p class="text-muted small mb-3">{{ section.description }}</p>
         <div class="d-flex flex-wrap gap-2">
-          <a class="btn btn-primary" href="{{ url_for('admin_manage', filename=section.filename) }}">
-            <i class="bi bi-list-task me-1"></i> Verwalten
-          </a>
-          {% if section.allow_new %}
-          <a class="btn btn-outline-primary" href="{{ url_for('admin_item', filename=section.filename) }}">
-            <i class="bi bi-plus-lg me-1"></i> Neuer Eintrag
-          </a>
+          {% if section.kind == 'doc' %}
+            <a class="btn btn-primary" href="{{ url_for('admin_doc', filename=section.filename) }}">
+              <i class="bi bi-pencil-square me-1"></i> Bearbeiten
+            </a>
           {% else %}
-          <span class="badge rounded-pill text-bg-secondary align-self-center">Nur Ansicht</span>
+            <a class="btn btn-primary" href="{{ url_for('admin_manage', filename=section.filename) }}">
+              <i class="bi bi-list-task me-1"></i> Verwalten
+            </a>
+            {% if section.allow_new %}
+            <a class="btn btn-outline-primary" href="{{ url_for('admin_item', filename=section.filename) }}">
+              <i class="bi bi-plus-lg me-1"></i> Neuer Eintrag
+            </a>
+            {% elif section.read_only %}
+            <span class="badge rounded-pill text-bg-secondary align-self-center">Nur Ansicht</span>
+            {% endif %}
           {% endif %}
           <a class="btn btn-link text-muted" href="{{ url_for('admin_edit', filename=section.filename) }}">
             <i class="bi bi-code-slash me-1"></i> RAW

@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% block title %}Kiosk Mode – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Kiosk Mode mit News, Flipper-Highlights und Öffnungstagen von Aixtraball e.V.{% endblock %}
+{% set slides_count = slides|length %}
+{% set bg_primary = slides[0].image if slides_count > 0 else "images/slides/hall.jpg" %}
+{% set bg_secondary = slides[1].image if slides_count > 1 else bg_primary %}
+{% set bg_tertiary = slides[2].image if slides_count > 2 else bg_primary %}
+{% set bg_quaternary = slides[3].image if slides_count > 3 else bg_secondary %}
+{% set flipper_bg = kiosk_flippers[0].image if kiosk_flippers else bg_primary %}
+{% set history_bg = "images/timeline/background_X2.jpg" %}
+{% set logo_url = url_for("static", filename="images/logo.png") %}
+{% set duration_intro = 18000 %}
+{% set duration_section = 20000 %}
+{% set duration_spotlight = 45000 %}
+{% block head_extra %}
+  <link href="{{ url_for('static', filename='css/kiosk.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="kiosk">
+  {% if show_logo %}
+  <div class="kiosk-brand">
+    <img src="{{ logo_url }}" alt="Aixtraball Logo">
+  </div>
+  {% endif %}
+  <div class="kiosk-progress" aria-hidden="true">
+    <span class="kiosk-progress-bar"></span>
+  </div>
+
+  <div class="kiosk-stage">
+    <section class="kiosk-slide kiosk-slide--hero is-active" data-duration="{{ duration_intro }}"
+             style="--kiosk-bg-image: url('{{ bg_primary | asset }}');">
+      <div class="kiosk-hero-content">
+        <div class="kiosk-eyebrow kiosk-animate" style="--delay:0.05s;">Schön, dass ihr da seid</div>
+        <h1 class="kiosk-title kiosk-animate" style="--delay:0.15s;">Flipperkultur live erleben</h1>
+        <p class="kiosk-lead kiosk-animate" style="--delay:0.25s;">
+          Über 45 restaurierte Flipperautomaten warten – entdeckt Highlights, fragt das Team und spielt euch warm.
+        </p>
+        <div class="kiosk-stat-grid">
+          <div class="kiosk-stat kiosk-animate" style="--delay:0.35s;">
+            <span class="kiosk-stat-value">50+</span>
+            <span class="kiosk-stat-label">Flipperautomaten</span>
+          </div>
+          <div class="kiosk-stat kiosk-animate" style="--delay:0.45s;">
+            <span class="kiosk-stat-value">200 m²</span>
+            <span class="kiosk-stat-label">Spielhalle</span>
+          </div>
+          <div class="kiosk-stat kiosk-animate" style="--delay:0.55s;">
+            <span class="kiosk-stat-value">1x/Monat</span>
+            <span class="kiosk-stat-label">Offener Spieltag</span>
+          </div>
+        </div>
+      </div>
+      <div class="kiosk-hero-panel kiosk-animate" style="--delay:0.4s;">
+        <div class="kiosk-card">
+          <h2 class="kiosk-card-title">Highlights</h2>
+          <ul class="kiosk-list">
+            <li>Restauration historischer Geräte</li>
+            <li>Offene Spieltage &amp; Turniere</li>
+            <li>Workshops und Technik-Einblicke</li>
+            <li>Vereinsleben mit Leidenschaft</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="kiosk-slide kiosk-slide--opening" data-duration="{{ duration_section }}"
+             style="--kiosk-bg-image: url('{{ bg_secondary | asset }}');">
+      <div class="kiosk-opening-content">
+        <div class="kiosk-eyebrow kiosk-animate" style="--delay:0.05s;">Nächster Öffnungstag</div>
+        {% if opening %}
+          {% if opening.is_today %}
+            <div class="kiosk-opening-date kiosk-animate" style="--delay:0.15s;">Heute</div>
+            <div class="kiosk-opening-time kiosk-animate" style="--delay:0.25s;">
+              {{ opening.from_dt | datetimeformat('%H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr
+            </div>
+            <p class="kiosk-opening-note kiosk-animate" style="--delay:0.35s;">
+              Wir freuen uns auf deinen Besuch.
+            </p>
+          {% else %}
+            <div class="kiosk-opening-date kiosk-animate" style="--delay:0.15s;">
+              {{ opening.from_dt | datetimeformat('%d.%m.%Y') }}
+            </div>
+            <div class="kiosk-opening-time kiosk-animate" style="--delay:0.25s;">
+              {{ opening.from_dt | datetimeformat('%H:%M') }} – {{ opening.to_dt | datetimeformat('%H:%M') }} Uhr
+            </div>
+            <p class="kiosk-opening-note kiosk-animate" style="--delay:0.35s;">
+              Regelmäßig am letzten Sonntag im Monat geöffnet.
+            </p>
+          {% endif %}
+        {% else %}
+          <div class="kiosk-opening-date kiosk-animate" style="--delay:0.15s;">Termine folgen</div>
+          <p class="kiosk-opening-note kiosk-animate" style="--delay:0.25s;">
+            Aktuell stehen keine Öffnungstage fest.
+          </p>
+        {% endif %}
+      </div>
+      <div class="kiosk-opening-panel kiosk-animate" style="--delay:0.25s;">
+        <div class="kiosk-card">
+          <h2 class="kiosk-card-title">Besuch planen</h2>
+          <ul class="kiosk-list">
+            <li>Merzbrück 210, 52146 Würselen</li>
+            <li>Mehr als 50 Flipperautomaten</li>
+            <li>Rund 200 m² Spielhalle</li>
+            <li>Community, Turniere und Events</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="kiosk-slide kiosk-slide--rental" data-duration="{{ duration_section }}"
+             style="--kiosk-bg-image: url('{{ bg_quaternary | asset }}');">
+      <div class="kiosk-rental-content">
+        <div class="kiosk-eyebrow kiosk-animate" style="--delay:0.05s;">Vermietung</div>
+        <h2 class="kiosk-section-title kiosk-animate" style="--delay:0.15s;">Die Halle exklusiv buchen</h2>
+        <p class="kiosk-lead kiosk-animate" style="--delay:0.25s;">
+          Firmenveranstaltungen, Teamevents und Geburtstage inmitten unserer Flipper.
+        </p>
+        <div class="kiosk-rental-details kiosk-animate" style="--delay:0.35s;">
+          <span class="kiosk-chip">200 m² Spielhalle</span>
+          <span class="kiosk-chip">50+ Automaten</span>
+          <span class="kiosk-chip">Catering möglich</span>
+        </div>
+        <div class="kiosk-rental-contact kiosk-animate" style="--delay:0.45s;">
+          <span class="kiosk-rental-label">Anfragen direkt vor Ort oder per Mail</span>
+          <span class="kiosk-rental-email">vermietung@aixtraball.de</span>
+        </div>
+      </div>
+      <div class="kiosk-rental-grid kiosk-animate" style="--delay:0.25s;">
+        <div class="kiosk-rental-card">
+          <i class="bi bi-briefcase-fill kiosk-rental-icon" aria-hidden="true"></i>
+          <h3>Firmenveranstaltungen</h3>
+          <p>Team-Building mit Turniermodus, Lounge und Technik-Insights.</p>
+        </div>
+        <div class="kiosk-rental-card">
+          <i class="bi bi-people-fill kiosk-rental-icon" aria-hidden="true"></i>
+          <h3>Teamevents</h3>
+          <p>Exklusive Öffnung mit Anleitung, Tipps und Highscore-Challenge.</p>
+        </div>
+        <div class="kiosk-rental-card">
+          <i class="bi bi-gift-fill kiosk-rental-icon" aria-hidden="true"></i>
+          <h3>Geburtstage</h3>
+          <p>Retro-Atmosphäre, Musik und viele Flipper in einer Location.</p>
+        </div>
+        <div class="kiosk-rental-card">
+          <i class="bi bi-star-fill kiosk-rental-icon" aria-hidden="true"></i>
+          <h3>Special Nights</h3>
+          <p>Individuelle Slots, private Turniere und VIP-Tische.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="kiosk-slide kiosk-slide--news" data-duration="{{ duration_section }}"
+             style="--kiosk-bg-image: url('{{ bg_tertiary | asset }}');">
+      <header class="kiosk-slide-header kiosk-animate" style="--delay:0.05s;">
+        <div class="kiosk-eyebrow">Aktuell</div>
+        <h2 class="kiosk-section-title">News aus der Halle</h2>
+        <p class="kiosk-lead">Die letzten Updates aus der Werkstatt und dem Vereinsleben.</p>
+      </header>
+      <div class="kiosk-news-grid">
+        {% for article in latest_news %}
+          {% set news_pool = article.kiosk_images | default([]) %}
+          {% set news_image = (news_pool[0] if news_pool else (article.preview_image or (article.images[0] if article.images) or bg_primary)) %}
+          {% set news_text = article.excerpt or ((article.content or '') | striptags | truncate(160, True)) or article.category or 'Neuigkeiten aus dem Verein.' %}
+          <article class="kiosk-news-card kiosk-animate" style="--delay:{{ (0.1 + loop.index0 * 0.08) | round(2) }}s;">
+            <img class="kiosk-news-media" src="{{ news_image | asset }}" alt="{{ article.title }}" loading="lazy" decoding="async">
+            <div class="kiosk-news-body">
+              <div class="kiosk-chip">{{ article.date | datetimeformat('%d.%m.%Y') }}</div>
+              <h3>{{ article.title }}</h3>
+              <p>{{ news_text }}</p>
+            </div>
+          </article>
+        {% else %}
+          <div class="kiosk-card kiosk-animate" style="--delay:0.1s;">Zurzeit keine News.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="kiosk-slide kiosk-slide--flippers" data-duration="{{ duration_section }}"
+             style="--kiosk-bg-image: url('{{ flipper_bg | asset }}');">
+      <header class="kiosk-slide-header kiosk-animate" style="--delay:0.05s;">
+        <div class="kiosk-eyebrow">Flipper-Highlights</div>
+        <h2 class="kiosk-section-title">Maschinen im Spotlight</h2>
+        <p class="kiosk-lead">Ein Blick auf ausgewählte Geräte aus unserer Sammlung.</p>
+      </header>
+      <div class="kiosk-flipper-grid">
+        {% for flipper in kiosk_flippers %}
+          <article class="kiosk-flipper-card kiosk-animate" style="--delay:{{ (0.1 + loop.index0 * 0.08) | round(2) }}s;">
+            <div class="kiosk-flipper-media">
+              <img src="{{ flipper.image | asset }}" alt="{{ flipper.name }}" loading="lazy" decoding="async">
+            </div>
+            <div class="kiosk-flipper-body">
+              <div class="kiosk-chip">{{ flipper.display_year or 'Klassiker' }}</div>
+              <h3>{{ flipper.name }}</h3>
+              <p class="kiosk-meta">{{ flipper.manufacturer or 'Flipperautomat' }}</p>
+              {% if flipper.kiosk_notes %}
+              <ul class="kiosk-mini-list">
+                {% for note in flipper.kiosk_notes %}
+                <li>{{ note }}</li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+          </article>
+        {% else %}
+          <div class="kiosk-card kiosk-animate" style="--delay:0.1s;">Flipperliste wird geladen.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% for spotlight in kiosk_spotlights %}
+      {% if spotlight.type == "news" %}
+        {% set article = spotlight.article %}
+        {% set news_text = article.excerpt or ((article.content or '') | striptags | truncate(320, True)) or 'Neuigkeiten aus dem Verein und der Werkstatt.' %}
+        {% set news_images = article.kiosk_images | default([]) %}
+        {% if not news_images %}
+          {% set news_images = [article.preview_image] if article.preview_image else [] %}
+        {% endif %}
+        {% if not news_images and article.images %}
+          {% set news_images = article.images %}
+        {% endif %}
+        {% set display_images = news_images[:6] if news_images else [bg_primary] %}
+        <section class="kiosk-slide kiosk-slide--spotlight kiosk-slide--news-spotlight" data-duration="{{ duration_spotlight }}"
+                 style="--kiosk-bg-image: url('{{ display_images[0] | asset }}');">
+          <div class="kiosk-spotlight-panel kiosk-animate" style="--delay:0.05s;">
+            <div class="kiosk-eyebrow">News Spotlight</div>
+            <h2 class="kiosk-section-title">{{ article.title }}</h2>
+            <p class="kiosk-spotlight-text">{{ news_text }}</p>
+            <div class="kiosk-spotlight-meta">
+              <span class="kiosk-chip">{{ article.date | datetimeformat('%d.%m.%Y') }}</span>
+              {% if article.category %}
+                <span class="kiosk-chip">{{ article.category }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="kiosk-spotlight-media kiosk-animate" style="--delay:0.15s;">
+            <div class="kiosk-media-stack" data-frame-duration="7000">
+              {% for img in display_images %}
+                <img class="kiosk-media-frame{% if loop.first %} is-active{% endif %}"
+                     src="{{ img | asset }}" alt="{{ article.title }}" loading="lazy" decoding="async">
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      {% elif spotlight.type == "flipper" %}
+        {% set flipper = spotlight.flipper %}
+        {% set flipper_images = flipper.kiosk_images | default([]) %}
+        {% if not flipper_images %}
+          {% set flipper_images = [flipper.image] if flipper.image else [] %}
+        {% endif %}
+        {% if not flipper_images and flipper.image_details %}
+          {% set flipper_images = flipper.image_details %}
+        {% endif %}
+        {% set display_images = flipper_images[:6] if flipper_images else [bg_primary] %}
+        <section class="kiosk-slide kiosk-slide--spotlight kiosk-slide--flipper-spotlight" data-duration="{{ duration_spotlight }}"
+                 style="--kiosk-bg-image: url('{{ display_images[0] | asset }}');">
+          <div class="kiosk-spotlight-panel kiosk-animate" style="--delay:0.05s;">
+            <div class="kiosk-eyebrow">Flipper im Fokus</div>
+            <h2 class="kiosk-section-title">{{ flipper.name }}</h2>
+            <p class="kiosk-lead">{{ flipper.kiosk_specs or 'Flipperautomat aus unserer Sammlung.' }}</p>
+            <div class="kiosk-spotlight-meta">
+              {% if flipper.display_year %}
+                <span class="kiosk-chip">{{ flipper.display_year }}</span>
+              {% endif %}
+              {% if flipper.manufacturer %}
+                <span class="kiosk-chip">{{ flipper.manufacturer }}</span>
+              {% endif %}
+            </div>
+            {% if flipper.kiosk_details %}
+              <ul class="kiosk-list">
+                {% for note in flipper.kiosk_details %}
+                  <li>{{ note }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="kiosk-spotlight-note">Sprich uns gern an – wir zeigen dir die Besonderheiten am Gerät.</p>
+            {% endif %}
+          </div>
+          <div class="kiosk-spotlight-media kiosk-animate" style="--delay:0.15s;">
+            <div class="kiosk-media-stack" data-frame-duration="7000">
+              {% for img in display_images %}
+                <img class="kiosk-media-frame{% if loop.first %} is-active{% endif %}"
+                     src="{{ img | asset }}" alt="{{ flipper.name }}" loading="lazy" decoding="async">
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      {% else %}
+        <section class="kiosk-slide kiosk-slide--spotlight kiosk-slide--info-spotlight" data-duration="{{ duration_spotlight }}"
+                 style="--kiosk-bg-image: url('{{ spotlight.image | asset }}');">
+          <div class="kiosk-spotlight-panel kiosk-animate" style="--delay:0.05s;">
+            <div class="kiosk-eyebrow">{{ spotlight.eyebrow }}</div>
+            <h2 class="kiosk-section-title">{{ spotlight.title }}</h2>
+            <p class="kiosk-spotlight-text">{{ spotlight.text }}</p>
+            {% if spotlight.bullets %}
+              <ul class="kiosk-list">
+                {% for bullet in spotlight.bullets %}
+                  <li>{{ bullet }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+          <div class="kiosk-spotlight-media kiosk-animate" style="--delay:0.15s;">
+            <div class="kiosk-media-stack" data-frame-duration="7000">
+              <img class="kiosk-media-frame is-active"
+                   src="{{ spotlight.image | asset }}" alt="{{ spotlight.title }}" loading="lazy" decoding="async">
+            </div>
+          </div>
+        </section>
+      {% endif %}
+    {% endfor %}
+
+    <section class="kiosk-slide kiosk-slide--history" data-duration="{{ duration_section }}"
+             style="--kiosk-bg-image: url('{{ history_bg | asset }}');">
+      <div class="kiosk-history-content">
+        <div class="kiosk-eyebrow kiosk-animate" style="--delay:0.05s;">Der Verein</div>
+        <h2 class="kiosk-section-title kiosk-animate" style="--delay:0.15s;">Unsere Geschichte</h2>
+        <p class="kiosk-lead kiosk-animate" style="--delay:0.25s;">
+          Wir bewahren Flipperkultur, dokumentieren Technik und machen sie der Öffentlichkeit zugänglich.
+        </p>
+        <div class="kiosk-card kiosk-animate" style="--delay:0.35s;">
+          <h3 class="kiosk-card-title">Dafür stehen wir</h3>
+          <ul class="kiosk-list">
+            <li>Erhalt historischer Flipperautomaten</li>
+            <li>Wissen teilen und Technik erklären</li>
+            <li>Gemeinschaft und Spielkultur fördern</li>
+          </ul>
+        </div>
+      </div>
+      <div class="kiosk-history-timeline">
+        {% for item in timeline %}
+          <div class="kiosk-timeline-item kiosk-animate" style="--delay:{{ (0.1 + loop.index0 * 0.08) | round(2) }}s;">
+            <div class="kiosk-timeline-date">{{ item.date | datetimeformat('%m/%Y') }}</div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
+          </div>
+        {% else %}
+          <div class="kiosk-card kiosk-animate" style="--delay:0.1s;">Noch keine Meilensteine eingetragen.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const slides = Array.from(document.querySelectorAll('.kiosk-slide'));
+    const progressBar = document.querySelector('.kiosk-progress-bar');
+    if (!slides.length) {
+      return;
+    }
+
+    const shuffle = (array) => {
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    };
+
+    shuffle(slides);
+
+    let index = Math.floor(Math.random() * slides.length);
+    let timer = null;
+
+    const activateSlide = (nextIndex) => {
+      slides.forEach((slide, idx) => {
+        slide.classList.toggle('is-active', idx === nextIndex);
+        slide.classList.toggle('is-previous', idx === (nextIndex - 1 + slides.length) % slides.length);
+      });
+
+      const duration = parseInt(slides[nextIndex].dataset.duration || '12000', 10);
+      if (progressBar) {
+        progressBar.style.setProperty('--kiosk-duration', `${duration}ms`);
+        progressBar.classList.remove('is-animating');
+        void progressBar.offsetWidth;
+        progressBar.classList.add('is-animating');
+      }
+
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        index = (nextIndex + 1) % slides.length;
+        activateSlide(index);
+      }, duration);
+    };
+
+    activateSlide(index);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') {
+        index = (index + 1) % slides.length;
+        activateSlide(index);
+      }
+      if (event.key === 'ArrowLeft') {
+        index = (index - 1 + slides.length) % slides.length;
+        activateSlide(index);
+      }
+    });
+
+    const setupMediaStack = (stack) => {
+      const media = stack.closest('.kiosk-spotlight-media');
+      let frames = Array.from(stack.querySelectorAll('.kiosk-media-frame'));
+      if (!frames.length) {
+        media?.classList.add('is-empty');
+        return;
+      }
+
+      const refreshFrames = () => {
+        frames = Array.from(stack.querySelectorAll('.kiosk-media-frame'));
+        if (!frames.length) {
+          media?.classList.add('is-empty');
+        }
+      };
+
+      const activateFrame = (idx) => {
+        frames.forEach((frame, index) => {
+          frame.classList.toggle('is-active', index === idx);
+        });
+      };
+
+      let currentIndex = Math.floor(Math.random() * frames.length);
+      activateFrame(currentIndex);
+
+      frames.forEach((frame) => {
+        frame.addEventListener('error', () => {
+          const wasActive = frame.classList.contains('is-active');
+          frame.remove();
+          refreshFrames();
+          if (!frames.length) {
+            return;
+          }
+          if (wasActive) {
+            currentIndex = currentIndex % frames.length;
+            activateFrame(currentIndex);
+          }
+        }, { once: true });
+
+        if (frame.complete && frame.naturalWidth === 0) {
+          frame.remove();
+        }
+      });
+
+      refreshFrames();
+      if (frames.length <= 1) {
+        activateFrame(0);
+        return;
+      }
+
+      const frameDuration = parseInt(stack.dataset.frameDuration || '7000', 10);
+      window.setInterval(() => {
+        refreshFrames();
+        if (frames.length <= 1) {
+          activateFrame(0);
+          return;
+        }
+        frames[currentIndex].classList.remove('is-active');
+        currentIndex = (currentIndex + 1) % frames.length;
+        frames[currentIndex].classList.add('is-active');
+      }, frameDuration);
+    };
+
+    document.querySelectorAll('.kiosk-media-stack').forEach(setupMediaStack);
+
+  });
+</script>
+{% endblock %}

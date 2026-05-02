@@ -1,544 +1,802 @@
 {% extends "base.html" %}
 {# app/templates/flipper_all.html #}
 
+{% block title %}Flipper-Epochen – Unsere Sammlung | Aixtraball e.V.{% endblock %}
+{% block meta_description %}Über 50 Flipper von den 70ern bis heute – chronologisch aufbereitet. Entdecke die historische Sammlung von Aixtraball e.V. in Würselen bei Aachen.{% endblock %}
+
 {% block head_extra %}
-  <style>
-    /* Flipper-Detail-Overlay --------------------------------------- */
-    .flipper-overlay{
-      position:fixed;            /* bleibt gleich, aber anchor für absolute Kinder */
-      top:0; right:0;
-      height:100%;
-      width:100%;
-      max-width:460px;
-      background:#fff;
-      box-shadow:-4px 0 12px rgba(0,0,0,.3);
-      transform:translateX(100%);
-      transition:transform .4s ease;
-      z-index:1050;
-      overflow-y:auto;
-    }
-    .flipper-overlay.open{transform:translateX(0);}
-    @media (max-width:767.98px){
-      .flipper-overlay{max-width:none;}
-    }
-    .flipper-overlay .flipper-hero{
-      position:relative;
-      height:220px;
-      background-size:cover;
-      background-position:center;
-    }
-    .flipper-overlay .flipper-hero::after{
-      content:"";
-      position:absolute;
-      left:0; right:0; bottom:0; height:60%;
-      background:linear-gradient(180deg,rgba(0,0,0,0) 0%, #ffffff 100%);
-    }
-    .flipper-overlay .flipper-content{padding:1rem 1.5rem;}
-    .flipper-overlay .close-overlay{
-      position:absolute;
-      top:1rem; right:1rem;
-      width:42px; height:42px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:rgba(0,0,0,.65);
-      border:0;
-      border-radius:50%;
-      font-size:1.5rem;
-      line-height:1;
-      color:#fff;
-      z-index:2;                 /* über dem Hero-Bild */
-      transition:background .3s ease;
-    }
-    .flipper-overlay .close-overlay:hover,
-    .flipper-overlay .close-overlay:focus{
-      background:rgba(var(--bs-primary-rgb), .85);
-      color:#fff;
-    }
-    /* Detail-Slider im unteren Drittel ----------------------------- */
-    .flipper-detail-hero{
-      position:relative;
-      height:180px;
-      margin-top:1.5rem;
-      overflow:hidden;
-    }
-    .flipper-detail-hero::before{
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(0deg,
-        rgba(255, 255, 255, 1) 0%,
-        rgba(255, 255, 255, 0.5) 50%,
-        rgba(255, 255, 255, 0) 100%);
-      pointer-events: none;
-      z-index: 1;
-    }
-    .flipper-detail-hero img{
-      width:100%; height:100%;
-      object-fit:cover;
-      display:block;
-      transition:opacity .8s ease;
-      opacity:1;
-    }
-    /* Hero-Bild ----------------------------------------------------- */
-    .hero-flipper {
-      background: url('{{ url_for("static", filename="images/else/50s.jpg") }}') center/cover;
-      min-height: 45vh;
-    }
-    .hero-flipper .overlay {
-      background: rgba(var(--bs-primary-rgb), .65);
-    }
-
-    /* Timeline ------------------------------------------------------ */
-    .timeline {
-      position: relative;
-      padding: 2rem 0;
-      overflow: hidden;  /* sorgt dafür, dass hereingleitende Elemente erst sichtbar werden */
-    }
-    .timeline::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 50%;
-      width: 4px;
-      background: var(--bs-primary);
-      transform: translateX(-50%);
-    }
-
-    .timeline-item {
-      position: relative;
-      width: 50%;
-      padding: 1rem 2rem;
-      margin-bottom: 2rem;
-      border: 1px solid rgba(var(--bs-primary-rgb), 0.3);
-      border-radius: 0.25rem;
-
-      /* Anfangszustand für Slide-In + Fade */
-      opacity: 0;
-      transform: translateY(30px);
-      transition: transform .6s ease-out, opacity .6s ease-out;
-    }
-    .timeline-item.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Abstand der Timeline-Items zum Mittelstrich erhöhen */
-    .timeline-item:nth-of-type(odd) {
-      padding-right: 4rem;
-    }
-    .timeline-item:nth-of-type(even) {
-      padding-left: 4rem;
-    }
-
-    .timeline-item .timeline-year {
-      font-weight: 700;
-      color: var(--bs-primary);
-    }
-    .timeline-item::after {
-      content: "";
-      position: absolute;
-      top: 1.2rem;
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: #fff;
-      border: 4px solid var(--bs-primary);
-    }
-    .timeline-item:nth-of-type(odd) {
-      left: 0;
-      text-align: right;
-    }
-    .timeline-item:nth-of-type(odd)::after {
-      right: -8px;
-    }
-    .timeline-item:nth-of-type(even) {
-      left: 50%;
-    }
-    .timeline-item:nth-of-type(even)::after {
-      left: -8px;
-    }
-
-    @media (max-width: 767.98px) {
-      .timeline::before {
-        left: 8px;
-        transform: none;
-      }
-      .timeline-item {
-        width: 100%;
-        padding-left: 2.5rem;
-        text-align: left;
-      }
-      .timeline-item:nth-of-type(odd),
-      .timeline-item:nth-of-type(even) {
-        left: 0;
-      }
-      .timeline-item::after {
-        left: 0;
-      }
-    }
-
-    /* Jahrzehnt-Badges --------------------------------------------- */
-    .decade-badge {
-      display: inline-block;
-      padding: .25rem .5rem;
-      border-radius: .25rem;
-      background: rgba(var(--bs-primary-rgb), .15);
-      color: var(--bs-primary);
-      font-size: .75rem;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-
-    /* Dezente Hintergrundfarben pro Jahrzehnt ----------------------- */
-    .timeline-item.decade-1970,
-    .timeline-item.decade-1990,
-    .timeline-item.decade-2010,
-    .timeline-item.decade-2030 {
-      background: rgba(var(--bs-primary-rgb), .15);
-    }
-    .timeline-item.decade-1980,
-    .timeline-item.decade-2000,
-    .timeline-item.decade-2020 {
-      background: rgba(var(--bs-primary-rgb), .15);
-    }
-
-    /* Dekaden-Hintergrundabschnitte */
-    .decade-section {
-      position: relative;
-      background-size: auto;
-      background-position: center;
-      background-repeat: repeat;
-      border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.5);
-    }
-    .decade-section::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      background: linear-gradient(to right, white 0%, transparent 10%, transparent 90%, white 100%);
-    }
-    .decade-overlay {
-      background: rgba(255,255,255,0.6);
-      padding: 2rem 0;
-    }
-
-    /* Sticky Epoch-Label beim Scrollen */
-    .timeline-epoch {
-      position: sticky;
-      top: 70px;
-      background: transparent;
-      z-index: 5;
-      padding: 0.5rem 0;
-    }
-
-    /* Stil für "Mehr zum Gerät"-Buttons */
-    .device-link {
-      display: inline-block;
-      padding: .25rem .75rem;
-      border: 1px solid var(--bs-primary);
-      border-radius: .25rem;
-      color: var(--bs-primary);
-      text-decoration: none;
-      transition: background .3s ease, color .3s ease;
-    }
-    .device-link:hover,
-    .device-link:focus {
-      background: var(--bs-primary);
-      color: #fff;
-    }
-    /* Detail-Slider im unteren Drittel ----------------------------- */
-    .flipper-detail-hero{
-      position:absolute;
-      left:0; right:0; bottom:0;
-      width:100%;
-      height:33vh;               /* füllt bis zum Seitenende */
-      max-height:320px;          /* nur beschränken, falls höher */
-      overflow:hidden;
-    }
-  .flipper-detail-hero::before{
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 120px;            /* Fade-Region, beginnt direkt an Oberkante des Bildes */
-    background: linear-gradient(to bottom,
-      rgba(255, 255, 255, 1) 0%,
-      rgba(255, 255, 255, 0.7) 40%,
-      rgba(255, 255, 255, 0) 100%);
-    pointer-events: none;
-    z-index: 1;
-  }
-  .flipper-detail-hero img{
-      width:100%; height:100%;
-      object-fit:cover;
-      object-position:center bottom;  /* Zoom mittig, unten orientiert */
-      display:block;
-      transition:opacity .8s ease;
-      opacity:1;
-  }
-    .flipper-overlay .flipper-content{
-      padding:1rem 1.5rem;
-      padding-bottom:33vh;      /* Platz für Detailbild, passt sich an Höhe an */
-    }
-    @media (max-width: 767.98px) {
-  /* verberge den Slider mit den Detailbildern */
-  .flipper-detail-hero {
-    display: none !important;
-  }
-  /* entferne die extra Reservierung für den Slider */
-  .flipper-overlay .flipper-content {
-    padding-bottom: 1.5rem !important;
-  }
+<style>
+/* ════════════════════════════════════════════════════
+   Flipper-Epochen – reset custom.css timeline conflicts
+   ════════════════════════════════════════════════════ */
+.timeline { padding: 0 !important; }
+.timeline-item,
+.timeline-item:nth-of-type(odd),
+.timeline-item:nth-of-type(even) {
+  left: 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+  margin-bottom: 0 !important;
+  background: none !important;
+  border: none !important;
 }
-  </style>
+.timeline-item::after { display: none !important; }
+
+/* ════════════════════════════════════════════════════
+   Page layout
+   ════════════════════════════════════════════════════ */
+.flipper-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 40px 120px;
+}
+
+.flipper-intro {
+  max-width: 600px;
+  margin-bottom: 80px;
+}
+.flipper-intro p {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.75;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+/* ════════════════════════════════════════════════════
+   Timeline
+   ════════════════════════════════════════════════════ */
+.timeline {
+  position: relative;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 2px;
+  background: linear-gradient(to bottom,
+    transparent 0%, var(--red) 3%, var(--red) 97%, transparent 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Decade block */
+.decade-block {
+  position: relative;
+  margin-bottom: 72px;
+}
+
+/* Sticky decade label */
+.decade-header {
+  position: sticky;
+  top: 72px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  margin-bottom: 52px;
+}
+.decade-header-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.decade-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 22px;
+  margin: 0 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--red);
+  border-radius: var(--r-pill);
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--red);
+  white-space: nowrap;
+  box-shadow: 0 0 0 6px var(--bg);
+}
+.decade-pill-dot {
+  width: 6px; height: 6px;
+  background: var(--red);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.decade-pill-count {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .03em;
+  text-transform: none;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+/* Items: 2-column grid so left+right items sit side by side */
+.timeline-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 56px;
+  row-gap: 20px;
+}
+
+/* Single item */
+.timeline-item {
+  position: relative;
+  display: flex;
+  opacity: 0;
+  /* Slide in from the respective side for visual rhythm */
+  transition: opacity .5s var(--ease-out), transform .5s var(--ease-out);
+}
+.timeline-item.card-left  { transform: translateX(-20px); justify-content: flex-end; }
+.timeline-item.card-right { transform: translateX( 20px); justify-content: flex-start; }
+.timeline-item.show {
+  opacity: 1;
+  transform: none;
+}
+
+/* Timeline dot – positioned into the column-gap center (gap=56px, half=28px) */
+.timeline-dot {
+  position: absolute;
+  top: 24px;
+  width: 18px; height: 18px;
+  background: var(--bg);
+  border: 3px solid var(--red);
+  border-radius: 50%;
+  z-index: 3;
+  pointer-events: none;
+  transition: background .25s var(--ease-out),
+              box-shadow .25s var(--ease-out),
+              transform .25s var(--ease-out);
+}
+.timeline-item.card-left  .timeline-dot { right: -37px; left: auto; }
+.timeline-item.card-right .timeline-dot { left:  -37px; right: auto; }
+.timeline-item.show:hover .timeline-dot {
+  background: var(--red);
+  box-shadow: 0 0 0 5px rgba(227,30,36,.15);
+  transform: scale(1.15);
+}
+
+/* ════════════════════════════════════════════════════
+   Flipper card
+   ════════════════════════════════════════════════════ */
+.flipper-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg2);
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  cursor: pointer;
+  display: block;
+  text-decoration: none !important;
+  transition: transform .3s var(--ease-out),
+              box-shadow .3s var(--ease-out),
+              border-color .25s;
+}
+.flipper-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(227,30,36,.4) !important;
+}
+.flipper-card:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+
+/* Image area */
+.flipper-card-img {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.flipper-card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+  transition: transform .5s var(--ease-out);
+}
+.flipper-card:hover .flipper-card-img img {
+  transform: scale(1.04);
+}
+.flipper-card-img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 55%);
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+}
+.flipper-card:hover .flipper-card-img-overlay { opacity: 1; }
+
+/* Placeholder (no image) */
+.flipper-card-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3);
+  color: var(--muted);
+  font-size: 2.5rem;
+}
+
+/* Year badge */
+.fc-year {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-head);
+  font-size: 11px; font-weight: 800;
+  letter-spacing: .05em;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  z-index: 1;
+}
+
+/* "Details" hover hint */
+.fc-hint {
+  position: absolute;
+  bottom: 12px; left: 0; right: 0;
+  display: flex;
+  align-items: center; justify-content: center;
+  gap: 5px;
+  font-size: 11px; font-weight: 700;
+  color: rgba(255,255,255,.9);
+  letter-spacing: .06em; text-transform: uppercase;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .25s, transform .25s;
+  z-index: 2;
+  pointer-events: none;
+}
+.flipper-card:hover .fc-hint {
+  opacity: 1; transform: none;
+}
+
+/* Text body */
+.flipper-card-body {
+  padding: 14px 18px 16px;
+}
+.fc-name {
+  font-family: var(--font-head);
+  font-size: 15px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em; line-height: 1.3;
+  margin-bottom: 4px;
+}
+.fc-meta {
+  font-size: 12px; color: var(--muted);
+  display: flex; align-items: center;
+  gap: 5px; flex-wrap: wrap;
+}
+.fc-meta-sep {
+  width: 3px; height: 3px;
+  background: var(--muted);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════════════
+   Detail overlay panel
+   ════════════════════════════════════════════════════ */
+.flipper-overlay {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(520px, 100vw);
+  z-index: 1060;
+  transform: translateX(100%);
+  transition: transform .42s var(--ease-out);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0,0,0,.35);
+}
+[data-theme="dark"]  .flipper-overlay { background: #111114; }
+[data-theme="light"] .flipper-overlay { background: #ffffff; }
+.flipper-overlay.open { transform: translateX(0); }
+
+.fo-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  z-index: 1059;
+  opacity: 0; pointer-events: none;
+  transition: opacity .35s;
+}
+.fo-backdrop.open { opacity: 1; pointer-events: auto; }
+
+/* Hero image at top */
+.fo-hero {
+  position: relative;
+  aspect-ratio: 16/10;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.fo-hero img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  transition: opacity .4s ease;
+  display: block;
+}
+.fo-hero::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 45%; pointer-events: none; z-index: 1;
+}
+[data-theme="dark"]  .fo-hero::after { background: linear-gradient(to top, #111114, transparent); }
+[data-theme="light"] .fo-hero::after { background: linear-gradient(to top, #ffffff, transparent); }
+
+/* Close button */
+.fo-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 38px; height: 38px;
+  background: rgba(0,0,0,.65); border: 0; border-radius: 50%;
+  color: #fff; font-size: 1.35rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5; cursor: pointer;
+  transition: background .2s;
+}
+.fo-close:hover { background: var(--red); }
+
+/* Slideshow dots */
+.fo-img-dots {
+  position: absolute;
+  bottom: 52px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 5px;
+  z-index: 2;
+}
+.fo-img-dot {
+  width: 6px; height: 6px;
+  background: rgba(255,255,255,.35);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none; padding: 0;
+  transition: background .25s, transform .25s;
+}
+.fo-img-dot.active {
+  background: #fff;
+  transform: scale(1.3);
+}
+
+/* Body */
+.fo-body {
+  padding: 20px 28px 56px;
+  flex: 1;
+}
+.fo-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--red); margin-bottom: 6px;
+}
+.fo-name {
+  font-family: var(--font-head);
+  font-size: clamp(20px, 4vw, 28px); font-weight: 800;
+  color: var(--text); letter-spacing: -.03em; line-height: 1.1;
+  margin-bottom: 20px;
+}
+.fo-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+
+/* Specs grid */
+.fo-specs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 8px; column-gap: 18px;
+  margin-bottom: 4px;
+}
+.fo-spec-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+  white-space: nowrap; padding-top: 1px;
+}
+.fo-spec-value {
+  font-size: 13px; color: var(--text); line-height: 1.5;
+}
+
+.fo-section-head {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+  margin: 22px 0 8px;
+}
+.fo-text {
+  font-size: 13px; color: var(--muted-strong); line-height: 1.75; margin: 0;
+}
+
+.fo-actions {
+  margin-top: 24px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.fo-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--red);
+  text-decoration: none;
+  padding: 8px 18px;
+  border: 1px solid rgba(227,30,36,.3);
+  border-radius: var(--r-pill);
+  transition: background .2s, border-color .2s;
+}
+.fo-btn:hover {
+  background: rgba(227,30,36,.08);
+  border-color: var(--red); color: var(--red);
+}
+
+/* ════════════════════════════════════════════════════
+   CTA section
+   ════════════════════════════════════════════════════ */
+.flipper-cta {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 80px 40px;
+  text-align: center;
+}
+.flipper-cta .eyebrow { justify-content: center; }
+.flipper-cta h2 { margin: 0 0 12px; }
+.flipper-cta .lead { max-width: 540px; margin: 0 auto 28px; }
+
+/* ════════════════════════════════════════════════════
+   Responsive
+   ════════════════════════════════════════════════════ */
+@media (max-width: 960px) {
+  .flipper-page { padding: 56px 24px 80px; }
+  .flipper-intro { margin-bottom: 56px; }
+  .decade-header { top: 68px; }
+}
+@media (max-width: 720px) {
+  /* Collapse 2-column grid to single column on smaller screens */
+  .timeline-items {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 16px;
+  }
+  .timeline::before { left: 14px; transform: none; }
+  .timeline-item.card-left,
+  .timeline-item.card-right {
+    grid-column: 1;
+    justify-content: flex-start;
+    transform: translateX(0);
+    padding-left: 36px;
+  }
+  .timeline-item.card-left  .timeline-dot,
+  .timeline-item.card-right .timeline-dot {
+    left: 5px; right: auto; top: 20px;
+  }
+  .flipper-card { max-width: 100%; }
+}
+@media (max-width: 575.98px) {
+  .flipper-page { padding: 36px 16px 56px; }
+  .flipper-intro { margin-bottom: 40px; }
+  .flipper-cta { padding: 60px 20px; }
+  .fo-body { padding: 16px 20px 48px; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero --------------------------------------------------------------- -->
-<header class="hero-flipper d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">Unsere Flipper-Epochen</h1>
-    <p class="lead mb-0">Von early-electronic Klassikern bis zu modernen Stern-Titeln</p>
+
+<!-- ── Hero ── -->
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/50s.jpg") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Unsere Sammlung</div>
+    <h1>Flipper-Epochen</h1>
+    <p class="lead">Von Early-Electronic Klassikern bis zu modernen Stern-Titeln</p>
   </div>
 </header>
 
-<!-- Intro-Text ---------------------------------------------------------- -->
-<section class="py-5">
-  <div class="container">
-    <p class="lead">
-      Begib dich mit uns auf eine kleine Zeitreise!  
-      Wir haben für dich die Highlights unserer Sammlung chronologisch
-      aufbereitet – vom ältesten Automaten der 70er Jahre bis zum neuesten Gerät.
+<!-- ── Page wrapper ── -->
+<div class="flipper-page">
+
+  <!-- Intro -->
+  <div class="flipper-intro reveal">
+    <div class="eyebrow">Geschichte des Flippers</div>
+    <h2>Eine Zeitreise durch unsere Sammlung</h2>
+    <p>
+      Begib dich mit uns auf eine kleine Zeitreise!
+      Wir haben die Highlights unserer Sammlung chronologisch aufbereitet –
+      vom ältesten Automaten der 70er Jahre bis zum neuesten Gerät.
     </p>
   </div>
-</section>
 
-<!-- Timeline nach Dekade ------------------------------------------------------------ -->
-{% set groups = flippers|groupby('decade_label') %}
-{% for decade_label, items in groups %}
-  {% set decade = (items[0].year // 10) * 10 %}
-  <section class="decade-section" style="background-image: url('{{ url_for('static', filename='images/timeline/bg-' ~ decade ~ '.jpg') }}');">
-    <div class="decade-overlay">
-      <div class="container">
-        <div class="timeline-epoch">
-          <span class="epoch-label">{{ decade_label }}</span>
+  <!-- Timeline -->
+  <div class="timeline">
+    {% set groups = flippers|groupby('decade_label') %}
+    {% for decade_label, items in groups %}
+    {% set items_list = items|list %}
+    {% set decade = (items_list[0].year // 10) * 10 %}
+
+    <div class="decade-block">
+
+      <!-- Decade header -->
+      <div class="decade-header">
+        <div class="decade-header-line"></div>
+        <div class="decade-pill">
+          <span class="decade-pill-dot"></span>
+          {{ decade_label }}
+          <span class="decade-pill-count">{{ items_list|length }} Maschinen</span>
         </div>
-        <div class="timeline">
-          {% for f in items %}
-          <div class="timeline-item decade-{{ decade }}"
-               data-name="{{ f.name }}"
-               data-image="{{ f.image | asset }}"
-               data-year="{{ f.year }}"
-               {% if f.manufacturer %}data-manufacturer="{{ f.manufacturer }}"{% endif %}
-               {% if f.system %}data-system="{{ f.system }}"{% endif %}
-               {% if f.designer %}data-designer="{{ f.designer }}"{% endif %}
-               {% if f.artwork %}data-artwork="{{ f.artwork }}"{% endif %}
-               {% if f.sound %}data-sound="{{ f.sound }}"{% endif %}
-               {% if f.production %}data-production="{{ f.production }}"{% endif %}
-               {% if f.features %}data-features="{{ f.features|join(' • ') }}"{% endif %}
-               {% if f.notable_facts %}data-facts="{{ f.notable_facts|join(' • ') }}"{% endif %}
-               {% if f.link %}data-link="{{ f.link }}"{% endif %}
-               {% if f.image_details %}data-imagedetails="{{ f.image_details|join('|') }}"{% endif %}>
-            <span class="timeline-year">
-              {{ f.year }}
-            </span>
-            <h3 class="h5 mt-2">{{ f.name }}</h3>
-            {% if f.image %}
-            <a href="#" class="flipper-trigger d-block">
-              <img src="{{ f.image | asset }}" class="img-fluid rounded shadow my-3" alt="{{ f.name }}" loading="lazy" decoding="async">
-            </a>
-            {% endif %}
-            {% if f.link %}
-              <p>
-                <a href="#" class="device-link flipper-trigger">Mehr zum Gerät
-                  <i class="bi bi-info-circle ms-1"></i>
-                </a>
-              </p>
-            {% endif %}
-          </div>
-          {% endfor %}
-        </div>
+        <div class="decade-header-line"></div>
       </div>
-    </div>
-  </section>
-{% endfor %}
 
-<!-- Flipper-Detail-Overlay ------------------------------------------- -->
-<div id="flipperOverlay" class="flipper-overlay" aria-hidden="true">
-  <button class="close-overlay" aria-label="Schließen">&times;</button>
-  <div class="flipper-hero"></div>
-  <div class="flipper-content">
-    <h3 id="fo-name"></h3>
-    <p class="text-muted mb-2"><span id="fo-year"></span></p>
-    <ul class="list-unstyled small mb-3">
-      <li><strong>Hersteller:</strong> <span id="fo-manufacturer"></span></li>
-      <li><strong>System:</strong> <span id="fo-system"></span></li>
-      <li><strong>Designer:</strong> <span id="fo-designer"></span></li>
-      <li><strong>Artwork:</strong> <span id="fo-artwork"></span></li>
-      <li><strong>Sound:</strong> <span id="fo-sound"></span></li>
-      <li><strong>Produktion:</strong> <span id="fo-production"></span></li>
-    </ul>
-    <h5>Features</h5>
-    <p id="fo-features"></p>
-    <h5>Besonderheiten</h5>
-    <p id="fo-facts"></p>
-    <p class="mt-3">
-      <a id="fo-link" href="#" target="_blank" class="btn btn-outline-primary btn-sm">IPDB-Eintrag öffnen</a>
-    </p>
-    <!-- Detail-Slider ------------------------------------------- -->
-    <div class="flipper-detail-hero d-none">
-      <img id="fd-img" src="" alt="Detailbild">
-    </div>
+      <!-- Items for this decade -->
+      <div class="timeline-items">
+        {% for f in items_list %}
+        <div class="timeline-item {{ 'card-left' if loop.index0 % 2 == 0 else 'card-right' }}"
+             data-name="{{ f.name }}"
+             data-image="{{ f.image | asset if f.image else '' }}"
+             data-year="{{ f.year }}"
+             {% if f.manufacturer %}data-manufacturer="{{ f.manufacturer }}"{% endif %}
+             {% if f.system %}data-system="{{ f.system }}"{% endif %}
+             {% if f.designer %}data-designer="{{ f.designer }}"{% endif %}
+             {% if f.artwork %}data-artwork="{{ f.artwork }}"{% endif %}
+             {% if f.sound %}data-sound="{{ f.sound }}"{% endif %}
+             {% if f.production %}data-production="{{ f.production }}"{% endif %}
+             {% if f.features %}data-features="{{ f.features|join(' • ') }}"{% endif %}
+             {% if f.notable_facts %}data-facts="{{ f.notable_facts|join(' • ') }}"{% endif %}
+             {% if f.link %}data-link="{{ f.link }}"{% endif %}
+             {% if f.image_details %}data-imagedetails="{{ f.image_details|join('|') }}"{% endif %}>
+
+          <div class="timeline-dot"></div>
+
+          <div class="flipper-card flipper-trigger"
+               tabindex="0"
+               role="button"
+               aria-label="{{ f.name }}, {{ f.year }}{% if f.manufacturer %}, {{ f.manufacturer }}{% endif %}">
+
+            <!-- Image -->
+            <div class="flipper-card-img">
+              {% if f.image %}
+              <img src="{{ f.image | asset }}" alt="{{ f.name }}"
+                   loading="{{ 'eager' if loop.index <= 6 else 'lazy' }}" decoding="async">
+              {% else %}
+              <div class="flipper-card-placeholder">
+                <i class="bi bi-controller"></i>
+              </div>
+              {% endif %}
+              <div class="flipper-card-img-overlay"></div>
+              <span class="fc-year">{{ f.year }}</span>
+              <div class="fc-hint"><i class="bi bi-info-circle"></i> Details</div>
+            </div>
+
+            <!-- Text -->
+            <div class="flipper-card-body">
+              <div class="fc-name">{{ f.name }}</div>
+              <div class="fc-meta">
+                {% if f.manufacturer %}<span>{{ f.manufacturer }}</span>{% endif %}
+                {% if f.manufacturer and f.system %}<span class="fc-meta-sep"></span>{% endif %}
+                {% if f.system %}<span>{{ f.system }}</span>{% endif %}
+              </div>
+            </div>
+
+          </div><!-- .flipper-card -->
+        </div><!-- .timeline-item -->
+        {% endfor %}
+      </div><!-- .timeline-items -->
+
+    </div><!-- .decade-block -->
+    {% endfor %}
+  </div><!-- .timeline -->
+
+</div><!-- .flipper-page -->
+
+<!-- ── Detail Overlay ── -->
+<div id="flipperOverlay" class="flipper-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+
+  <div class="fo-hero" id="fo-hero">
+    <img id="fo-img" src="" alt="">
+    <button class="fo-close" id="fo-close-btn" aria-label="Schließen">&times;</button>
+    <div class="fo-img-dots" id="fo-dots"></div>
   </div>
+
+  <div class="fo-body">
+    <div class="fo-eyebrow" id="fo-year"></div>
+    <h2 class="fo-name" id="fo-name"></h2>
+    <div class="fo-divider"></div>
+
+    <div class="fo-specs" id="fo-specs"></div>
+
+    <div id="fo-features-wrap">
+      <div class="fo-section-head">Features</div>
+      <p class="fo-text" id="fo-features"></p>
+    </div>
+
+    <div id="fo-facts-wrap">
+      <div class="fo-section-head">Besonderheiten</div>
+      <p class="fo-text" id="fo-facts"></p>
+    </div>
+
+    <div class="fo-actions" id="fo-actions"></div>
+  </div>
+
 </div>
+<div id="fo-backdrop" class="fo-backdrop"></div>
 
-<!-- CTA --------------------------------------------------------------- -->
-<section class="py-5 text-center">
-  <div class="container">
-    <h2 class="mb-3">Selbst spielen – live vor Ort!</h2>
-    <p class="lead mb-4">
-      Komm an unserem nächsten Öffnungstag vorbei und teste deine Lieblingsgeräte
-      aus jeder Epoche.
-    </p>
-    <a class="btn btn-primary btn-lg" href="{{ url_for('preise') }}">
-      Preise &amp; Besuch
-    </a>
-  </div>
+<!-- ── CTA ── -->
+<section class="flipper-cta reveal">
+  <div class="eyebrow">Selbst spielen</div>
+  <h2>Live vor Ort erleben</h2>
+  <p class="lead">
+    Komm an unserem nächsten Öffnungstag vorbei und teste Geräte aus jeder Epoche.
+  </p>
+  <a class="btn btn-primary" href="{{ url_for('preise') }}">
+    Preise &amp; Besuch <i class="bi bi-arrow-right"></i>
+  </a>
 </section>
+
 {% endblock %}
 
 {% block scripts %}
-  {{ super() }}
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const STATIC_PREFIX = "{{ url_for('static', filename='') }}";
-      const items = document.querySelectorAll('.timeline-item');
-      if (!('IntersectionObserver' in window)) {
-        items.forEach(i => i.classList.add('show'));
-        return;
-      }
-      const io = new IntersectionObserver((entries, obs) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('show');
-            obs.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.15 });
-      items.forEach(el => io.observe(el));
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const STATIC = "{{ url_for('static', filename='') }}";
 
-      /* Flipper-Detail-Overlay ----------------------------------- */
-      const overlay   = document.getElementById('flipperOverlay');
-      const hero      = overlay.querySelector('.flipper-hero');
-      const heroDetail = overlay.querySelector('.flipper-detail-hero');
-      const fdImg      = document.getElementById('fd-img');
-      const nameEl    = document.getElementById('fo-name');
-      const yearEl    = document.getElementById('fo-year');
-      const manuEl    = document.getElementById('fo-manufacturer');
-      const systemEl  = document.getElementById('fo-system');
-      const designerEl= document.getElementById('fo-designer');
-      const artworkEl = document.getElementById('fo-artwork');
-      const soundEl   = document.getElementById('fo-sound');
-      const prodEl    = document.getElementById('fo-production');
-      const featEl    = document.getElementById('fo-features');
-      const factsEl   = document.getElementById('fo-facts');
-      const linkEl    = document.getElementById('fo-link');
-
-      let detailTimer = null;
-
-      function openOverlay(item){
-        hero.style.backgroundImage = `url('${item.dataset.image}')`;
-        nameEl.textContent  = item.dataset.name || '';
-        yearEl.textContent  = item.dataset.year || '';
-        manuEl.textContent  = item.dataset.manufacturer || '';
-        systemEl.textContent= item.dataset.system || '';
-        designerEl.textContent = item.dataset.designer || '';
-        artworkEl.textContent  = item.dataset.artwork || '';
-        soundEl.textContent    = item.dataset.sound || '';
-        prodEl.textContent     = item.dataset.production || '';
-        featEl.textContent     = item.dataset.features || '';
-        factsEl.textContent    = item.dataset.facts || '';
-        linkEl.href            = item.dataset.link || '#';
-        /* Detailbilder ---------------------------------- */
-        const rawImgs = item.dataset.imagedetails ? item.dataset.imagedetails.split('|') : [];
-        const imgs = rawImgs.map(p => {
-          if(!p) return '';
-          if(/^https?:\/\//i.test(p)) return p;
-          // remove leading slashes and prepend static prefix
-          return STATIC_PREFIX + p.replace(/^\/+/, '');
-        }).filter(Boolean);
-        if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
-        if(imgs.length){
-          heroDetail.classList.remove('d-none');
-          let idx = 0;
-          fdImg.style.opacity = 0;
-          fdImg.onload = ()=>{ fdImg.style.opacity = 1; };
-          fdImg.src = imgs[0];
-          detailTimer = setInterval(()=>{
-            fdImg.style.opacity = 0;
-            idx = (idx + 1) % imgs.length;
-            setTimeout(()=>{
-              fdImg.src = imgs[idx];
-            },400);
-          },8000);
-        }else{
-          heroDetail.classList.add('d-none');
-        }
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-        overlay.setAttribute('aria-hidden','false');
-      }
-
-      document.querySelectorAll('.flipper-trigger').forEach(trig=>{
-        trig.addEventListener('click', e=>{
-          e.preventDefault();
-          e.stopPropagation();          // verhindert, dass der Dokument-Listener das Overlay sofort wieder schließt
-          const item = trig.closest('.timeline-item');
-          if(item) openOverlay(item);
-        });
-      });
-
-      overlay.querySelector('.close-overlay').addEventListener('click', ()=>{
-        overlay.classList.remove('open');
-        document.body.style.overflow = '';
-        overlay.setAttribute('aria-hidden','true');
-        if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
-      });
-
-      /* Desktop: Klick außerhalb des Overlays schließt es --------- */
-      document.addEventListener('click', ev=>{
-        if(!overlay.classList.contains('open')) return;
-        if(!overlay.contains(ev.target)){  // Klick links neben dem Panel
-          overlay.classList.remove('open');
-          document.body.style.overflow = '';
-          overlay.setAttribute('aria-hidden','true');
-          if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
-        }
-      });
-
-      /* Mobile: Swipe‑to‑Close ------------------------------------- */
-      let touchStartX = null;
-      overlay.addEventListener('touchstart', e=>{
-        touchStartX = e.touches[0].clientX;
-      });
-      overlay.addEventListener('touchmove', e=>{
-        if(touchStartX===null) return;
-        const deltaX = e.touches[0].clientX - touchStartX;
-        // nach rechts wischen (Panel sitzt rechts)
-        if(deltaX > 80){
-          overlay.classList.remove('open');
-          document.body.style.overflow = '';
-          overlay.setAttribute('aria-hidden','true');
-          if(detailTimer){ clearInterval(detailTimer); detailTimer = null; }
-          touchStartX = null;
-        }
-      });
-      overlay.addEventListener('touchend', ()=>{ touchStartX = null; });
+  /* ── Reveal: timeline items ── */
+  const items = document.querySelectorAll('.timeline-item');
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); }
     });
-  </script>
+  }, { threshold: 0.1 });
+  items.forEach(el => io.observe(el));
+
+  /* ── Reveal: other sections ── */
+  const revObs = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('reveal-visible'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+  /* ── Overlay refs ── */
+  const overlay    = document.getElementById('flipperOverlay');
+  const backdrop   = document.getElementById('fo-backdrop');
+  const closeBtn   = document.getElementById('fo-close-btn');
+  const heroEl     = document.getElementById('fo-hero');
+  const imgEl      = document.getElementById('fo-img');
+  const dotsEl     = document.getElementById('fo-dots');
+  const nameEl     = document.getElementById('fo-name');
+  const yearEl     = document.getElementById('fo-year');
+  const specsEl    = document.getElementById('fo-specs');
+  const featWrap   = document.getElementById('fo-features-wrap');
+  const factsWrap  = document.getElementById('fo-facts-wrap');
+  const featEl     = document.getElementById('fo-features');
+  const factsEl    = document.getElementById('fo-facts');
+  const actionsEl  = document.getElementById('fo-actions');
+
+  let imgTimer = null;
+  let imgList  = [];
+  let imgIdx   = 0;
+
+  function resolveImg(p) {
+    if (!p) return '';
+    if (/^https?:\/\//i.test(p)) return p;
+    return STATIC + p.replace(/^\/+/, '');
+  }
+
+  function setImg(idx) {
+    imgIdx = idx;
+    imgEl.style.opacity = '0';
+    setTimeout(() => { imgEl.src = imgList[idx]; imgEl.style.opacity = '1'; }, 220);
+    dotsEl.querySelectorAll('.fo-img-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === idx));
+  }
+
+  function startSlideshow() {
+    if (imgTimer) clearInterval(imgTimer);
+    if (imgList.length <= 1) { imgTimer = null; return; }
+    imgTimer = setInterval(() => setImg((imgIdx + 1) % imgList.length), 6000);
+  }
+
+  function stopSlideshow() {
+    if (imgTimer) { clearInterval(imgTimer); imgTimer = null; }
+  }
+
+  function openOverlay(item) {
+    const d = item.dataset;
+
+    /* Name & year */
+    nameEl.textContent = d.name || '';
+    yearEl.textContent = d.year ? d.year + ' · Jahrgang' : '';
+
+    /* Specs */
+    const specDefs = [
+      ['Hersteller', d.manufacturer],
+      ['System',     d.system],
+      ['Designer',   d.designer],
+      ['Artwork',    d.artwork],
+      ['Sound',      d.sound],
+      ['Produktion', d.production],
+    ];
+    specsEl.innerHTML = specDefs
+      .filter(([, v]) => v)
+      .map(([k, v]) =>
+        `<span class="fo-spec-label">${k}</span><span class="fo-spec-value">${v}</span>`)
+      .join('');
+
+    /* Features / Facts */
+    const feat  = d.features || '';
+    const facts = d.facts    || '';
+    featWrap.style.display  = feat  ? '' : 'none';
+    factsWrap.style.display = facts ? '' : 'none';
+    featEl.textContent  = feat;
+    factsEl.textContent = facts;
+
+    /* Actions */
+    actionsEl.innerHTML = '';
+    if (d.link) {
+      const a = document.createElement('a');
+      a.href = d.link; a.target = '_blank'; a.rel = 'noopener';
+      a.className = 'fo-btn';
+      a.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> IPDB-Eintrag';
+      actionsEl.appendChild(a);
+    }
+
+    /* Images */
+    const main    = d.image ? resolveImg(d.image) : '';
+    const details = d.imagedetails
+      ? d.imagedetails.split('|').map(resolveImg).filter(Boolean)
+      : [];
+    imgList = [main, ...details].filter(Boolean);
+    imgIdx  = 0;
+
+    /* Build dots */
+    dotsEl.innerHTML = '';
+    if (imgList.length > 1) {
+      imgList.forEach((_, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'fo-img-dot' + (i === 0 ? ' active' : '');
+        btn.setAttribute('aria-label', 'Bild ' + (i + 1));
+        btn.addEventListener('click', () => { stopSlideshow(); setImg(i); startSlideshow(); });
+        dotsEl.appendChild(btn);
+      });
+    }
+
+    /* First image */
+    heroEl.style.display = '';
+    if (imgList.length) {
+      imgEl.src     = imgList[0];
+      imgEl.alt     = d.name || '';
+      imgEl.style.opacity = '1';
+    } else {
+      heroEl.style.display = 'none';
+    }
+
+    startSlideshow();
+    overlay.classList.add('open');
+    backdrop.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  }
+
+  function closeOverlay() {
+    stopSlideshow();
+    overlay.classList.remove('open');
+    backdrop.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  /* Open triggers */
+  document.querySelectorAll('.flipper-trigger').forEach(card => {
+    const item = card.closest('.timeline-item');
+    if (!item) return;
+    card.addEventListener('click', e => { e.preventDefault(); openOverlay(item); });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOverlay(item); }
+    });
+  });
+
+  closeBtn.addEventListener('click', closeOverlay);
+  backdrop.addEventListener('click', closeOverlay);
+
+  document.addEventListener('keydown', e => {
+    if (overlay.classList.contains('open') && e.key === 'Escape') closeOverlay();
+  });
+
+  /* Swipe-to-close */
+  let touchX = null;
+  overlay.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  overlay.addEventListener('touchend', e => {
+    if (touchX !== null && e.changedTouches[0].clientX - touchX > 80) closeOverlay();
+    touchX = null;
+  });
+});
+</script>
 {% endblock %}

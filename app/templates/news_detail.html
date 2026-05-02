@@ -29,9 +29,18 @@
 </script>
 {% endblock %}
 {% block content %}
+{% if article.preview_image %}
+<header class="page-hero" style="background-image:url('{{ article.preview_image | asset }}')">
+  <div class="page-hero-content">
+    {% if article.category %}<div class="eyebrow">{{ article.category }}</div>{% endif %}
+    <h1>{{ article.title }}</h1>
+    {% if article._dt %}<p class="lead">{{ article._dt | datetimeformat('%d. %B %Y') }}</p>{% endif %}
+  </div>
+</header>
+{% endif %}
 <section class="py-5">
   <div class="container">
-    <h1 class="mb-3">{{ article.title }}</h1>
+    {% if not article.preview_image %}<h1 class="mb-3">{{ article.title }}</h1>{% endif %}
     <p class="text-muted">{{ article.date | datetimeformat('%d.%m.%Y') }}</p>
     {% if article.images %}
       <div class="row g-4 mb-3">

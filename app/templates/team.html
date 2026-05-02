@@ -1,316 +1,431 @@
 {% extends "base.html" %}
+{% block title %}Das Team – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Das Team hinter dem Flipperverein Aixtraball e.V. – {{ members|length }} Mitglieder, eine Leidenschaft.{% endblock %}
+
 {% block head_extra %}
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
+<style>
+  /* ── Team Grid ─────────────────────────────────── */
+  .team-section {
+    padding: 72px 40px 96px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .team-intro {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 16px; margin-bottom: 48px;
+  }
+  .team-count {
+    font-family: var(--font-head); font-size: 13px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); padding: 6px 14px;
+    border: 1px solid var(--border); border-radius: var(--r-pill);
+  }
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 1100px) { .team-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px)  { .team-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+  @media (max-width: 400px)  { .team-grid { grid-template-columns: 1fr; } }
 
-  <style>
-    /* Thumbs carousel on top */
-    .thumbs-bar { background:#fff; border-bottom:1px solid rgba(0,0,0,.06); }
-    .thumbs-bar .swiper { padding: .75rem 2.5rem; }
-    .thumb-slide { width: 90px; cursor: pointer; }
-    .thumb-slide .thumb-img { width: 100%; height: 90px; object-fit: cover; object-position: left center; border-radius: .5rem; border:2px solid transparent; display:block; }
-    .thumb-slide .thumb-name { font-size:.8rem; text-align:center; margin-top:.35rem; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; }
-    .memberThumbs .swiper-slide-thumb-active .thumb-img { border-color: var(--bs-primary); box-shadow: 0 .25rem .5rem rgba(0,0,0,.08); }
-    .memberThumbs .swiper-button-prev, .memberThumbs .swiper-button-next { color: var(--bs-primary); }
-    @media (max-width: 575.98px){ .thumb-slide { width: 72px; } .thumb-slide .thumb-img { height: 72px; } }
-    /* Hero-Bild für Team-Seite */
-    .hero-flipper {
-      background: url('{{ url_for("static", filename="/images/else/background_person.jpg") }}') center/cover;
-      min-height: 30vh;
-    }
-    .hero-flipper .overlay {
-      background: rgba(var(--bs-primary-rgb), .65);
-    }
+  /* ── Member Card ────────────────────────────────── */
+  .team-card {
+    position: relative;
+    aspect-ratio: 3/4;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    transition: transform .3s var(--ease-out), box-shadow .3s var(--ease-out);
+  }
+  .team-card:hover, .team-card:focus-visible {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    outline: none;
+  }
+  .team-card:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+  .team-card.active { box-shadow: 0 0 0 2px var(--red), var(--shadow-lg); }
 
-    /* Vollbild‑Member‑Slides */
-    .member-slide{
-      width:100%;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      background-size:cover;
-      background-position:left center !important;
-      background-position-x:left;
-      background-position-y:center;
-      position:relative;
-    }
-    .member-slide::after{
-      content:'';
-      position:absolute;
-      inset:0;
-      background:linear-gradient(90deg, rgba(255,255,255,0) 55%, #fff 97%);
-      z-index:0;
-    }
-    .member-info{
-      position:relative;
-      margin-left:auto;
-      margin-right:5%;
-      max-width:420px;
-      background:#fff;
-      border: 1px solid var(--bs-primary);
-      padding:2rem;
-      border-radius:.5rem;
-      box-shadow:0 .5rem 1rem rgba(0,0,0,.15);
-      text-align:left;
-      z-index:1;
-    }
-    .member-info h2{ color:var(--bs-primary); margin-bottom:.25rem; }
-    .member-info .role{ font-weight:600; margin-bottom:1rem; }
+  .team-card-photo { position: absolute; inset: 0; }
+  .team-card-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: left top;
+    transition: transform .6s var(--ease-out);
+  }
+  .team-card:hover .team-card-photo img { transform: scale(1.05); }
 
-    @media (max-width: 767.98px){
-      .member-slide{
-        flex-direction:column;
-        justify-content:flex-end;
-        align-items:stretch;
-        min-height:100vh;
-        padding:0;
-        background-color:#000;
-        background-repeat:no-repeat;
-        background-size:cover;
-        background-position:left center !important;
-        background-position-x:left;
-        background-position-y:center;
-      }
-      .member-slide::after{
-        background:linear-gradient(180deg,
-                                   rgba(0,0,0,.15) 0%,
-                                   rgba(0,0,0,.65) 55%,
-                                   rgba(0,0,0,.85) 100%);
-        z-index:0;
-      }
-      .member-info{
-        position:absolute;
-        bottom:0;
-        left:0;
-        right:0;
-        margin:0;
-        padding:1rem 1.25rem calc(1rem + env(safe-area-inset-bottom, 12px));
-        max-width:100%;
-        border:0;
-        border-radius:1rem 1rem 0 0;
-        background:rgba(255,255,255,.95);
-        box-shadow:0 -0.5rem 1.5rem rgba(0,0,0,.35);
-        display:flex;
-        flex-direction:column;
-        gap:.4rem;
-        min-height:45vh;
-        max-height:55vh;
-        z-index:2;
-      }
-      .member-info h2,
-      .member-info .role,
-      .member-info .bio-toggle{
-        flex-shrink:0;
-      }
-      .member-info .bio-content{
-        margin-top:.25rem;
-        flex:1;
-        min-height:0;
-        overflow-y:auto;
-      }
+  .team-card-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg3); font-family: var(--font-head);
+    font-size: 3rem; font-weight: 800; color: var(--red);
+    letter-spacing: -.04em;
+  }
 
-      /* Pagination unterhalb der Box auf Mobile */
-      .memberSwiper .swiper-pagination {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 0;
-        width: 100%;
-        z-index: 3;
-        text-align: center;
-      }
-    }
+  .team-card-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.9) 0%, rgba(0,0,0,.35) 40%, transparent 65%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 16px;
+    transition: background .3s;
+  }
+  .team-card:hover .team-card-overlay {
+    background: linear-gradient(to top, rgba(0,0,0,.95) 0%, rgba(0,0,0,.4) 45%, transparent 65%);
+  }
+  .team-card-role {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 5px;
+  }
+  .team-card-name {
+    font-family: var(--font-head); font-size: 15px; font-weight: 700;
+    color: #fff; line-height: 1.25; margin-bottom: 8px;
+  }
+  .team-card-cta {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,.5);
+    text-transform: uppercase; letter-spacing: .06em;
+    transform: translateY(4px); opacity: 0;
+    transition: opacity .25s, transform .25s, color .2s;
+  }
+  .team-card:hover .team-card-cta { opacity: 1; transform: translateY(0); color: rgba(255,255,255,.75); }
+  .team-card-cta .bi { font-size: 13px; }
 
-    /* Deaktiviert Fade‑Opacity, falls Swiper die Klasse trotzdem anlegt */
-    .memberSwiper.swiper-fade .swiper-slide{
-      opacity:1 !important;
-      transition-property:transform !important;
-    }
+  /* ── Detail Panel ───────────────────────────────── */
+  .team-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(500px, 100vw);
+    background: var(--bg);
+    z-index: 1060;
+    transform: translateX(100%);
+    transition: transform .42s var(--ease-out);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+    box-shadow: -8px 0 40px rgba(0,0,0,.35);
+  }
+  .team-panel.open { transform: translateX(0); }
 
-    /* Paginierung unterhalb der Box platzieren */
-    .memberSwiper .swiper-pagination{
-      position:absolute;
-      bottom:0.75rem;
-      left:0;
-      width:100%;
-      text-align:center;
-      z-index:0;               /* hinter der Info-Box, damit sie nicht überlappt */
-    }
+  .team-panel-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(2px);
+    z-index: 1059;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s;
+  }
+  .team-panel-backdrop.open { opacity: 1; pointer-events: auto; }
 
-    /* Navigation-Pfeile in Vereinsfarbe (rot) */
-    .memberSwiper .swiper-button-prev,
-    .memberSwiper .swiper-button-next {
-      color: var(--bs-primary) !important;
-    }
+  .team-panel-hero {
+    position: relative;
+    aspect-ratio: 16/10; flex-shrink: 0;
+    overflow: hidden; background: var(--bg3);
+  }
+  .team-panel-hero img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: left top;
+  }
+  .team-panel-hero::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+  }
+  .team-panel-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 38px; height: 38px;
+    background: rgba(0,0,0,.65); border: 0; border-radius: 50%;
+    color: #fff; font-size: 1.35rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2; cursor: pointer;
+    transition: background .2s;
+  }
+  .team-panel-close:hover { background: var(--red); }
 
-    /* Aktive Pagination-Bullets rot einfärben */
-    .memberSwiper .swiper-pagination-bullet-active {
-      background: var(--bs-primary) !important;
-    }
+  .team-panel-body {
+    padding: 20px 28px 48px;
+    flex: 1;
+  }
+  .team-panel-role {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 6px;
+  }
+  .team-panel-name {
+    font-family: var(--font-head); font-size: clamp(22px, 4vw, 30px);
+    font-weight: 800; color: var(--text);
+    letter-spacing: -.03em; line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .team-panel-divider {
+    height: 1px; background: var(--border); margin-bottom: 20px;
+  }
+  .team-panel-bio {
+    font-size: 14px; color: var(--muted); line-height: 1.8;
+  }
+  .team-panel-links {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px;
+  }
+  .team-panel-links a {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--red);
+    text-decoration: none;
+    padding: 7px 16px;
+    border: 1px solid rgba(227,30,36,.3);
+    border-radius: var(--r-pill);
+    transition: background .2s, border-color .2s;
+  }
+  .team-panel-links a:hover {
+    background: rgba(227,30,36,.08); border-color: var(--red);
+  }
 
-    /* Make outline-primary buttons fully red */
-    .btn-outline-primary {
-      color: var(--bs-primary);
-      border-color: var(--bs-primary);
-    }
-    .btn-outline-primary:hover,
-    .btn-outline-primary:focus {
-      color: #fff;
-      background-color: var(--bs-primary);
-      border-color: var(--bs-primary);
-    }
-    .btn-outline-primary:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.5);
-    }
-    .btn-outline-primary:active,
-    .btn-outline-primary.active {
-      color: #fff;
-      background-color: var(--bs-primary);
-      border-color: var(--bs-primary);
-    }
+  /* no-bio state */
+  .team-panel-no-bio {
+    font-size: 13px; color: var(--muted); font-style: italic;
+  }
 
-    /* Override Bootstrap active selector for toggle button */
-    .bio-toggle:active,
-    .bio-toggle.active {
-      color: #fff !important;
-      background-color: var(--bs-primary) !important;
-      border-color: var(--bs-primary) !important;
-    }
-    .btn-outline-primary.disabled,
-    .btn-outline-primary:disabled {
-      color: var(--bs-primary);
-      background-color: transparent;
-      border-color: var(--bs-primary);
-    }
+  /* Panel nav arrows */
+  .team-panel-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px 16px; gap: 8px;
+  }
+  .team-panel-nav-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    background: none; border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: var(--r-pill);
+    cursor: pointer; transition: color .2s, border-color .2s, background .2s;
+  }
+  .team-panel-nav-btn:hover {
+    color: var(--text); border-color: rgba(255,255,255,.2);
+    background: var(--nav-link-hover-bg);
+  }
+  .team-panel-nav-btn:disabled { opacity: .3; cursor: default; }
+  .team-panel-counter {
+    font-size: 12px; color: var(--muted); font-family: var(--font-head); font-weight: 600;
+  }
 
-    /* Bio always visible on desktop, collapsible on mobile */
-    .bio-content { display: block; }
-    .bio-toggle { display: none !important; }
-    @media (max-width: 767.98px) {
-      .bio-content { display: none; }
-      .bio-content.show {
-        display: block;
-        max-height:24vh;
-        overflow-y:auto;
-      }
-      .bio-toggle {
-        display: inline-block !important;
-        margin-top: 0.25rem;
-        color: var(--bs-primary);
-      }
-    }
-
-    /* Make toggle button red when bio is expanded */
-    .bio-toggle.active-indicator {
-      color: var(--bs-primary) !important;
-    }
-  </style>
+  @media (max-width: 767.98px) {
+    .team-section { padding: 48px 20px 72px; }
+    .team-intro { margin-bottom: 28px; }
+    .team-panel-hero { aspect-ratio: 4/3; }
+    .team-panel-body { padding: 16px 20px 40px; }
+    .team-panel-nav { padding: 0 20px 12px; }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Overview: Thumbnails carousel -->
-<div class="thumbs-bar">
-  <div class="container position-relative">
-    <div class="swiper memberThumbs">
-      <div class="swiper-wrapper">
-        {% for m in members %}
-        <div class="swiper-slide thumb-slide">
-          <img class="thumb-img" src="{{ m.image | asset }}" alt="{{ m.name }}" loading="lazy" decoding="async">
-          {% set parts = m.name.split(' ') %}
-          <div class="thumb-name">{{ parts[0] }}{% if parts|length > 1 %}<br>{{ parts[1:]|join(' ') }}{% endif %}</div>
-        </div>
-        {% endfor %}
-      </div>
-      <div class="swiper-button-prev thumbs-prev"></div>
-      <div class="swiper-button-next thumbs-next"></div>
-    </div>
+<!-- Hero -->
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/background_person.jpg") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Die Menschen hinter den Flippern</div>
+    <h1>Das Team</h1>
+    <p class="lead">Leidenschaft, Schraubenzieher und jede Menge Flipper-Wissen.</p>
   </div>
-  
-</div>
+</header>
 
-<!-- Vollbild‑Swiper für Mitglieder -->
-<div class="swiper memberSwiper">
-  <div class="swiper-wrapper">
-    {% for m in members %}
-    <div class="swiper-slide member-slide" style="background-image:url('{{ m.image | asset }}');">
-      <div class="member-info">
-        <h2>{{ m.name }}</h2>
-        <div class="role text-muted mb-2">{{ m.role }}</div>
-        <button class="btn btn-outline-primary bio-toggle">Bio anzeigen</button>
-        <div class="bio-content">
-          {% if m.bio %}
-            <p>{{ m.bio }}</p>
-          {% endif %}
-        </div>
-      </div>
+<!-- Team Grid -->
+<section class="team-section">
+  <div class="team-intro">
+    <div>
+      <div class="eyebrow">Mitglieder</div>
+      <h2 style="margin:0">Wer wir sind</h2>
     </div>
+    <span class="team-count">{{ members|length }} Mitglieder</span>
+  </div>
+
+  <div class="team-grid" id="teamGrid">
+    {% for m in members %}
+    {% set initials = (m.name.split(' ')[0][0] + (m.name.split(' ')[-1][0] if m.name.split(' ')|length > 1 else '')) | upper %}
+    <article class="team-card reveal"
+             tabindex="0"
+             role="button"
+             aria-label="{{ m.name }}{% if m.role %}, {{ m.role }}{% endif %}"
+             data-index="{{ loop.index0 }}"
+             data-name="{{ m.name }}"
+             data-role="{{ m.role or '' }}"
+             data-image="{{ m.image | asset if m.image else '' }}"
+             data-bio="{{ m.bio | trim if m.bio else '' }}"
+             data-links="{{ m.links | tojson if m.links else '[]' }}">
+      <div class="team-card-photo">
+        {% if m.image %}
+          <img src="{{ m.image | asset }}" alt="{{ m.name }}"
+               loading="{{ 'eager' if loop.index <= 8 else 'lazy' }}" decoding="async">
+        {% else %}
+          <div class="team-card-placeholder">{{ initials }}</div>
+        {% endif %}
+      </div>
+      <div class="team-card-overlay">
+        {% if m.role %}<div class="team-card-role">{{ m.role }}</div>{% endif %}
+        <div class="team-card-name">{{ m.name }}</div>
+        {% if m.bio and m.bio.strip() %}
+        <div class="team-card-cta"><i class="bi bi-arrow-right-circle"></i> Mehr erfahren</div>
+        {% endif %}
+      </div>
+    </article>
     {% endfor %}
   </div>
+</section>
 
-  <div class="swiper-button-prev"></div>
-  <div class="swiper-button-next"></div>
-  <div class="swiper-pagination"></div>
+<!-- Detail Panel -->
+<div id="teamPanel" class="team-panel" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="team-panel-hero">
+    <img id="tp-img" src="" alt="">
+    <button class="team-panel-close" id="teamPanelClose" aria-label="Schließen">&times;</button>
+  </div>
+  <div class="team-panel-body">
+    <div id="tp-role" class="team-panel-role"></div>
+    <h2 id="tp-name" class="team-panel-name"></h2>
+    <div class="team-panel-divider"></div>
+    <p id="tp-bio" class="team-panel-bio"></p>
+    <div id="tp-links" class="team-panel-links"></div>
+  </div>
+  <div class="team-panel-nav">
+    <button class="team-panel-nav-btn" id="tpPrev" aria-label="Vorheriges Mitglied">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span class="team-panel-counter" id="tpCounter"></span>
+    <button class="team-panel-nav-btn" id="tpNext" aria-label="Nächstes Mitglied">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
 </div>
+<div id="teamBackdrop" class="team-panel-backdrop" aria-hidden="true"></div>
 {% endblock %}
 
 {% block scripts %}
-  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const thumbs = new Swiper('.memberThumbs', {
-        slidesPerView: 'auto',
-        spaceBetween: 10,
-        freeMode: true,
-        watchSlidesProgress: true,
-        navigation: {
-          nextEl: '.memberThumbs .thumbs-next',
-          prevEl: '.memberThumbs .thumbs-prev'
-        },
-        breakpoints: {
-          0:   { spaceBetween: 8 },
-          576: { spaceBetween: 10 },
-          992: { spaceBetween: 12 }
-        }
-      });
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const panel    = document.getElementById('teamPanel');
+  const backdrop = document.getElementById('teamBackdrop');
+  const closeBtn = document.getElementById('teamPanelClose');
+  const cards    = Array.from(document.querySelectorAll('.team-card'));
+  const total    = cards.length;
+  let current    = -1;
 
-      const swiper = new Swiper('.memberSwiper',{
-        effect:'slide',
-        slidesPerView:1,
-        speed:600,
-        navigation:{
-          nextEl:'.memberSwiper .swiper-button-next',
-          prevEl:'.memberSwiper .swiper-button-prev'
-        },
-        pagination:{
-          el:'.memberSwiper .swiper-pagination',
-          clickable:true
-        },
-        keyboard:{ enabled:true },
-        thumbs: { swiper: thumbs }
-      });
-
-      // Ensure no residual fade classes / inline opacity
-      const container = document.querySelector('.memberSwiper');
-      const clearFade = () => {
-        container.classList.remove('swiper-fade');
-        container.querySelectorAll('.swiper-slide').forEach(s=>{
-          s.style.removeProperty('opacity');
-          s.style.removeProperty('transition-duration');
-          s.style.removeProperty('transition-property');
-        });
-      };
-      clearFade();
-      swiper.on('slideChangeTransitionStart', clearFade);
-
-      // Toggle bio on mobile
-      document.querySelectorAll('.bio-toggle').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const content = btn.nextElementSibling;
-          content.classList.toggle('show');
-          btn.classList.toggle('active-indicator', content.classList.contains('show'));
-          btn.textContent = content.classList.contains('show') ? 'Bio verbergen' : 'Bio anzeigen';
-        });
-      });
+  // Reveal observer
+  const revealObs = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('reveal-visible');
+        obs.unobserve(e.target);
+      }
     });
-  </script>
+  }, { threshold: 0.06 });
+  cards.forEach(c => revealObs.observe(c));
+
+  function parseLinks(raw) {
+    try { return JSON.parse(raw || '[]'); } catch { return []; }
+  }
+
+  function fill(idx) {
+    if (idx < 0 || idx >= total) return;
+    current = idx;
+    const d = cards[idx].dataset;
+
+    // Photo
+    const img = document.getElementById('tp-img');
+    if (d.image) {
+      img.src = d.image;
+      img.alt = d.name;
+      img.parentElement.style.display = '';
+    } else {
+      img.parentElement.style.display = 'none';
+    }
+
+    // Text
+    document.getElementById('tp-role').textContent = d.role || '';
+    document.getElementById('tp-name').textContent = d.name || '';
+    const bioEl = document.getElementById('tp-bio');
+    if (d.bio && d.bio.trim()) {
+      bioEl.textContent = d.bio;
+      bioEl.classList.remove('team-panel-no-bio');
+    } else {
+      bioEl.textContent = 'Noch keine Bio hinterlegt.';
+      bioEl.classList.add('team-panel-no-bio');
+    }
+
+    // Links
+    const linksEl = document.getElementById('tp-links');
+    linksEl.innerHTML = '';
+    parseLinks(d.links).forEach(str => {
+      const parts = str.split(' | ');
+      if (parts.length < 2) return;
+      const a = document.createElement('a');
+      a.href = parts[1].trim();
+      a.textContent = parts[0].trim();
+      a.target = '_blank'; a.rel = 'noopener';
+      linksEl.appendChild(a);
+    });
+
+    // Counter + nav
+    document.getElementById('tpCounter').textContent = `${idx + 1} / ${total}`;
+    document.getElementById('tpPrev').disabled = idx === 0;
+    document.getElementById('tpNext').disabled = idx === total - 1;
+
+    // Active card highlight
+    cards.forEach((c, i) => c.classList.toggle('active', i === idx));
+  }
+
+  function open(idx) {
+    fill(idx);
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    closeBtn.focus();
+  }
+
+  function close() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    cards.forEach(c => c.classList.remove('active'));
+    if (current >= 0) cards[current]?.focus();
+    current = -1;
+  }
+
+  // Open on card click / Enter / Space
+  cards.forEach((card, idx) => {
+    card.addEventListener('click', () => open(idx));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(idx); }
+    });
+  });
+
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', close);
+
+  document.getElementById('tpPrev').addEventListener('click', () => {
+    if (current > 0) fill(current - 1);
+  });
+  document.getElementById('tpNext').addEventListener('click', () => {
+    if (current < total - 1) fill(current + 1);
+  });
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (!panel.classList.contains('open')) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowLeft'  && current > 0)         fill(current - 1);
+    if (e.key === 'ArrowRight' && current < total - 1) fill(current + 1);
+  });
+
+  // Touch swipe inside panel
+  let touchX = null;
+  panel.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  panel.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    touchX = null;
+    if (dx > 60 && current > 0)         fill(current - 1);
+    if (dx < -60 && current < total - 1) fill(current + 1);
+  });
+});
+</script>
 {% endblock %}
