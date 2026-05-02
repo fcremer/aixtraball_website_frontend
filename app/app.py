@@ -94,6 +94,26 @@ NEWS_SETTINGS_FILE = "news_settings.yaml"
 DEFAULT_NEWS_SETTINGS = {
     "homepage_limit": 2,
 }
+
+HOMEPAGE_CONTENT_FILE = "homepage_content.yaml"
+DEFAULT_HOMEPAGE_CONTENT = {
+    "stat1_number": "50+",  "stat1_label": "Flipper & Arcade-Geräte",    "stat1_sub": "spielbereit",
+    "stat2_number": "1994", "stat2_label": "Gegründet",                   "stat2_sub": "über 30 Jahre Leidenschaft",
+    "stat3_number": "4★",   "stat3_label": "IFPA-Turniere",               "stat3_sub": "international anerkannt",
+    "stat4_number": "12×",  "stat4_label": "Öffnungstage / Jahr",         "stat4_sub": "Eintritt frei",
+    "rental_eyebrow":     "Event-Location",
+    "rental_headline":    "Exklusive Anmietung\nder Flipperhalle",
+    "rental_intro":       "Feiert euren Geburtstag, Firmenevents oder Junggesellenabschied in unserer einzigartigen Spielhalle – ganz privat und unvergesslich.",
+    "rental_features":    [
+        "Exklusivnutzung für **2–5 Stunden**",
+        "Alle Flipper und Arcade-Geräte **inklusive**",
+        "Bis zu **40 Personen**",
+        "Getränke & Catering nach Wunsch",
+    ],
+    "rental_button_text": "Anfrage senden",
+    "rental_button_link": "mailto:vermietung@aixtraball.de",
+    "rental_image":       "images/slides/Halle.jpg",
+}
 KIOSK_NEWS_LIMIT = _env_int(os.environ.get("KIOSK_NEWS_LIMIT"), 12)
 KIOSK_FLIPPER_LIMIT = _env_int(os.environ.get("KIOSK_FLIPPER_LIMIT"), 12)
 KIOSK_TIMELINE_LIMIT = _env_int(os.environ.get("KIOSK_TIMELINE_LIMIT"), 6)
@@ -196,6 +216,19 @@ def load_news_settings():
             except (ValueError, TypeError):
                 pass
     return settings
+
+
+def load_homepage_content():
+    """Return homepage content dict merged with defaults."""
+    raw = load_yaml(HOMEPAGE_CONTENT_FILE)
+    content = DEFAULT_HOMEPAGE_CONTENT.copy()
+    if isinstance(raw, dict):
+        content.update(raw)
+    if isinstance(content.get("rental_features"), str):
+        content["rental_features"] = [
+            l.strip() for l in content["rental_features"].splitlines() if l.strip()
+        ]
+    return content
 
 
 def _resolve_smtp_recipients():
@@ -314,6 +347,35 @@ def load_admin_accounts():
 
 
 ADMIN_SECTIONS = {
+    "homepage_content.yaml": {
+        "title": "Startseite – Texte",
+        "description": "Stats-Leiste, Vermietungsbereich und weitere Texte der Startseite.",
+        "icon": "house-gear",
+        "kind": "doc",
+        "schema": [
+            {"type": "heading", "label": "Statistiken (Stats-Leiste)"},
+            {"name": "stat1_number", "label": "Stat 1 – Wert",        "type": "text", "help": "z. B. 50+ oder 1994"},
+            {"name": "stat1_label",  "label": "Stat 1 – Bezeichnung", "type": "text"},
+            {"name": "stat1_sub",    "label": "Stat 1 – Subtext",     "type": "text"},
+            {"name": "stat2_number", "label": "Stat 2 – Wert",        "type": "text"},
+            {"name": "stat2_label",  "label": "Stat 2 – Bezeichnung", "type": "text"},
+            {"name": "stat2_sub",    "label": "Stat 2 – Subtext",     "type": "text"},
+            {"name": "stat3_number", "label": "Stat 3 – Wert",        "type": "text"},
+            {"name": "stat3_label",  "label": "Stat 3 – Bezeichnung", "type": "text"},
+            {"name": "stat3_sub",    "label": "Stat 3 – Subtext",     "type": "text"},
+            {"name": "stat4_number", "label": "Stat 4 – Wert",        "type": "text"},
+            {"name": "stat4_label",  "label": "Stat 4 – Bezeichnung", "type": "text"},
+            {"name": "stat4_sub",    "label": "Stat 4 – Subtext",     "type": "text"},
+            {"type": "heading", "label": "Vermietungs-Bereich"},
+            {"name": "rental_eyebrow",     "label": "Eyebrow (Kategorie-Label)", "type": "text"},
+            {"name": "rental_headline",    "label": "Überschrift",               "type": "text", "help": "\\n für Zeilenumbruch, z. B. Zeile 1\\nZeile 2"},
+            {"name": "rental_intro",       "label": "Intro-Text",                "type": "textarea"},
+            {"name": "rental_features",    "label": "Feature-Liste",             "type": "list",  "help": "Eine Zeile pro Punkt. **Wort** für Fettschrift."},
+            {"name": "rental_button_text", "label": "Button-Text",               "type": "text"},
+            {"name": "rental_button_link", "label": "Button-Link",               "type": "text",  "help": "z. B. mailto:vermietung@... oder /kontakt"},
+            {"name": "rental_image",       "label": "Foto",                      "type": "image"},
+        ]
+    },
     "slides.yaml": {
         "title": "Startseiten-Slider",
         "description": "Hero-Slides mit Headline, Subline und optionalem Logo.",
@@ -533,8 +595,11 @@ def _cookie_banner_required():
 
 
 @app.context_processor
-def inject_cookie_notice_flag():
-    return {"cookie_banner_required": _cookie_banner_required}
+def inject_globals():
+    return {
+        "cookie_banner_required": _cookie_banner_required,
+        "now": datetime.now(tz=tz.gettz("Europe/Berlin")),
+    }
 
 # --------------------------------------------------
 # Jinja‑Filter
@@ -552,6 +617,32 @@ def asset(path: str):
     if path.startswith(("http://", "https://", "//")):
         return path
     return url_for("static", filename=path)
+
+@app.template_filter("stat_number_html")
+def stat_number_html(value: str):
+    """'50+' → '50<span>+</span>', '1994' → '1994'."""
+    import re
+    from markupsafe import Markup, escape
+    s = str(value or "")
+    m = re.match(r'^(\d[\d,.]*)(.*)', s)
+    if m and m.group(2):
+        return Markup(f"{escape(m.group(1))}<span>{escape(m.group(2))}</span>")
+    return Markup(escape(s))
+
+@app.template_filter("md_strong")
+def md_strong(value: str):
+    """'Exklusiv für **2–5 Std.**' → 'Exklusiv für <strong>2–5 Std.</strong>'."""
+    import re
+    from markupsafe import Markup, escape
+    result = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', str(escape(value or "")))
+    return Markup(result)
+
+@app.template_filter("nl2br")
+def nl2br(value: str):
+    """Replace newlines with <br> tags."""
+    from markupsafe import Markup, escape
+    escaped = escape(str(value or ""))
+    return Markup(str(escaped).replace('\n', Markup('<br>')))
 
 # --------------------------------------------------
 # Routen
@@ -718,14 +809,19 @@ def admin():
             data = load_yaml(filename)
         except Exception:
             data = []
-        count = len(data) if isinstance(data, list) else (len(data.keys()) if isinstance(data, dict) else 0)
+        kind = meta.get("kind", "list")
+        if kind == "doc":
+            count = len(data.keys()) if isinstance(data, dict) else 0
+        else:
+            count = len(data) if isinstance(data, list) else (len(data.keys()) if isinstance(data, dict) else 0)
         sections.append({
             "filename": filename,
             "title": meta.get("title", filename),
             "description": meta.get("description", ""),
             "icon": meta.get("icon", "folder"),
             "count": count,
-            "allow_new": meta.get("allow_new", True) and not meta.get("read_only"),
+            "kind": kind,
+            "allow_new": meta.get("allow_new", True) and not meta.get("read_only") and kind != "doc",
             "read_only": meta.get("read_only", False)
         })
     sections.sort(key=lambda s: s["title"])
@@ -789,6 +885,69 @@ def admin_news_settings():
     save_news_settings({"homepage_limit": limit})
     flash("News-Einstellungen gespeichert.", "success")
     return redirect(url_for("admin_manage", filename="news.yaml"))
+
+
+@app.route("/admin/doc/<path:filename>", methods=["GET", "POST"])
+@login_required
+def admin_doc(filename):
+    """Edit a single-document (dict) YAML file via a schema-driven form."""
+    section = get_admin_section(filename)
+    schema = [f for f in (section.get("schema") or []) if f.get("type") != "heading"]
+    full_schema = section.get("schema") or []
+    filepath = CONFIG_DIR / filename
+
+    raw = load_yaml(filename)
+    if not isinstance(raw, dict):
+        raw = {}
+    item = {}
+    for field in schema:
+        name = field["name"]
+        item[name] = normalize_field_value(field, raw.get(name))
+
+    if request.method == "POST":
+        new_doc = {}
+        for field in schema:
+            key = field["name"]
+            ftype = field.get("type", "text")
+            if ftype in {"list", "image_list"}:
+                text = request.form.get(key, "")
+                entries = [l.strip() for l in text.splitlines() if l.strip()]
+                if ftype == "image_list":
+                    for f in request.files.getlist(f"{key}_upload"):
+                        if f and f.filename:
+                            upload_dir = BASE_DIR / "static" / "images"
+                            upload_dir.mkdir(parents=True, exist_ok=True)
+                            fname = secure_filename(f.filename)
+                            f.save(upload_dir / fname)
+                            entries.append(f"images/{fname}")
+                new_doc[key] = entries
+            elif ftype == "image":
+                file = request.files.get(f"{key}_upload")
+                if file and file.filename:
+                    upload_dir = BASE_DIR / "static" / "images"
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    fname = secure_filename(file.filename)
+                    file.save(upload_dir / fname)
+                    new_doc[key] = f"images/{fname}"
+                else:
+                    new_doc[key] = request.form.get(key, "").strip()
+            elif ftype == "bool":
+                new_doc[key] = request.form.get(key) == "on"
+            else:
+                new_doc[key] = request.form.get(key, "").strip()
+        yaml_content = yaml.safe_dump(new_doc, allow_unicode=True, sort_keys=False)
+        filepath.write_text(yaml_content, encoding="utf-8")
+        YAML_CACHE.pop(filename, None)
+        flash("Gespeichert", "success")
+        return redirect(url_for("admin_doc", filename=filename))
+
+    return render_template(
+        "admin_doc.html",
+        filename=filename,
+        item=item,
+        section=section,
+        schema=full_schema,
+    )
 
 
 @app.route("/admin/manage/<path:filename>/new", methods=["GET", "POST"])
@@ -991,12 +1150,13 @@ def index():
 
     return render_template(
         "index.html",
-        slides       = prepare_slides(),
-        opening      = get_next_opening(),
-        home_flippers= home_flippers,
-        latest_news  = news_teaser,
-        now          = now,
-        stack_news_cards=len(news_teaser) > 2
+        slides        = prepare_slides(),
+        opening       = get_next_opening(),
+        home_flippers = home_flippers,
+        latest_news   = news_teaser,
+        now           = now,
+        stack_news_cards = len(news_teaser) > 2,
+        c             = load_homepage_content(),
     )
 
 @app.route("/kiosk")

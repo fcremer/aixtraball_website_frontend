@@ -2,16 +2,6 @@
 {% block title %}News – Aixtraball e.V.{% endblock %}
 {% block meta_description %}Aktuelle Meldungen, Ankündigungen und Berichte vom Aixtraball e.V.{% endblock %}
 {% block head_extra %}
-  <style>
-    /* Hero-Bild für News-Seite */
-    .hero-flipper {
-      background: url('{{ url_for("static", filename="images/else/Newstime.jpg") }}') center/cover;
-      min-height: 45vh;
-    }
-    .hero-flipper .overlay {
-      background: rgba(var(--bs-primary-rgb), .65);
-    }
-  </style>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -25,11 +15,11 @@
   </script>
 {% endblock %}
 {% block content %}
-<!-- Hero-Banner wie auf Flipper-All -->
-<header class="hero-flipper d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">News</h1>
-    <p class="lead mb-0">Aktuelle Meldungen und Ankündigungen</p>
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/Newstime.jpg") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Aktuell</div>
+    <h1>News</h1>
+    <p class="lead">Aktuelle Meldungen und Ankündigungen</p>
   </div>
 </header>
 <section class="py-5">

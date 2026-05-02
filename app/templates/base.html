@@ -2,35 +2,35 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <!-- Privacy-friendly analytics by Plausible (loaded after consent) -->
+  <!-- Theme: set before CSS to avoid flash -->
+  <script>
+    (function(){
+      var saved = localStorage.getItem('theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <!-- Analytics by Plausible (loaded after consent) -->
   <script>
     window.enableAnalytics = function() {
-      if (window.analyticsLoaded) {
-        return;
-      }
+      if (window.analyticsLoaded) return;
       window.analyticsLoaded = true;
-      window.plausible = window.plausible || function() {
-        (window.plausible.q = window.plausible.q || []).push(arguments);
-      };
-      window.plausible.init = window.plausible.init || function(config) {
-        window.plausible.o = config || {};
-      };
+      window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments); };
+      window.plausible.init = window.plausible.init || function(config) { window.plausible.o = config || {}; };
       window.plausible.init();
-      var script = document.createElement('script');
-      script.src = 'https://analytics.aixtraball.de/js/pa-qNaL3IW3cnU7umIP5-FmH.js';
-      script.async = true;
-      document.head.appendChild(script);
+      var s = document.createElement('script');
+      s.src = 'https://analytics.aixtraball.de/js/pa-qNaL3IW3cnU7umIP5-FmH.js';
+      s.async = true;
+      document.head.appendChild(s);
     };
   </script>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Flipperverein Aixtraball e.V.{% endblock %}</title>
   <link rel="canonical" href="{{ request.base_url }}"/>
 
-  <meta name="description" content="{% block meta_description %}Aixtraball – Die Flipperhalle in Aachen. Öffnungstage, Vermietung, über 50 Flipperautomaten & aktuelle Turniere.{% endblock %}"/>
+  <meta name="description" content="{% block meta_description %}Aixtraball – Die Flipperhalle in Aachen. Öffnungstage, Vermietung, über 45 Flipperautomaten &amp; aktuelle Turniere.{% endblock %}"/>
   <meta name="robots" content="index,follow" />
-  
   <meta property="og:title"       content="{% block og_title %}{{ self.title() }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
   <meta property="og:url"         content="{{ request.base_url }}">
@@ -43,14 +43,13 @@
   <meta name="twitter:image"      content="{{ url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
   <link rel="alternate" href="{{ request.base_url }}" hreflang="de-DE" />
 
-  {# — JSON-LD Organisation & WebSite ------------------------------------------ #}
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"Organization",
     "name":"Aixtraball e.V.",
     "url":"https://aixtraball.de",
-    "logo":"{{ url_for('static', filename='images/logo.png', _external=True) }}",
+    "logo":"{{ url_for('static', filename='images/Logo.png', _external=True) }}",
     "email":"info@aixtraball.de",
     "address":{
       "@type":"PostalAddress",
@@ -63,51 +62,64 @@
   </script>
   <script type="application/ld+json">
   {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "url": "https://aixtraball.de/",
-    "name": "Aixtraball e.V.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://aixtraball.de/news?q={search_term_string}",
-      "query-input": "required name=search_term_string"
+    "@context":"https://schema.org",
+    "@type":"WebSite",
+    "url":"https://aixtraball.de/",
+    "name":"Aixtraball e.V.",
+    "potentialAction":{
+      "@type":"SearchAction",
+      "target":"https://aixtraball.de/news?q={search_term_string}",
+      "query-input":"required name=search_term_string"
     }
   }
   </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Bootstrap + Custom -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="{{ url_for('static', filename='css/custom.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
 
-  {# *** Platz für Seitenspezifisches CSS/JS *** #}
   {% block head_extra %}{% endblock %}
 </head>
 
 {% set cookie_banner_enabled = cookie_banner_required() if cookie_banner_required is defined else false %}
 <body{% if body_class %} class="{{ body_class }}"{% endif %}{% if cookie_banner_enabled %} data-cookie-banner="true"{% endif %}>
-  <nav class="navbar navbar-expand-lg navbar-light fixed-top glassnav">
+
+  <!-- ─── NAVBAR ─── -->
+  <nav class="navbar navbar-expand-lg fixed-top glassnav" id="siteNav">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{{ url_for('index') }}">
+      <a class="navbar-brand nav-logo" href="{{ url_for('index') }}">
         <img src="{{ url_for('static', filename='images/logo.png') }}"
-             alt="Logo" height="32"
-             class="d-inline-block align-text-top">
+             alt="Aixtraball" class="nav-logo-img nav-logo-light" height="34">
+        <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
+             alt="Aixtraball" class="nav-logo-img nav-logo-dark" height="34">
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      <div class="d-flex align-items-center gap-2 ms-auto ms-lg-0 order-lg-last">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Farbschema wechseln">
+          <span class="theme-icon-dark"><i class="bi bi-moon-stars"></i></span>
+          <span class="theme-icon-light"><i class="bi bi-sun"></i></span>
+        </button>
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Navigation öffnen">
+          <span class="toggler-line"></span>
+          <span class="toggler-line"></span>
+          <span class="toggler-line"></span>
+        </button>
+      </div>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('verein') }}">Der Verein</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('flipper_all') }}">Unsere Flipper</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('news_list') }}">News</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('team') }}">Das Team</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('preise') }}">Preise &amp; Besuch</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('kontakt') }}">Kontakt</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('impressum') }}">Impressum</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'verein' %} active{% endif %}" href="{{ url_for('verein') }}">Der Verein</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'flipper_all' %} active{% endif %}" href="{{ url_for('flipper_all') }}">Unsere Flipper</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint in ('news_list','news_detail') %} active{% endif %}" href="{{ url_for('news_list') }}">News</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'team' %} active{% endif %}" href="{{ url_for('team') }}">Das Team</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'preise' %} active{% endif %}" href="{{ url_for('preise') }}">Preise &amp; Besuch</a></li>
+          <li class="nav-item"><a class="nav-link nav-cta{% if request.endpoint == 'kontakt' %} active{% endif %}" href="{{ url_for('kontakt') }}">Kontakt</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'impressum' %} active{% endif %}" href="{{ url_for('impressum') }}">Impressum</a></li>
           {% if session.get('logged_in') %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('admin') }}">Admin</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
@@ -116,6 +128,14 @@
       </div>
     </div>
   </nav>
+
+  <!-- Theme icon visibility -->
+  <style>
+    [data-theme="dark"]  .theme-icon-dark  { display: none; }
+    [data-theme="dark"]  .theme-icon-light { display: flex; }
+    [data-theme="light"] .theme-icon-dark  { display: flex; }
+    [data-theme="light"] .theme-icon-light { display: none; }
+  </style>
 
   <main class="flex-shrink-0">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -144,101 +164,125 @@
   </div>
   {% endif %}
 
-  <footer class="py-4 bg-light border-top">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-md-6">
-          <img src="{{ url_for('static', filename='images/Logo.png') }}"
-               alt="Aixtraball Logo"
-               class="footer-logo mb-2" loading="lazy">
-          <p class="mb-1">Merzbrück 210<br>52146 Würselen</p>
-          <p class="mb-0">
-            E-Mail: <a href="mailto:info@aixtraball.de">info@aixtraball.de</a>
-          </p>
-        </div>
-        <div class="col-md-6 text-md-end">
-          <div class="d-flex justify-content-md-end align-items-center gap-3 mt-3 mt-md-0">
-            <a href="{{ url_for('impressum') }}" class="text-decoration-none text-muted">
-              Impressum &amp; Datenschutz
-            </a>
-            <a href="https://www.facebook.com/100063739775945" target="_blank" class="text-muted" aria-label="Facebook">
-              <i class="bi bi-facebook fs-5"></i>
-            </a>
-            <a href="https://www.youtube.com/@aixtraballflippervereinaac2208" target="_blank" class="text-muted" aria-label="YouTube">
-              <i class="bi bi-youtube fs-5"></i>
-            <a href="https://www.instagram.com/aixtraball/" target="_blank" class="text-muted" aria-label="Instagram">
-              <i class="bi bi-instagram"></i>
-            </a>
+  <!-- ─── FOOTER ─── -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <!-- Brand -->
+        <div>
+          <div class="footer-brand">
+            Aixtraball e.V.
           </div>
+          <p class="footer-tagline">Flipperverein in der Städteregion Aachen seit 2015.</p>
+          <div class="footer-address">
+            Merzbrück 210<br>
+            52146 Würselen<br>
+            <a href="mailto:info@aixtraball.de">info@aixtraball.de</a>
+          </div>
+        </div>
+        <!-- Navigation -->
+        <div>
+          <div class="footer-col-title">Navigation</div>
+          <ul class="footer-nav-list">
+            <li><a href="{{ url_for('verein') }}">Der Verein</a></li>
+            <li><a href="{{ url_for('flipper_all') }}">Unsere Flipper</a></li>
+            <li><a href="{{ url_for('news_list') }}">News</a></li>
+            <li><a href="{{ url_for('team') }}">Das Team</a></li>
+            <li><a href="{{ url_for('kontakt') }}">Kontakt</a></li>
+          </ul>
+        </div>
+        <!-- Mehr -->
+        <div>
+          <div class="footer-col-title">Mehr</div>
+          <ul class="footer-nav-list">
+            <li><a href="{{ url_for('preise') }}">Preise &amp; Besuch</a></li>
+            <li><a href="mailto:vermietung@aixtraball.de">Halle mieten</a></li>
+            <li><a href="{{ url_for('impressum') }}">Impressum</a></li>
+            <li><a href="{{ url_for('impressum') }}">Datenschutz</a></li>
+          </ul>
+        </div>
+        <!-- Öffnungszeiten -->
+        <div>
+          <div class="footer-col-title">Öffnungszeiten</div>
+          <div class="footer-hours">
+            <div>Jeden <strong>letzen Sonntag im Monat</strong></div>
+            <div>11:00 – 15:00 Uhr</div>
+            <div style="margin-top:.75rem;font-size:12px;">+ Sondertermine</div>
+          </div>
+        </div>
+      </div>
+      <!-- Bottom bar -->
+      <div class="footer-bottom">
+        <div class="footer-copy">
+          © {{ now.year if now is defined else 2025 }} Aixtraball e.V. – Alle Rechte vorbehalten ·
+          <a href="{{ url_for('impressum') }}">Impressum</a> ·
+          <a href="{{ url_for('impressum') }}">Datenschutz</a>
+        </div>
+        <div class="footer-socials">
+          <a href="https://www.facebook.com/100063739775945" target="_blank" rel="noopener"
+             class="social-btn" aria-label="Facebook">
+            <i class="bi bi-facebook"></i>
+          </a>
+          <a href="https://www.youtube.com/@aixtraballflippervereinaac2208" target="_blank" rel="noopener"
+             class="social-btn" aria-label="YouTube">
+            <i class="bi bi-youtube"></i>
+          </a>
+          <a href="https://www.instagram.com/aixtraball/" target="_blank" rel="noopener"
+             class="social-btn" aria-label="Instagram">
+            <i class="bi bi-instagram"></i>
+          </a>
         </div>
       </div>
     </div>
   </footer>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       GLightbox({ selector: '.glightbox' });
       document.body.classList.add('page-loaded');
-      const nav = document.querySelector('.navbar');
+
+      // Navbar scroll state
+      var nav = document.getElementById('siteNav');
       if (nav) {
-        window.addEventListener('scroll', () => {
+        window.addEventListener('scroll', function() {
           nav.classList.toggle('scrolled', window.scrollY > 10);
+        }, { passive: true });
+      }
+
+      // Theme toggle
+      var toggle = document.getElementById('themeToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          var current = document.documentElement.getAttribute('data-theme');
+          var next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try { localStorage.setItem('theme', next); } catch(e) {}
         });
       }
 
-      const banner = document.getElementById('cookieConsent');
+      // Cookie banner
+      var banner = document.getElementById('cookieConsent');
       if (banner) {
-        const enableAnalyticsIfNeeded = () => {
-          if (typeof window.enableAnalytics === 'function') {
-            window.enableAnalytics();
-          }
-        };
-        const hideBanner = () => {
-          banner.classList.remove('is-visible');
-          banner.setAttribute('hidden', 'hidden');
-        };
-        const showBanner = () => {
-          banner.removeAttribute('hidden');
-          banner.classList.add('is-visible');
-        };
-        const saveConsent = (value) => {
-          try {
-            localStorage.setItem('cookieConsent', value);
-          } catch (error) {
-            console.warn('Cookie-Einstellungen konnten nicht gespeichert werden.', error);
-          }
-        };
-        const applyConsent = (value) => {
-          saveConsent(value);
-          if (value === 'all') {
-            enableAnalyticsIfNeeded();
-          }
+        var hideBanner = function() { banner.classList.remove('is-visible'); banner.setAttribute('hidden','hidden'); };
+        var showBanner = function() { banner.removeAttribute('hidden'); banner.classList.add('is-visible'); };
+        var saveConsent = function(v) { try { localStorage.setItem('cookieConsent', v); } catch(e) {} };
+        var applyConsent = function(v) {
+          saveConsent(v);
+          if (v === 'all' && typeof window.enableAnalytics === 'function') window.enableAnalytics();
           hideBanner();
         };
-
-        let storedConsent = null;
-        try {
-          storedConsent = localStorage.getItem('cookieConsent');
-        } catch (error) {
-          console.warn('Cookie-Einstellungen konnten nicht gelesen werden.', error);
-        }
-
-        if (storedConsent === 'all') {
-          enableAnalyticsIfNeeded();
-        } else if (storedConsent !== 'essential') {
-          showBanner();
-        }
-
-        const acceptButton = banner.querySelector('[data-consent="accept"]');
-        const declineButton = banner.querySelector('[data-consent="decline"]');
-        acceptButton?.addEventListener('click', () => applyConsent('all'));
-        declineButton?.addEventListener('click', () => applyConsent('essential'));
+        var stored = null;
+        try { stored = localStorage.getItem('cookieConsent'); } catch(e) {}
+        if (stored === 'all') { if (typeof window.enableAnalytics === 'function') window.enableAnalytics(); }
+        else if (stored !== 'essential') { showBanner(); }
+        banner.querySelector('[data-consent="accept"]')?.addEventListener('click', function() { applyConsent('all'); });
+        banner.querySelector('[data-consent="decline"]')?.addEventListener('click', function() { applyConsent('essential'); });
       }
     });
   </script>
 
-  {# *** Platz für Seitenspezifische SCRIPTS *** #}
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -3,27 +3,20 @@
 {% block meta_description %}Kontakt zum Aixtraball e.V.: Adresse Merzbrück 210, 52146 Würselen, E‑Mail und Öffnungstage. Jetzt anfragen.{% endblock %}
 {% block head_extra %}
 <style>
-  .hero-contact{background: url('{{ url_for("static", filename="images/else/background_contact.png") }}') center/cover; min-height: 32vh;}
-  .hero-contact .overlay{background: rgba(0,0,0,.4);} 
-  .contact-card{border:1px solid rgba(0,0,0,.06); box-shadow:0 .5rem 1rem rgba(0,0,0,.06);} 
-  .contact-info .bi{color: var(--bs-primary);} 
-  .form-honeypot{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
-  .osm-map{height:300px; border-radius:.5rem; overflow:hidden;}
+  .osm-map { height: 300px; border-radius: var(--r-md); overflow: hidden; }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 
 {% block content %}
-<!-- Hero -->
-<header class="hero-contact d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-5 fw-bold">Kontakt</h1>
-    <p class="lead mb-0">Frag uns alles rund um Verein, Besuch & Events</p>
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/background_contact.png") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Schreib uns</div>
+    <h1>Kontakt</h1>
+    <p class="lead">Frag uns alles rund um Verein, Besuch &amp; Events</p>
   </div>
-  
 </header>
 
-<!-- Content -->
 <section class="py-5 bg-light">
   <div class="container">
     <div class="row g-4">

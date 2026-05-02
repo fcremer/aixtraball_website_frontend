@@ -1,90 +1,21 @@
 {% extends "base.html" %}
 {% block head_extra %}
   <style>
-    /* -------------------------------------------------------------
-       Vereins‑Akzentfarbe (#D23729)
-       ------------------------------------------------------------- */
-    /* Hero-Bild für Verein-Seite */
-    .hero-flipper {
-      background: url('{{ url_for("static", filename="images/else/background_verein.jpg") }}') center/cover;
-      min-height: 45vh;
-    }
-    .hero-flipper .overlay {
-      background: rgba(var(--bs-primary-rgb), .70);
-    }
-    .accordion-button:not(.collapsed){
-      background:rgba(var(--bs-primary-rgb),.15);
-      color:var(--bs-primary);
-    }
-    .accordion-button::after{filter:hue-rotate(-10deg) saturate(200%);}
-    .btn-light:hover,
-    .btn-light:focus{background:rgba(var(--bs-primary-rgb),.10);color:var(--bs-primary);}
-
-    /* -------------------------------------------------------------
-       Timeline
-       ------------------------------------------------------------- */
-    .timeline{position:relative;padding:2rem 0;}
-    .timeline::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;background:var(--bs-primary);transform:translateX(-50%);}
-    .timeline-item{position:relative;width:50%;padding:1rem 2rem;margin-bottom:2rem;transform:translateY(30px);transition:transform .6s ease-out;}
-    .timeline-item.show{transform:none;}
-    .timeline-item .timeline-date{font-weight:700;color:var(--bs-primary);}
-    .timeline-item::after{content:"";position:absolute;top:1.2rem;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid var(--bs-primary);}
-    .timeline-item:nth-of-type(odd){left:0;text-align:right;}
-    .timeline-item:nth-of-type(odd)::after{right:-8px;}
-    .timeline-item:nth-of-type(even){left:50%;}
-    .timeline-item:nth-of-type(even)::after{left:-8px;}
-    @media(max-width:767.98px){
-      .timeline::before{left:8px;transform:none;}
-      .timeline-item{width:100%;padding-left:2.5rem;text-align:left;}
-      .timeline-item:nth-of-type(odd),
-      .timeline-item:nth-of-type(even){left:0;}
-      .timeline-item::after{left:0;}
-    }
-
-    /* Hintergrund für die Timeline */
-    .timeline-section {
-      position: relative;
-      background-size: auto;
-      background-position: center;
-      background-repeat: repeat;
-      border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.5);
-    }
-    .timeline-section::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      background: linear-gradient(to right, white 0%, transparent 10%, transparent 90%, white 100%);
-    }
-    .timeline-overlay {
-      background: rgba(255,255,255,0.6);
-      padding: 2rem 0;
-    }
-    /* Box-Design wie bei Flipper-Timeline */
     .timeline-item {
       border: 1px solid rgba(var(--bs-primary-rgb), 0.3);
-      border-radius: 0.25rem;
-      padding: 1rem 2rem;
-      background: rgba(var(--bs-primary-rgb), 0.10);
+      border-radius: var(--r-sm);
+      background: rgba(var(--bs-primary-rgb), 0.06);
     }
-    .hero-overlay h1 img {
-      height: 1em;
-      display: inline-block;
-      vertical-align: middle;
-    }
+    .timeline-date { font-weight: 700; color: var(--red); }
   </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero-Banner wie auf anderen Seiten -->
-<header class="hero-flipper d-flex align-items-center text-white text-center">
-  <div class="container overlay py-5">
-    <h1 class="display-4 fw-bold">
-      <img src="{{ url_for('static', filename='images/logo_Inv.png') }}"
-           alt="Aixtraball e.V. Logo"
-           style="height:1em; display:inline-block; vertical-align:middle;">
-    </h1>
-    <p class="lead mb-0">Flipper‑Kultur bewahren · erleben · teilen</p>
+<header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/background_verein.jpg") }}')">
+  <div class="page-hero-content">
+    <div class="eyebrow">Über uns</div>
+    <h1>Der Verein</h1>
+    <p class="lead">Flipper‑Kultur bewahren · erleben · teilen</p>
   </div>
 </header>
 
@@ -95,9 +26,9 @@
       <div class="col-md-6">
         <h2 class="mb-3">Unsere Mission</h2>
         <p>
-          Am Flugplatz <strong>Aachen‑Merzbrück</strong> bewahren wir auf rund
+          Auf dem <strong>Forschungsflugplatz Würselen-Aachen</strong> bewahren wir auf rund
           <strong>200&nbsp;m²</strong> Flipper‑Kultur. In unserer Halle warten
-          mehr als <strong>50 restaurierte Automaten</strong> darauf, entdeckt zu
+          mehr als <strong>45 restaurierte Automaten</strong> darauf, entdeckt zu
           werden – vom EM‑Klassiker bis zum neuesten Stern‑Titel.
         </p>
         <ul class="list-unstyled">
