@@ -212,25 +212,19 @@ a:hover { color: var(--red-dark); }
   background: var(--red-dark) !important;
 }
 
-/* Theme toggle */
-.theme-toggle {
-  width: 36px; height: 36px;
-  background: var(--nav-link-hover-bg);
-  border: 1px solid var(--border); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--muted-strong); font-size: 15px;
-  transition: background .2s, color .2s; flex-shrink: 0;
-  line-height: 1;
-}
-.theme-toggle:hover { color: var(--text); background: rgba(255,255,255,.1); }
-[data-theme="light"] .theme-toggle:hover { background: rgba(0,0,0,.08); }
 
-/* Hamburger */
+/* Hamburger – only flex on mobile; Bootstrap hides it on lg+ */
 .glassnav .navbar-toggler {
-  border: none; background: none; padding: 8px;
-  flex-direction: column; gap: 5px; cursor: pointer;
+  border: none; background: none; padding: 8px; cursor: pointer;
+  width: 40px; height: 40px; flex-shrink: 0;
 }
 .glassnav .navbar-toggler:focus { box-shadow: none; outline: none; }
+@media (max-width: 991.98px) {
+  .glassnav .navbar-toggler {
+    display: flex !important;
+    flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  }
+}
 .glassnav .navbar-toggler .toggler-line {
   display: block; width: 22px; height: 2px;
   background: var(--text); border-radius: 2px;
@@ -239,6 +233,29 @@ a:hover { color: var(--red-dark); }
 .glassnav .navbar-toggler[aria-expanded="true"] .toggler-line:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
 .glassnav .navbar-toggler[aria-expanded="true"] .toggler-line:nth-child(2) { opacity: 0; }
 .glassnav .navbar-toggler[aria-expanded="true"] .toggler-line:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* Floating theme toggle (bottom-right) */
+.theme-toggle-fab {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  width: 44px; height: 44px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--muted-strong);
+  font-size: 17px;
+  z-index: 1050;
+  box-shadow: var(--shadow-md);
+  transition: background .2s, color .2s, transform .2s, box-shadow .2s;
+}
+.theme-toggle-fab:hover {
+  background: var(--bg3);
+  color: var(--text);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
 
 /* Mobile nav */
 @media (max-width: 991.98px) {
