@@ -292,6 +292,16 @@ a:hover { color: var(--red-dark); }
   background: rgba(0,0,0,.07) !important;
   border-color: rgba(0,0,0,.15) !important;
 }
+/* Ghost button on dark hero background needs visible border + white text */
+.hero-overlay .btn-ghost {
+  border-color: rgba(255,255,255,.35) !important;
+  color: #fff !important;
+}
+.hero-overlay .btn-ghost:hover {
+  background: rgba(255,255,255,.14) !important;
+  border-color: rgba(255,255,255,.6) !important;
+  color: #fff !important;
+}
 .btn-outline-primary { border-width: 1.5px; border-radius: var(--r-pill); }
 .btn-lg { padding: 13px 28px; font-size: 15px; }
 .btn:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
