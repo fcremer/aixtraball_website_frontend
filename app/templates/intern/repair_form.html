@@ -1,0 +1,84 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ 'Ticket bearbeiten' if repair else 'Defekt melden' }}{% endblock %}
+{% block page_title %}{{ 'Ticket bearbeiten' if repair else 'Defekt melden' }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.repairs.machine_repairs', machine_id=machine.id) }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--form">
+  <div class="intern-card mb-3">
+    <div class="intern-card__eyebrow"><i class="bi bi-controller me-1"></i>Flipper</div>
+    <div class="intern-card__title">{{ machine.display_name }}</div>
+  </div>
+
+  <form method="post" class="intern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="intern-field">
+      <label class="intern-label">Titel <span class="intern-required">*</span></label>
+      <input type="text" name="title" class="intern-input" value="{{ repair.title if repair else '' }}"
+             required autofocus placeholder="Kurze Beschreibung des Defekts">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Beschreibung <span class="intern-muted-label">(optional)</span></label>
+      <textarea name="description" class="intern-input intern-textarea" rows="4"
+                placeholder="Was genau ist defekt? Wie wurde es bemerkt?">{{ repair.description if repair else '' }}</textarea>
+    </div>
+
+    <div class="intern-field-row">
+      <div class="intern-field">
+        <label class="intern-label">Kategorie</label>
+        <select name="category" class="intern-input intern-select">
+          {% for cat in categories %}
+          <option value="{{ cat }}" {% if repair and repair.category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="intern-field">
+        <label class="intern-label">Priorität</label>
+        <select name="priority" class="intern-input intern-select">
+          {% for val, label in priorities %}
+          <option value="{{ val }}" {% if repair and repair.priority == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    {% if repair and statuses %}
+    <div class="intern-field">
+      <label class="intern-label">Status</label>
+      <select name="status" class="intern-input intern-select">
+        {% for val, label in statuses %}
+        <option value="{{ val }}" {% if repair.status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="intern-field">
+      <label class="intern-label">Zugewiesen an <span class="intern-muted-label">(optional)</span></label>
+      <select name="assigned_to" class="intern-input intern-select">
+        <option value="">– niemand –</option>
+        {% for member in members %}
+        <option value="{{ member.id }}" {% if repair and repair.assigned_to == member.id %}selected{% endif %}>
+          {{ member.get_display_name() }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="intern-form-actions">
+      <a href="{{ url_for('intern.repairs.machine_repairs', machine_id=machine.id) }}" class="intern-btn intern-btn--ghost">Abbrechen</a>
+      <button type="submit" class="intern-btn intern-btn--primary">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Speichern' if repair else 'Melden' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

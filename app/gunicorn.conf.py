@@ -5,7 +5,7 @@ workers = int(os.environ.get("WEB_CONCURRENCY", "2"))
 threads = int(os.environ.get("THREADS", "8"))
 worker_class = "gthread"
 keepalive = int(os.environ.get("KEEPALIVE", "5"))
-timeout = int(os.environ.get("TIMEOUT", "60"))
+timeout = int(os.environ.get("TIMEOUT", "300"))
 graceful_timeout = int(os.environ.get("GRACEFUL_TIMEOUT", "30"))
 worker_tmp_dir = "/dev/shm"
 

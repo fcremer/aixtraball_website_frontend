@@ -4,3 +4,5 @@ python-dateutil
 gunicorn
 Flask-Compress
 PyOTP
+SQLAlchemy>=2.0,<3.0
+rapidfuzz>=3.0,<4.0

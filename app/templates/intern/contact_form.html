@@ -1,0 +1,62 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ 'Kontakt bearbeiten' if contact else 'Neuer Kontakt' }}{% endblock %}
+{% block page_title %}{{ 'Kontakt bearbeiten' if contact else 'Neuer Kontakt' }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.contacts.list_contacts') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--form">
+  <form method="post" class="intern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="intern-field">
+      <label class="intern-label">Name <span class="intern-required">*</span></label>
+      <input type="text" name="name" class="intern-input" value="{{ contact.name if contact else '' }}"
+             required autofocus placeholder="Vor- und Nachname">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Telefon</label>
+      <input type="tel" name="phone" class="intern-input" value="{{ contact.phone if contact else '' }}"
+             placeholder="+49 911 …" inputmode="tel">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">E-Mail</label>
+      <input type="email" name="email" class="intern-input" value="{{ contact.email if contact else '' }}"
+             placeholder="name@example.com">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Notiz</label>
+      <textarea name="note" class="intern-input intern-textarea" rows="3"
+                placeholder="z.B. Funktion, Verfügbarkeit, …">{{ contact.note if contact else '' }}</textarea>
+    </div>
+
+    <div class="intern-form-actions">
+      <a href="{{ url_for('intern.contacts.list_contacts') }}" class="intern-btn intern-btn--ghost">Abbrechen</a>
+      <button type="submit" class="intern-btn intern-btn--primary">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Speichern' if contact else 'Hinzufügen' }}
+      </button>
+    </div>
+
+    {% if contact %}
+    <div class="intern-danger-zone mt-5">
+      <p class="intern-danger-zone__label">Gefahrenzone</p>
+      <form method="post" action="{{ url_for('intern.contacts.delete_contact', contact_id=contact.id) }}"
+            onsubmit="return confirm('Kontakt wirklich löschen?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="intern-btn intern-btn--danger intern-btn--sm">
+          <i class="bi bi-trash me-1"></i>Kontakt löschen
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

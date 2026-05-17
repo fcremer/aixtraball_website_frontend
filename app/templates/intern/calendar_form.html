@@ -1,0 +1,86 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ 'Termin bearbeiten' if event else 'Neuer Termin' }}{% endblock %}
+{% block page_title %}{{ 'Termin bearbeiten' if event else 'Neuer Termin' }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.calendar.list_events') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--form">
+  <form method="post" class="intern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="intern-field">
+      <label class="intern-label">Titel <span class="intern-required">*</span></label>
+      <input type="text" name="title" class="intern-input" value="{{ event.title if event else '' }}" required autofocus placeholder="z.B. Öffnungstag Mai">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Startzeit <span class="intern-required">*</span></label>
+      <input type="datetime-local" name="start_dt" class="intern-input"
+        value="{{ event.start_dt.strftime('%Y-%m-%dT%H:%M') if event else '' }}" required>
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Endzeit <span class="intern-muted-label">(optional)</span></label>
+      <input type="datetime-local" name="end_dt" class="intern-input"
+        value="{{ event.end_dt.strftime('%Y-%m-%dT%H:%M') if event and event.end_dt else '' }}">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Ort <span class="intern-muted-label">(optional)</span></label>
+      <input type="text" name="location" class="intern-input" value="{{ event.location if event else '' }}" placeholder="z.B. Vereinshalle">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Beschreibung <span class="intern-muted-label">(optional)</span></label>
+      <textarea name="description" class="intern-input intern-textarea" rows="3" placeholder="Weitere Infos zum Termin…">{{ event.description if event else '' }}</textarea>
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Mindestbesetzung <span class="intern-muted-label">(optional)</span></label>
+      <input type="number" name="min_members" class="intern-input" min="1" max="50"
+             value="{{ event.min_members if event and event.min_members else '' }}"
+             placeholder="z.B. 3">
+      <p class="intern-field-hint">Warnung in der Liste, wenn weniger Mitglieder zugewiesen sind.</p>
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Zugewiesene Mitglieder</label>
+      <div class="intern-checkbox-list">
+        {% for member in members %}
+        <label class="intern-checkbox-item">
+          <input type="checkbox" name="assigned_members" value="{{ member.id }}"
+            {% if current_assigned is defined and member.id in current_assigned %}checked{% endif %}>
+          <span>{{ member.get_display_name() }}</span>
+          <span class="intern-checkbox-email">{{ member.email }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="intern-form-actions">
+      <a href="{{ url_for('intern.calendar.list_events') }}" class="intern-btn intern-btn--ghost">Abbrechen</a>
+      <button type="submit" class="intern-btn intern-btn--primary">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Speichern' if event else 'Erstellen' }}
+      </button>
+    </div>
+
+    {% if event %}
+    <div class="intern-danger-zone mt-5">
+      <p class="intern-danger-zone__label">Gefahrenzone</p>
+      <form method="post" action="{{ url_for('intern.calendar.delete_event', event_id=event.id) }}" onsubmit="return confirm('Termin wirklich löschen?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="intern-btn intern-btn--danger intern-btn--sm">
+          <i class="bi bi-trash me-1"></i>Termin löschen
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
