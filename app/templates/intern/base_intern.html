@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <script>
+    (function(){
+      var saved = localStorage.getItem('intern-theme');
+      document.documentElement.setAttribute('data-theme', saved || 'dark');
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#E31E24">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Intern">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ generate_csrf_token() }}">
+  <title>{% block title %}Mitgliederportal{% endblock %} — Aixtraball</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='intern/icons/icon-192.png') }}" type="image/png">
+  <link rel="manifest" href="{{ url_for('intern.pwa.manifest') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='intern/icons/apple-touch-icon.png') }}">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Intern portal styles (standalone, no dependency on public-site custom.css) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='intern/css/intern.css') }}?v={{ intern_build_id }}">
+
+  {% block head %}{% endblock %}
+</head>
+<body class="intern-body">
+
+<!-- Offline banner -->
+<div id="offline-banner" class="intern-offline-banner" hidden>
+  <i class="bi bi-wifi-off"></i> Du bist offline – einige Funktionen sind eingeschränkt.
+</div>
+
+<!-- iOS Add-to-Home hint -->
+<div id="ios-hint" class="intern-ios-hint" hidden>
+  <div class="intern-ios-hint__content">
+    <i class="bi bi-box-arrow-up"></i>
+    Tippe auf <strong>Teilen</strong> und dann <strong>„Zum Home-Bildschirm"</strong> um die App zu installieren.
+  </div>
+  <button onclick="document.getElementById('ios-hint').hidden=true; localStorage.setItem('ios-hint-dismissed','1')" class="intern-ios-hint__close" aria-label="Schließen">
+    <i class="bi bi-x-lg"></i>
+  </button>
+</div>
+
+<div class="intern-layout">
+  <!-- Sidebar (desktop) -->
+  <nav class="intern-sidebar d-none d-md-flex flex-column">
+    <div class="intern-sidebar__logo mb-4">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Aixtraball" height="28" class="nav-logo-light">
+      <img src="{{ url_for('static', filename='images/logo_Inv.png') }}" alt="Aixtraball" height="28" class="nav-logo-dark">
+      <span class="intern-sidebar__label ms-2">Intern</span>
+    </div>
+    {% with nav_items = [
+      ('intern.dashboard.index', 'house-fill', 'Dashboard', 'dashboard'),
+      ('intern.calendar.list_events', 'calendar3', 'Termine', 'termine'),
+      ('intern.repairs.list_repairs', 'tools', 'Reparaturen', 'reparaturen'),
+      ('intern.info.list_pages', 'info-circle-fill', 'Informationen', 'informationen'),
+      ('intern.contacts.list_contacts', 'person-lines-fill', 'Kontakte', 'kontakte'),
+      ('intern.todos.list_todos', 'check2-square', 'Todolisten', 'todolisten'),
+      ('intern.parts.list_parts', 'box-seam-fill', 'Ersatzteile', 'ersatzteile'),
+    ] %}
+    {% for endpoint, icon, label, tab in nav_items %}
+    <a href="{{ url_for(endpoint) }}" class="intern-sidebar__item {% if active_tab == tab %}active{% endif %}">
+      <i class="bi bi-{{ icon }}"></i>
+      <span>{{ label }}</span>
+    </a>
+    {% endfor %}
+    {% endwith %}
+    <div class="mt-auto">
+      <a href="{{ url_for('intern.auth.logout') }}" class="intern-sidebar__item intern-sidebar__item--muted">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Abmelden</span>
+      </a>
+      <button class="intern-sidebar__item intern-sidebar__item--muted w-100" id="sidebar-theme-toggle" aria-label="Theme wechseln">
+        <i class="bi bi-moon-fill" id="sidebar-theme-icon"></i>
+        <span id="sidebar-theme-label">Dark Mode</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content area -->
+  <div class="intern-content-area">
+    <!-- Header bar -->
+    <header class="intern-header">
+      <div class="intern-header__left">
+        {% block header_back %}{% endblock %}
+      </div>
+      <h1 class="intern-header__title">{% block page_title %}{% endblock %}</h1>
+      <div class="intern-header__right">
+        {% block header_action %}{% endblock %}
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="intern-flash-container">
+      {% for category, message in messages %}
+      <div class="intern-flash intern-flash--{{ category }}">
+        {% if category == 'success' %}<i class="bi bi-check-circle-fill"></i>
+        {% elif category == 'error' %}<i class="bi bi-exclamation-triangle-fill"></i>
+        {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Page content -->
+    <main class="intern-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<!-- Bottom nav (mobile) -->
+<nav class="intern-bottom-nav d-md-none">
+  {% with nav_items = [
+    ('intern.dashboard.index', 'house-fill', 'Dashboard', 'dashboard'),
+    ('intern.calendar.list_events', 'calendar3', 'Termine', 'termine'),
+    ('intern.repairs.list_repairs', 'tools', 'Reparaturen', 'reparaturen'),
+    ('intern.info.list_pages', 'info-circle', 'Info', 'informationen'),
+    ('intern.contacts.list_contacts', 'person-lines-fill', 'Kontakte', 'kontakte'),
+    ('intern.todos.list_todos', 'check2-square', 'Todos', 'todolisten'),
+    ('intern.parts.list_parts', 'box-seam', 'Teile', 'ersatzteile'),
+  ] %}
+  {% for endpoint, icon, label, tab in nav_items %}
+  <a href="{{ url_for(endpoint) }}" class="intern-bottom-nav__item {% if active_tab == tab %}active{% endif %}">
+    <i class="bi bi-{{ icon }}"></i>
+    <span>{{ label }}</span>
+  </a>
+  {% endfor %}
+  {% endwith %}
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='intern/js/intern-app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

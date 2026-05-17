@@ -1,0 +1,92 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  {% if unseen_repairs %}
+  <div class="intern-alert intern-alert--info mb-4">
+    <i class="bi bi-bell-fill"></i>
+    <div>
+      <strong>{{ unseen_repairs|length }} Reparatur-Update{% if unseen_repairs|length > 1 %}s{% endif %}</strong> seit deinem letzten Besuch.
+      {% for item in unseen_repairs %}
+        <a href="{{ url_for('intern.repairs.repair_detail', repair_id=item.repair.id) }}" class="intern-link">
+          {{ item.repair.title }} ({{ item.count }} neu)
+        </a>{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="intern-greeting">Hallo, <strong>{{ member.get_display_name() }}</strong> 👋</p>
+
+  <!-- My next appointment -->
+  {% if my_assignments %}
+  {% set my_next = my_assignments[0].event %}
+  <div class="intern-card intern-card--highlight mb-4">
+    <div class="intern-card__eyebrow"><i class="bi bi-person-check-fill me-1"></i>Dein nächster Termin</div>
+    <div class="intern-card__title">{{ my_next.title }}</div>
+    <div class="intern-card__meta">
+      <i class="bi bi-calendar3 me-1"></i>
+      {{ my_next.start_dt.strftime('%d.%m.%Y, %H:%M') }} Uhr
+      {% if my_next.location %}
+      &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ my_next.location }}
+      {% endif %}
+    </div>
+    <a href="{{ url_for('intern.calendar.detail_event', event_id=my_next.id) }}" class="intern-btn intern-btn--sm intern-btn--primary mt-3">
+      Details <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Next general event -->
+  {% if next_event %}
+  <div class="intern-card mb-4">
+    <div class="intern-card__eyebrow"><i class="bi bi-calendar-event me-1"></i>Nächster allgemeiner Termin</div>
+    <div class="intern-card__title">{{ next_event.title }}</div>
+    <div class="intern-card__meta">
+      <i class="bi bi-calendar3 me-1"></i>
+      {{ next_event.start_dt.strftime('%d.%m.%Y, %H:%M') }} Uhr
+      {% if next_event.location %}
+      &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ next_event.location }}
+      {% endif %}
+    </div>
+    <a href="{{ url_for('intern.calendar.detail_event', event_id=next_event.id) }}" class="intern-btn intern-btn--sm intern-btn--ghost mt-3">
+      Details <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+  {% else %}
+  <div class="intern-empty mb-4">
+    <i class="bi bi-calendar3"></i>
+    <p>Keine anstehenden Termine.</p>
+    <a href="{{ url_for('intern.calendar.new_event') }}" class="intern-btn intern-btn--sm intern-btn--primary">Termin anlegen</a>
+  </div>
+  {% endif %}
+
+  <!-- Quick nav -->
+  <div class="intern-grid-2 gap-3 mt-4">
+    <a href="{{ url_for('intern.calendar.list_events') }}" class="intern-quick-card">
+      <i class="bi bi-calendar3"></i>
+      <span>Termine</span>
+    </a>
+    <a href="{{ url_for('intern.repairs.list_repairs') }}" class="intern-quick-card">
+      <i class="bi bi-tools"></i>
+      <span>Reparaturen</span>
+      {% if defective_count %}
+      <span class="intern-quick-card__badge">{{ defective_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('intern.info.list_pages') }}" class="intern-quick-card">
+      <i class="bi bi-info-circle-fill"></i>
+      <span>Informationen</span>
+    </a>
+    <a href="{{ url_for('intern.contacts.list_contacts') }}" class="intern-quick-card">
+      <i class="bi bi-person-lines-fill"></i>
+      <span>Kontakte</span>
+    </a>
+  </div>
+
+</div>
+{% endblock %}

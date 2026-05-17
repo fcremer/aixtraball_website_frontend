@@ -1,0 +1,92 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ part.name }}{% endblock %}
+{% block page_title %}{{ part.name }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.parts.list_parts') }}" class="intern-back-btn"><i class="bi bi-arrow-left"></i></a>
+{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.parts.edit_part', part_id=part.id) }}" class="intern-icon-btn" aria-label="Bearbeiten">
+  <i class="bi bi-pencil"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  <!-- Stock card -->
+  <div class="intern-card intern-card--highlight mb-4" style="text-align:center;">
+    <div class="intern-card__eyebrow">Bestand</div>
+    <div style="font-family:var(--font-head);font-size:3rem;font-weight:800;line-height:1;color:var(--text);">
+      {{ part.stock }}
+    </div>
+    <div class="d-flex justify-content-center gap-2 mt-3">
+      <form method="post" action="{{ url_for('intern.parts.adjust_stock', part_id=part.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="delta" value="-1">
+        <button type="submit" class="intern-btn intern-btn--ghost intern-btn--sm" {% if part.stock <= 0 %}disabled{% endif %}>
+          <i class="bi bi-dash-lg"></i>
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('intern.parts.adjust_stock', part_id=part.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="delta" value="1">
+        <button type="submit" class="intern-btn intern-btn--primary intern-btn--sm">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div class="intern-detail-grid mb-4">
+    {% if part.article_number %}
+    <div class="intern-detail-row">
+      <span class="intern-detail-label">Artikelnummer</span>
+      <span class="intern-detail-value">{{ part.article_number }}</span>
+    </div>
+    {% endif %}
+    {% if part.supplier %}
+    <div class="intern-detail-row">
+      <span class="intern-detail-label">Lieferant</span>
+      <span class="intern-detail-value">{{ part.supplier }}</span>
+    </div>
+    {% endif %}
+    {% if part.shelf or part.bin %}
+    <div class="intern-detail-row">
+      <span class="intern-detail-label">Lagerort</span>
+      <span class="intern-detail-value">
+        {{ [part.shelf, part.bin] | select | join(' / ') }}
+      </span>
+    </div>
+    {% endif %}
+    {% if part.synonyms %}
+    <div class="intern-detail-row">
+      <span class="intern-detail-label">Synonyme</span>
+      <span class="intern-detail-value">{{ part.synonyms | map(attribute='synonym') | join(', ') }}</span>
+    </div>
+    {% endif %}
+    {% if part.part_manufacturers %}
+    <div class="intern-detail-row">
+      <span class="intern-detail-label">Hersteller</span>
+      <span class="intern-detail-value">{{ part.part_manufacturers | map(attribute='manufacturer') | map(attribute='name') | join(', ') }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Danger zone -->
+  <div class="intern-danger-zone mt-5">
+    <p class="intern-danger-zone__label">Gefahrenzone</p>
+    <form method="post" action="{{ url_for('intern.parts.delete_part', part_id=part.id) }}"
+          onsubmit="return confirm('Ersatzteil wirklich löschen?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="intern-btn intern-btn--danger intern-btn--sm">
+        <i class="bi bi-trash me-1"></i>Löschen
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

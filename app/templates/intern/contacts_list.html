@@ -1,0 +1,70 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Kontakte{% endblock %}
+{% block page_title %}Kontakte{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.contacts.new_contact') }}" class="intern-btn intern-btn--sm intern-btn--primary">
+  <i class="bi bi-plus-lg"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  <form method="get" class="intern-search-bar mb-4">
+    <div class="intern-search-wrap">
+      <i class="bi bi-search intern-search-icon"></i>
+      <input type="search" name="q" value="{{ search }}" class="intern-input intern-input--search"
+             placeholder="Kontakt suchen…" autocomplete="off">
+    </div>
+  </form>
+
+  {% if contacts %}
+  <div class="d-flex justify-content-end mb-2">
+    <a href="{{ url_for('intern.contacts.export_all') }}" class="intern-btn intern-btn--sm intern-btn--ghost">
+      <i class="bi bi-download me-1"></i>Alle exportieren (.vcf)
+    </a>
+  </div>
+
+  <div class="intern-contact-list">
+    {% for contact in contacts %}
+    <div class="intern-contact-card">
+      <div class="intern-member-avatar">{{ contact.name[0].upper() }}</div>
+      <div class="intern-contact-card__body">
+        <div class="intern-contact-card__name">{{ contact.name }}</div>
+        {% if contact.phone %}
+        <a href="tel:{{ contact.phone }}" class="intern-contact-card__detail">
+          <i class="bi bi-telephone me-1"></i>{{ contact.phone }}
+        </a>
+        {% endif %}
+        {% if contact.email %}
+        <a href="mailto:{{ contact.email }}" class="intern-contact-card__detail">
+          <i class="bi bi-envelope me-1"></i>{{ contact.email }}
+        </a>
+        {% endif %}
+        {% if contact.note %}
+        <p class="intern-contact-card__note">{{ contact.note }}</p>
+        {% endif %}
+      </div>
+      <div class="intern-contact-card__actions">
+        <a href="{{ url_for('intern.contacts.vcard', contact_id=contact.id) }}" class="intern-icon-btn" title="vCard speichern">
+          <i class="bi bi-person-vcard"></i>
+        </a>
+        <a href="{{ url_for('intern.contacts.edit_contact', contact_id=contact.id) }}" class="intern-icon-btn" title="Bearbeiten">
+          <i class="bi bi-pencil"></i>
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="intern-empty">
+    <i class="bi bi-person-lines-fill"></i>
+    <p>{% if search %}Keine Kontakte für „{{ search }}" gefunden.{% else %}Noch keine Kontakte.{% endif %}</p>
+    <a href="{{ url_for('intern.contacts.new_contact') }}" class="intern-btn intern-btn--primary">Kontakt hinzufügen</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

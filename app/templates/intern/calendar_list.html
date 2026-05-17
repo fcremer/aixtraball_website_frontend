@@ -1,0 +1,108 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Termine{% endblock %}
+{% block page_title %}Termine{% endblock %}
+
+{% block header_action %}
+{% if not is_archive %}
+<a href="{{ url_for('intern.calendar.new_event') }}" class="intern-btn intern-btn--sm intern-btn--primary">
+  <i class="bi bi-plus-lg"></i>
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  {% if not is_archive %}
+  <div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{{ url_for('intern.calendar.archive_events') }}" class="intern-btn intern-btn--sm intern-btn--ghost">
+      <i class="bi bi-archive me-1"></i>Archiv
+    </a>
+    {% if ical_token %}
+    <button class="intern-btn intern-btn--sm intern-btn--ghost" onclick="copyIcal(this)" data-url="webcal://{{ request.host }}/intern/ical?token={{ ical_token }}">
+      <i class="bi bi-calendar-plus me-1"></i>Kalender abonnieren
+    </button>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="mb-4">
+    <a href="{{ url_for('intern.calendar.list_events') }}" class="intern-btn intern-btn--sm intern-btn--ghost">
+      <i class="bi bi-arrow-left me-1"></i>Zurück zu Terminen
+    </a>
+    <span class="intern-badge ms-2">Archiv</span>
+  </div>
+  {% endif %}
+
+  {% if events %}
+  <div class="intern-event-list">
+    {% for event in events %}
+    {% set understaffed = event.min_members and event.assignments|length < event.min_members %}
+    <a href="{{ url_for('intern.calendar.detail_event', event_id=event.id) }}" class="intern-event-card {% if event.id in assigned_to_me %}intern-event-card--assigned{% endif %} {% if understaffed %}intern-event-card--understaffed{% endif %}">
+      <div class="intern-event-card__date">
+        <span class="intern-event-card__day">{{ event.start_dt.strftime('%d') }}</span>
+        <span class="intern-event-card__month">{{ event.start_dt.strftime('%b') }}</span>
+      </div>
+      <div class="intern-event-card__body">
+        <div class="intern-event-card__title">
+          {{ event.title }}
+          {% if understaffed %}
+          <i class="bi bi-exclamation-circle intern-event-card__warn" title="Mindestbesetzung {{ event.min_members }} noch nicht erreicht ({{ event.assignments|length }}/{{ event.min_members }})"></i>
+          {% endif %}
+        </div>
+        <div class="intern-event-card__meta">
+          <i class="bi bi-clock me-1"></i>{{ event.start_dt.strftime('%H:%M') }} Uhr
+          {% if event.end_dt %}&nbsp;– {{ event.end_dt.strftime('%H:%M') }} Uhr{% endif %}
+          {% if event.location %}
+          &nbsp;·&nbsp;<i class="bi bi-geo-alt me-1"></i>{{ event.location }}
+          {% endif %}
+        </div>
+        {% if event.assignments %}
+        <div class="intern-event-card__assignees mt-1">
+          <i class="bi bi-people me-1"></i>
+          {% for a in event.assignments %}{{ a.member.get_display_name() }}{% if not loop.last %}, {% endif %}{% endfor %}
+          {% if event.min_members %}
+          <span class="intern-event-card__staffing {% if understaffed %}warn{% endif %}">{{ event.assignments|length }}/{{ event.min_members }}</span>
+          {% endif %}
+        </div>
+        {% elif event.min_members %}
+        <div class="intern-event-card__assignees mt-1">
+          <i class="bi bi-people me-1"></i>
+          <span class="intern-event-card__staffing warn">0/{{ event.min_members }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% if event.id in assigned_to_me %}
+      <div class="intern-event-card__badge"><i class="bi bi-person-check-fill"></i></div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="intern-empty">
+    <i class="bi bi-calendar3"></i>
+    <p>{% if is_archive %}Keine archivierten Termine.{% else %}Keine anstehenden Termine.{% endif %}</p>
+    {% if not is_archive %}
+    <a href="{{ url_for('intern.calendar.new_event') }}" class="intern-btn intern-btn--primary">Termin anlegen</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyIcal(btn) {
+  const url = btn.dataset.url;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Link kopiert!';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-calendar-plus me-1"></i>Kalender abonnieren'; }, 2500);
+    });
+  } else {
+    prompt('Kalender-URL (kopieren):', url);
+  }
+}
+</script>
+{% endblock %}

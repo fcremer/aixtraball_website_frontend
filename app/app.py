@@ -1599,6 +1599,15 @@ def sitemap():
 # --------------------------------------------------
 # Local run (Dockerfile startet ebenfalls so)
 # --------------------------------------------------
+# --------------------------------------------------
+# Mitgliederportal (intern Blueprint)
+# --------------------------------------------------
+try:
+    from intern import create_intern_blueprint
+    create_intern_blueprint(app)
+except Exception as _intern_exc:
+    app.logger.error("Member portal failed to initialize: %s", _intern_exc)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 def _remove_static_file(path_value):

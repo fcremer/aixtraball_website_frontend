@@ -1,0 +1,86 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ todo_list.title }}{% endblock %}
+{% block page_title %}{{ todo_list.title }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.todos.list_todos') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block header_action %}
+<form method="post" action="{{ url_for('intern.todos.delete_list', list_id=todo_list.id) }}"
+      onsubmit="return confirm('Liste wirklich löschen?')" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <button class="intern-icon-btn intern-icon-btn--danger" title="Liste löschen">
+    <i class="bi bi-trash"></i>
+  </button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  {% for section in todo_list.sections %}
+  <div class="intern-todo-section mb-4">
+    <div class="intern-todo-section__header">
+      <h3 class="intern-todo-section__title">{{ section.title }}</h3>
+      <form method="post" action="{{ url_for('intern.todos.delete_section', section_id=section.id) }}"
+            onsubmit="return confirm('Abschnitt löschen?')" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="intern-icon-btn intern-icon-btn--sm intern-icon-btn--muted" title="Abschnitt löschen">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </form>
+    </div>
+
+    <div class="intern-todo-items">
+      {% for item in section.items %}
+      <div class="intern-todo-item {% if item.is_done %}intern-todo-item--done{% endif %}">
+        <form method="post" action="{{ url_for('intern.todos.toggle_item', item_id=item.id) }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="intern-todo-check" aria-label="{{ 'Erledigt markieren' if not item.is_done else 'Als offen markieren' }}">
+            <i class="bi bi-{% if item.is_done %}check-circle-fill{% else %}circle{% endif %}"></i>
+          </button>
+        </form>
+        <span class="intern-todo-item__text">{{ item.text }}</span>
+        <form method="post" action="{{ url_for('intern.todos.delete_item', item_id=item.id) }}"
+              onsubmit="return confirm('Eintrag löschen?')" class="ms-auto d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="intern-icon-btn intern-icon-btn--sm intern-icon-btn--muted">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Add item -->
+    <form method="post" action="{{ url_for('intern.todos.add_item', section_id=section.id) }}" class="intern-todo-add-item">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="text" name="text" class="intern-input intern-input--sm"
+             placeholder="+ Eintrag hinzufügen…">
+      <button type="submit" class="intern-btn intern-btn--xs intern-btn--ghost">
+        <i class="bi bi-plus-lg"></i>
+      </button>
+    </form>
+  </div>
+  {% endfor %}
+
+  <!-- Add section -->
+  <form method="post" action="{{ url_for('intern.todos.add_section', list_id=todo_list.id) }}"
+        class="intern-add-section-form mt-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="intern-search-wrap">
+      <i class="bi bi-folder-plus intern-search-icon"></i>
+      <input type="text" name="title" class="intern-input intern-input--search"
+             placeholder="Neuen Abschnitt hinzufügen…">
+    </div>
+    <button type="submit" class="intern-btn intern-btn--ghost">
+      <i class="bi bi-plus-lg me-1"></i>Abschnitt
+    </button>
+  </form>
+
+</div>
+{% endblock %}

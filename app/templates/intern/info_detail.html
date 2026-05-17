@@ -1,0 +1,31 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ page.title }}{% endblock %}
+{% block page_title %}{{ page.title }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.info.list_pages') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.info.edit_page', slug=page.slug) }}" class="intern-icon-btn" aria-label="Bearbeiten">
+  <i class="bi bi-pencil"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+  <div class="intern-meta mb-4">
+    Erstellt von {{ page.creator.get_display_name() }} am {{ page.created_at.strftime('%d.%m.%Y') }}
+    {% if page.updater and page.updated_at != page.created_at %}
+    · Zuletzt bearbeitet von {{ page.updater.get_display_name() }} am {{ page.updated_at.strftime('%d.%m.%Y') }}
+    {% endif %}
+  </div>
+
+  <div class="intern-richtext">
+    {{ page.content_html|safe }}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline – Aixtraball Intern</title>
+  <style>
+    :root { --red: #E31E24; --bg: #0a0a0b; --text: #f0ede8; --muted: rgba(240,237,232,0.45); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; text-align: center;
+    }
+    .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    h1 { font-size: 1.375rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p { color: var(--muted); font-size: 0.9375rem; line-height: 1.6; }
+    a {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      margin-top: 1.5rem; padding: 0.625rem 1.25rem;
+      background: var(--red); color: #fff; border-radius: 0.875rem;
+      text-decoration: none; font-weight: 600; font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="icon">📡</div>
+    <h1>Kein Internetzugang</h1>
+    <p>Du bist momentan offline.<br>Einige Inhalte sind ggf. aus dem Cache verfügbar.</p>
+    <a href="/intern/" onclick="history.back(); return false;">Zurück</a>
+  </div>
+</body>
+</html>

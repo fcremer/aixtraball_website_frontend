@@ -1,0 +1,91 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ machine.display_name }}{% endblock %}
+{% block page_title %}{{ machine.display_name }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.repairs.list_machines') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.repairs.new_repair', machine_id=machine.id) }}" class="intern-btn intern-btn--sm intern-btn--primary">
+  <i class="bi bi-plus-lg"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+  <div class="intern-machine-header mb-4">
+    {% if machine.manufacturer %}<span class="intern-badge">{{ machine.manufacturer }}</span>{% endif %}
+    {% if machine.year %}<span class="intern-badge ms-1">{{ machine.year }}</span>{% endif %}
+  </div>
+
+  <div class="intern-search-bar mb-4">
+    <i class="bi bi-search intern-search-bar__icon"></i>
+    <input
+      type="search"
+      id="repair-search"
+      class="intern-search-bar__input"
+      placeholder="Reparatur suchen …"
+      autocomplete="off"
+    >
+  </div>
+
+  {% if repairs %}
+  <div class="intern-repair-list" id="repair-list">
+    {% for repair in repairs %}
+    <a href="{{ url_for('intern.repairs.repair_detail', repair_id=repair.id) }}" class="intern-repair-card" data-title="{{ repair.title | lower }}">
+      <div class="intern-repair-card__top">
+        <span class="intern-status-badge intern-status-badge--{{ repair.status }}">
+          {{ statuses.get(repair.status, repair.status) }}
+        </span>
+        <span class="intern-repair-card__date">{{ repair.created_at.strftime('%d.%m.%Y') }}</span>
+      </div>
+      <div class="intern-repair-card__title">{{ repair.title }}</div>
+      {% if repair.description %}
+      <div class="intern-repair-card__desc">{{ repair.description[:100] }}{% if repair.description|length > 100 %}…{% endif %}</div>
+      {% endif %}
+      <div class="intern-repair-card__meta mt-1">
+        <span><i class="bi bi-chat me-1"></i>{{ repair.comments|length }}</span>
+        <span><i class="bi bi-image me-1"></i>{{ repair.media|length }}</span>
+        <span class="intern-repair-card__category">{{ repair.category }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p class="intern-search-empty" id="repair-empty" hidden>Keine Reparatur gefunden.</p>
+  {% else %}
+  <div class="intern-empty">
+    <i class="bi bi-tools"></i>
+    <p>Noch keine Reparaturen für diesen Flipper.</p>
+    <a href="{{ url_for('intern.repairs.new_repair', machine_id=machine.id) }}" class="intern-btn intern-btn--primary">
+      Defekt melden
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var input = document.getElementById('repair-search');
+  var list  = document.getElementById('repair-list');
+  var empty = document.getElementById('repair-empty');
+  if (!input || !list) return;
+  input.addEventListener('input', function () {
+    var q = input.value.toLowerCase().trim();
+    var cards = list.querySelectorAll('.intern-repair-card');
+    var visible = 0;
+    cards.forEach(function (card) {
+      var match = !q || card.dataset.title.includes(q);
+      card.hidden = !match;
+      if (match) visible++;
+    });
+    if (empty) empty.hidden = visible > 0;
+  });
+})();
+</script>
+{% endblock %}

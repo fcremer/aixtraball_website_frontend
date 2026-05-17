@@ -1,0 +1,74 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Reparaturen{% endblock %}
+{% block page_title %}Reparaturen{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+  <div class="intern-search-bar mb-4">
+    <i class="bi bi-search intern-search-bar__icon"></i>
+    <input
+      type="search"
+      id="machine-search"
+      class="intern-search-bar__input"
+      placeholder="Flipper suchen …"
+      autocomplete="off"
+    >
+  </div>
+
+  {% if machines %}
+  <div class="intern-machine-list" id="machine-list">
+    {% for machine in machines %}
+    <a href="{{ url_for('intern.repairs.machine_repairs', machine_id=machine.id) }}"
+       class="intern-machine-card"
+       data-name="{{ machine.display_name | lower }}">
+      <div class="intern-machine-card__info">
+        <div class="intern-machine-card__name">{{ machine.display_name }}</div>
+        {% if machine.manufacturer or machine.year %}
+        <div class="intern-machine-card__sub">
+          {{ machine.manufacturer }}{% if machine.manufacturer and machine.year %} · {% endif %}{{ machine.year }}
+        </div>
+        {% endif %}
+      </div>
+      <div class="intern-machine-card__right">
+        {% if open_counts[machine.id] > 0 %}
+        <span class="intern-badge intern-badge--danger">{{ open_counts[machine.id] }} offen</span>
+        {% else %}
+        <span class="intern-badge intern-badge--ok"><i class="bi bi-check-lg"></i> OK</span>
+        {% endif %}
+        <i class="bi bi-chevron-right intern-machine-card__arrow"></i>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p class="intern-search-empty" id="machine-empty" hidden>Kein Flipper gefunden.</p>
+  {% else %}
+  <div class="intern-empty">
+    <i class="bi bi-controller"></i>
+    <p>Keine Flipper gefunden.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var input = document.getElementById('machine-search');
+  var list  = document.getElementById('machine-list');
+  var empty = document.getElementById('machine-empty');
+  if (!input || !list) return;
+  input.addEventListener('input', function () {
+    var q = input.value.toLowerCase().trim();
+    var cards = list.querySelectorAll('.intern-machine-card');
+    var visible = 0;
+    cards.forEach(function (card) {
+      var match = !q || card.dataset.name.includes(q);
+      card.hidden = !match;
+      if (match) visible++;
+    });
+    if (empty) empty.hidden = visible > 0;
+  });
+})();
+</script>
+{% endblock %}

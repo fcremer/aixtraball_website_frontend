@@ -1,0 +1,188 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Ersatzteile{% endblock %}
+{% block page_title %}Ersatzteile{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.parts.new_part') }}" class="intern-btn intern-btn--sm intern-btn--primary">
+  <i class="bi bi-plus-lg"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--parts">
+
+  <div class="intern-parts-search mb-3">
+    <i class="bi bi-search intern-parts-search__icon"></i>
+    <input
+      type="search"
+      id="parts-q"
+      class="intern-parts-search__input"
+      placeholder="Name, Artikelnummer, Regal …"
+      value="{{ search }}"
+      autocomplete="off"
+      autofocus
+      spellcheck="false"
+    >
+    <span class="intern-parts-search__count" id="parts-count">{{ parts|length }} / {{ total }}</span>
+  </div>
+
+  <div id="parts-results">
+    {% for p in parts %}
+    {% set loc = [p.shelf, p.bin] | select | join(' / ') %}
+    <div class="intern-part-card">
+      <a href="{{ url_for('intern.parts.part_detail', part_id=p.id) }}" class="intern-part-card__link">
+        <div class="intern-part-card__main">
+          <div class="intern-part-card__name">{{ p.name }}</div>
+          {% if loc %}<div class="intern-part-card__loc"><i class="bi bi-geo-alt me-1"></i>{{ loc }}</div>{% endif %}
+        </div>
+        {% if p.article_number %}
+        <span class="intern-part-card__art">{{ p.article_number }}</span>
+        {% endif %}
+      </a>
+      <div class="intern-part-stock" data-part-id="{{ p.id }}" data-stock="{{ p.stock }}">
+        <span class="intern-part-card__stock {{ 'ok' if p.stock > 0 else 'zero' }}">{{ p.stock }}</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="intern-empty">
+      <i class="bi bi-search"></i>
+      <p>Kein Ersatzteil gefunden.</p>
+      {% if search %}<a href="{{ url_for('intern.parts.list_parts') }}" class="intern-btn intern-btn--sm intern-btn--ghost">Suche zurücksetzen</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  var stockBase = {{ url_for('intern.parts.adjust_stock', part_id=0) | tojson }}.replace('/0/', '/');
+
+  /* ── Live search ── */
+  var input   = document.getElementById('parts-q');
+  var results = document.getElementById('parts-results');
+  var counter = document.getElementById('parts-count');
+  var detailBase = {{ url_for('intern.parts.part_detail', part_id=0) | tojson }}.replace('/0', '/');
+  var timer;
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function stockClass(n) { return n > 0 ? 'ok' : 'zero'; }
+
+  function cardHtml(p) {
+    var loc = [p.shelf, p.bin].filter(Boolean).join(' / ');
+    var art = p.article_number ? '<span class="intern-part-card__art">' + esc(p.article_number) + '</span>' : '';
+    var loc_html = loc ? '<div class="intern-part-card__loc"><i class="bi bi-geo-alt me-1"></i>' + esc(loc) + '</div>' : '';
+    return '<div class="intern-part-card">' +
+      '<a href="' + detailBase + p.id + '" class="intern-part-card__link">' +
+        '<div class="intern-part-card__main"><div class="intern-part-card__name">' + esc(p.name) + '</div>' + loc_html + '</div>' +
+        art +
+      '</a>' +
+      '<div class="intern-part-stock" data-part-id="' + p.id + '" data-stock="' + p.stock + '">' +
+        '<span class="intern-part-card__stock ' + stockClass(p.stock) + '">' + p.stock + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function render(data) {
+    counter.textContent = data.length + ' Treffer';
+    if (!data.length) {
+      results.innerHTML = '<div class="intern-empty"><i class="bi bi-search"></i><p>Kein Ersatzteil gefunden.</p></div>';
+      return;
+    }
+    results.innerHTML = data.map(cardHtml).join('');
+  }
+
+  input.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = input.value.trim();
+    counter.textContent = '…';
+    timer = setTimeout(function() {
+      fetch({{ url_for('intern.parts.search') | tojson }} + '?q=' + encodeURIComponent(q) + '&limit=60')
+        .then(function(r){ return r.json(); })
+        .then(render)
+        .catch(function(){});
+    }, 220);
+  });
+
+  /* ── Inline stock editor ── */
+  var activeWrap = null;
+
+  function closeEditor(wrap) {
+    if (!wrap) return;
+    var stock = parseInt(wrap.dataset.stock, 10);
+    wrap.innerHTML = '<span class="intern-part-card__stock ' + stockClass(stock) + '">' + stock + '</span>';
+    wrap.classList.remove('intern-part-stock--open');
+    activeWrap = null;
+  }
+
+  function openEditor(wrap) {
+    if (activeWrap && activeWrap !== wrap) closeEditor(activeWrap);
+    var stock = parseInt(wrap.dataset.stock, 10);
+    wrap.classList.add('intern-part-stock--open');
+    wrap.innerHTML =
+      '<button class="intern-stock-btn intern-stock-btn--minus" data-delta="-1" aria-label="Minus">−</button>' +
+      '<span class="intern-stock-val ' + stockClass(stock) + '">' + stock + '</span>' +
+      '<button class="intern-stock-btn intern-stock-btn--plus" data-delta="1" aria-label="Plus">+</button>';
+    activeWrap = wrap;
+  }
+
+  function handleStockBtn(wrap, delta) {
+    var partId = wrap.dataset.partId;
+    var fd = new FormData();
+    fd.append('csrf_token', CSRF);
+    fd.append('delta', delta);
+    fetch(stockBase + partId + '/bestand', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd,
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.stock !== undefined) {
+        wrap.dataset.stock = data.stock;
+        var val = wrap.querySelector('.intern-stock-val');
+        if (val) {
+          val.textContent = data.stock;
+          val.className = 'intern-stock-val ' + stockClass(data.stock);
+        }
+        var minusBtn = wrap.querySelector('.intern-stock-btn--minus');
+        if (minusBtn) minusBtn.disabled = data.stock <= 0;
+      }
+    })
+    .catch(function() {});
+  }
+
+  document.addEventListener('click', function(e) {
+    var wrap = e.target.closest('.intern-part-stock');
+    if (wrap) {
+      e.stopPropagation();
+      var btn = e.target.closest('.intern-stock-btn');
+      if (btn) {
+        handleStockBtn(wrap, btn.dataset.delta);
+      } else {
+        if (wrap.classList.contains('intern-part-stock--open')) {
+          closeEditor(wrap);
+        } else {
+          openEditor(wrap);
+        }
+      }
+      return;
+    }
+    // Click outside → close
+    if (activeWrap) closeEditor(activeWrap);
+  });
+
+  /* Close on scroll (prevents accidental edits while scrolling) */
+  document.addEventListener('scroll', function() {
+    if (activeWrap) closeEditor(activeWrap);
+  }, { passive: true, capture: true });
+})();
+</script>
+{% endblock %}

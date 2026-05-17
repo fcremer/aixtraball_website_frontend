@@ -1,0 +1,86 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ event.title }}{% endblock %}
+{% block page_title %}Termin{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.calendar.list_events') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block header_action %}
+<a href="{{ url_for('intern.calendar.edit_event', event_id=event.id) }}" class="intern-icon-btn" aria-label="Bearbeiten">
+  <i class="bi bi-pencil"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+  <div class="intern-card">
+    <h2 class="intern-card__title intern-card__title--lg">{{ event.title }}</h2>
+
+    <div class="intern-detail-row">
+      <i class="bi bi-calendar3"></i>
+      <span>{{ event.start_dt.strftime('%A, %d. %B %Y') }}</span>
+    </div>
+    <div class="intern-detail-row">
+      <i class="bi bi-clock"></i>
+      <span>
+        {{ event.start_dt.strftime('%H:%M') }} Uhr
+        {% if event.end_dt %} – {{ event.end_dt.strftime('%H:%M') }} Uhr{% endif %}
+      </span>
+    </div>
+    {% if event.location %}
+    <div class="intern-detail-row">
+      <i class="bi bi-geo-alt"></i>
+      <span>{{ event.location }}</span>
+    </div>
+    {% endif %}
+    {% if event.description %}
+    <div class="intern-detail-description mt-3">
+      {{ event.description }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Assignment section -->
+  <div class="intern-card mt-3">
+    <div class="intern-card__eyebrow"><i class="bi bi-people me-1"></i>Zugewiesene Mitglieder</div>
+    {% if assigned_members %}
+    <ul class="intern-member-list mt-2">
+      {% for member in assigned_members %}
+      <li class="intern-member-item">
+        <div class="intern-member-avatar">{{ member.get_display_name()[0].upper() }}</div>
+        <span>{{ member.get_display_name() }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="intern-muted mt-2">Noch niemand zugewiesen.</p>
+    {% endif %}
+
+    <div class="mt-3 d-flex gap-2">
+      {% if is_assigned %}
+      <form method="post" action="{{ url_for('intern.calendar.unassign_self', event_id=event.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="intern-btn intern-btn--sm intern-btn--ghost">
+          <i class="bi bi-person-dash me-1"></i>Abmelden
+        </button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ url_for('intern.calendar.assign_self', event_id=event.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="intern-btn intern-btn--sm intern-btn--primary">
+          <i class="bi bi-person-check me-1"></i>Ich bin dabei
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="intern-meta mt-3">
+    Erstellt von {{ event.creator.get_display_name() }} am {{ event.created_at.strftime('%d.%m.%Y') }}
+  </div>
+</div>
+{% endblock %}

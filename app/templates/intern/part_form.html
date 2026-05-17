@@ -1,0 +1,77 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ 'Bearbeiten' if part else 'Neues Ersatzteil' }}{% endblock %}
+{% block page_title %}{{ 'Bearbeiten' if part else 'Neues Ersatzteil' }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.parts.part_detail', part_id=part.id) if part else url_for('intern.parts.list_parts') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--form">
+  <form method="post" class="intern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="intern-field">
+      <label class="intern-label">Name <span class="intern-required">*</span></label>
+      <input type="text" name="name" class="intern-input" required autofocus
+             value="{{ part.name if part else '' }}" placeholder="Bezeichnung des Ersatzteils">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Artikelnummer</label>
+      <input type="text" name="article_number" class="intern-input"
+             value="{{ part.article_number or '' if part else '' }}" placeholder="z.B. 545-5084-00">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Lieferant</label>
+      <input type="text" name="supplier" class="intern-input"
+             value="{{ part.supplier or '' if part else '' }}" placeholder="z.B. Marco Specialties">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Bestand</label>
+      <input type="number" name="stock" class="intern-input" min="0"
+             value="{{ part.stock if part else 0 }}">
+    </div>
+
+    <div class="intern-field-row">
+      <div class="intern-field">
+        <label class="intern-label">Regal</label>
+        <input type="text" name="shelf" class="intern-input"
+               value="{{ part.shelf or '' if part else '' }}" placeholder="Regal 1">
+      </div>
+      <div class="intern-field">
+        <label class="intern-label">Fach</label>
+        <input type="text" name="bin" class="intern-input"
+               value="{{ part.bin or '' if part else '' }}" placeholder="3">
+      </div>
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Synonyme <span class="intern-muted">(kommagetrennt)</span></label>
+      <input type="text" name="synonyms" class="intern-input"
+             value="{{ part.synonyms | map(attribute='synonym') | join(', ') if part else '' }}"
+             placeholder="LED, Leuchtdiode, Light">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Hersteller <span class="intern-muted">(kommagetrennt)</span></label>
+      <input type="text" name="manufacturers" class="intern-input"
+             value="{{ part.part_manufacturers | map(attribute='manufacturer') | map(attribute='name') | join(', ') if part else '' }}"
+             placeholder="Williams, Bally">
+    </div>
+
+    <div class="intern-form-actions">
+      <a href="{{ url_for('intern.parts.part_detail', part_id=part.id) if part else url_for('intern.parts.list_parts') }}"
+         class="intern-btn intern-btn--ghost">Abbrechen</a>
+      <button type="submit" class="intern-btn intern-btn--primary">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Speichern' if part else 'Anlegen' }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

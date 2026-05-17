@@ -1,0 +1,93 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Login{% endblock %}
+{% block page_title %}Mitgliederportal{% endblock %}
+
+{% block content %}
+<div class="intern-login-wrap">
+  <div class="intern-login-card">
+
+    <div class="intern-login-logo">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Aixtraball" class="nav-logo-light" height="40">
+      <img src="{{ url_for('static', filename='images/logo_Inv.png') }}" alt="Aixtraball" class="nav-logo-dark" height="40">
+    </div>
+
+    {% if step == "code" %}
+    {# ── Step 2: Code eingeben ─────────────────────────────────────────── #}
+
+    <h2 class="intern-login-title">Code eingeben</h2>
+    <p class="intern-login-sub">
+      Wir haben einen 6-stelligen Code an<br>
+      <strong>{{ email }}</strong><br>
+      gesendet. Gib ihn hier ein.
+    </p>
+
+    <form method="post" action="{{ url_for('intern.auth.login_code') }}" class="intern-login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="intern-field">
+        <label for="pin" class="intern-label">6-stelliger Code</label>
+        <input
+          type="text"
+          id="pin"
+          name="pin"
+          class="intern-input intern-input--pin"
+          placeholder="000000"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          autocomplete="one-time-code"
+          required
+          autofocus
+        >
+      </div>
+      <button type="submit" class="intern-btn intern-btn--primary intern-btn--full">
+        <i class="bi bi-arrow-right-circle-fill me-2"></i>Einloggen
+      </button>
+    </form>
+
+    <p class="intern-login-hint">
+      <i class="bi bi-clock"></i> Gültig 15 Minuten &bull; max. 5 Versuche
+    </p>
+    <p style="text-align:center;margin-top:0.75rem;">
+      <a href="{{ url_for('intern.auth.login') }}" class="intern-login-back">
+        <i class="bi bi-arrow-left me-1"></i>Andere E-Mail verwenden
+      </a>
+    </p>
+
+    {% else %}
+    {# ── Step 1: E-Mail eingeben ───────────────────────────────────────── #}
+
+    <h2 class="intern-login-title">Mitgliederbereich</h2>
+    <p class="intern-login-sub">Gib deine @aixtraball.de-Adresse ein – wir schicken dir einen sicheren Login-Code.</p>
+
+    <form method="post" action="{{ url_for('intern.auth.login') }}" class="intern-login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="intern-field">
+        <label for="email" class="intern-label">E-Mail-Adresse</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="intern-input"
+          placeholder="dein.name@aixtraball.de"
+          autocomplete="email"
+          inputmode="email"
+          required
+          autofocus
+        >
+      </div>
+      <button type="submit" class="intern-btn intern-btn--primary intern-btn--full">
+        <i class="bi bi-send-fill me-2"></i>Code senden
+      </button>
+    </form>
+
+    <p class="intern-login-hint">
+      <i class="bi bi-shield-lock"></i>
+      Passwortlos &amp; sicher via Magic Link
+    </p>
+
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

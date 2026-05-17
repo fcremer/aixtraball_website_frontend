@@ -1,0 +1,47 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}Todolisten{% endblock %}
+{% block page_title %}Todolisten{% endblock %}
+
+{% block content %}
+<div class="intern-page">
+
+  <form method="post" action="{{ url_for('intern.todos.new_list') }}" class="intern-inline-form mb-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="intern-search-wrap">
+      <i class="bi bi-plus-lg intern-search-icon"></i>
+      <input type="text" name="title" class="intern-input intern-input--search"
+             placeholder="Neue Liste erstellen…" required>
+    </div>
+    <button type="submit" class="intern-btn intern-btn--primary">Erstellen</button>
+  </form>
+
+  {% if lists %}
+  <div class="intern-todo-overview">
+    {% for todo_list in lists %}
+    <a href="{{ url_for('intern.todos.todo_detail', list_id=todo_list.id) }}" class="intern-todo-overview-card">
+      <div class="intern-todo-overview-card__title">{{ todo_list.title }}</div>
+      <div class="intern-todo-overview-card__stats">
+        {% set total = namespace(n=0) %}{% set done = namespace(n=0) %}
+        {% for section in todo_list.sections %}
+          {% for item in section.items %}
+            {% set total.n = total.n + 1 %}
+            {% if item.is_done %}{% set done.n = done.n + 1 %}{% endif %}
+          {% endfor %}
+        {% endfor %}
+        <span>{{ done.n }}/{{ total.n }} erledigt</span>
+        <span class="intern-badge ms-2">{{ todo_list.sections|length }} Abschnitte</span>
+      </div>
+      <i class="bi bi-chevron-right"></i>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="intern-empty">
+    <i class="bi bi-check2-square"></i>
+    <p>Noch keine Todolisten.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

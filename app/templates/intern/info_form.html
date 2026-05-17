@@ -1,0 +1,128 @@
+{% extends "intern/base_intern.html" %}
+
+{% block title %}{{ 'Seite bearbeiten' if page else 'Neue Seite' }}{% endblock %}
+{% block page_title %}{{ 'Seite bearbeiten' if page else 'Neue Seite' }}{% endblock %}
+
+{% block header_back %}
+<a href="{{ url_for('intern.info.list_pages') }}" class="intern-back-btn">
+  <i class="bi bi-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block head %}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="intern-page intern-page--form">
+  <form method="post" id="info-form" class="intern-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="content_html" id="content_html_hidden">
+
+    <div class="intern-field">
+      <label class="intern-label">Titel <span class="intern-required">*</span></label>
+      <input type="text" name="title" class="intern-input" value="{{ page.title if page else '' }}"
+             required autofocus placeholder="Seitentitel">
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Sektion <span class="intern-muted">(optional)</span></label>
+      <input type="text" name="section" class="intern-input"
+             value="{{ page.section if page and page.section else '' }}"
+             placeholder="z.B. Technik, Regeln, FAQ …"
+             list="section-suggestions">
+      <datalist id="section-suggestions">
+        {% for s in existing_sections %}
+        <option value="{{ s }}">
+        {% endfor %}
+      </datalist>
+    </div>
+
+    <div class="intern-field">
+      <label class="intern-label">Inhalt</label>
+      <div id="quill-editor" class="intern-quill-editor">{% if page %}{{ page.content_html|safe }}{% endif %}</div>
+    </div>
+
+    <div class="intern-form-actions">
+      <a href="{{ url_for('intern.info.list_pages') }}" class="intern-btn intern-btn--ghost">Abbrechen</a>
+      <button type="submit" class="intern-btn intern-btn--primary" id="save-btn">
+        <i class="bi bi-check-lg me-1"></i>{{ 'Speichern' if page else 'Erstellen' }}
+      </button>
+    </div>
+
+    {% if page %}
+    <div class="intern-danger-zone mt-5">
+      <p class="intern-danger-zone__label">Gefahrenzone</p>
+      <form method="post" action="{{ url_for('intern.info.delete_page', slug=page.slug) }}"
+            onsubmit="return confirm('Seite wirklich löschen?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="intern-btn intern-btn--danger intern-btn--sm">
+          <i class="bi bi-trash me-1"></i>Seite löschen
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script>
+(function () {
+  var CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  var UPLOAD_URL = {{ url_for('intern.info.upload_image') | tojson }};
+
+  var quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          ['link', 'image'],
+          ['clean']
+        ],
+        handlers: {
+          image: function () {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+            input.onchange = function () {
+              var file = input.files[0];
+              if (!file) return;
+              var fd = new FormData();
+              fd.append('file', file);
+              fd.append('csrf_token', CSRF);
+              fetch(UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd,
+              })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data.url) {
+                  var range = quill.getSelection(true);
+                  quill.insertEmbed(range.index, 'image', data.url, 'user');
+                  quill.setSelection(range.index + 1);
+                } else {
+                  alert('Bild-Upload fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler'));
+                }
+              })
+              .catch(function () { alert('Bild-Upload fehlgeschlagen.'); });
+            };
+          }
+        }
+      }
+    }
+  });
+
+  document.getElementById('info-form').addEventListener('submit', function () {
+    document.getElementById('content_html_hidden').value = quill.root.innerHTML;
+  });
+})();
+</script>
+{% endblock %}

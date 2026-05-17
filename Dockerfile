@@ -46,7 +46,7 @@ ARG APP_UID=10001
 RUN useradd -u ${APP_UID} -m -s /usr/sbin/nologin ${APP_USER}
 
 WORKDIR /app
-RUN mkdir -p /opt/venv /var/log/app /tmp/app \
+RUN mkdir -p /opt/venv /var/log/app /tmp/app /app/data /app/static/intern/uploads \
  && chown -R ${APP_USER}:${APP_USER} /app /opt/venv /var/log/app /tmp/app
 
 # Isolated venv
