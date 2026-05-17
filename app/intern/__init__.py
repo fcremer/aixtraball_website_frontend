@@ -81,11 +81,15 @@ def _sync_members_from_yaml(app: Flask) -> None:
             if not name:
                 continue
             email = _name_to_email(name)
-            existing = db.query(Member).filter_by(email=email).first()
-            if existing is None:
-                db.add(Member(email=email, display_name=name, is_active=True))
-            elif existing.display_name != name:
-                existing.display_name = name
+            try:
+                existing = db.query(Member).filter_by(email=email).first()
+                if existing is None:
+                    db.add(Member(email=email, display_name=name, is_active=True))
+                    db.flush()
+                elif existing.display_name != name:
+                    existing.display_name = name
+            except Exception:
+                db.rollback()
         db.commit()
     except Exception as exc:
         db.rollback()
