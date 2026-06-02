@@ -906,6 +906,7 @@ def admin_doc(filename):
 
     if request.method == "POST":
         new_doc = {}
+        upload_error = None
         for field in schema:
             key = field["name"]
             ftype = field.get("type", "text")
@@ -915,30 +916,51 @@ def admin_doc(filename):
                 if ftype == "image_list":
                     for f in request.files.getlist(f"{key}_upload"):
                         if f and f.filename:
-                            upload_dir = BASE_DIR / "static" / "images"
-                            upload_dir.mkdir(parents=True, exist_ok=True)
                             fname = secure_filename(f.filename)
-                            f.save(upload_dir / fname)
-                            entries.append(f"images/{fname}")
+                            if not fname:
+                                upload_error = f"Ungültiger Dateiname: {f.filename}"
+                                continue
+                            try:
+                                upload_dir = BASE_DIR / "static" / "images"
+                                upload_dir.mkdir(parents=True, exist_ok=True)
+                                f.save(upload_dir / fname)
+                                entries.append(f"images/{fname}")
+                            except Exception as exc:
+                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
                 new_doc[key] = entries
             elif ftype == "image":
                 file = request.files.get(f"{key}_upload")
                 if file and file.filename:
-                    upload_dir = BASE_DIR / "static" / "images"
-                    upload_dir.mkdir(parents=True, exist_ok=True)
                     fname = secure_filename(file.filename)
-                    file.save(upload_dir / fname)
-                    new_doc[key] = f"images/{fname}"
+                    if not fname:
+                        upload_error = f"Ungültiger Dateiname: {file.filename}"
+                        new_doc[key] = request.form.get(key, "").strip()
+                    else:
+                        try:
+                            upload_dir = BASE_DIR / "static" / "images"
+                            upload_dir.mkdir(parents=True, exist_ok=True)
+                            file.save(upload_dir / fname)
+                            new_doc[key] = f"images/{fname}"
+                        except Exception as exc:
+                            upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                            new_doc[key] = request.form.get(key, "").strip()
                 else:
                     new_doc[key] = request.form.get(key, "").strip()
             elif ftype == "bool":
                 new_doc[key] = request.form.get(key) == "on"
             else:
                 new_doc[key] = request.form.get(key, "").strip()
-        yaml_content = yaml.safe_dump(new_doc, allow_unicode=True, sort_keys=False)
-        filepath.write_text(yaml_content, encoding="utf-8")
-        YAML_CACHE.pop(filename, None)
-        flash("Gespeichert", "success")
+        try:
+            yaml_content = yaml.safe_dump(new_doc, allow_unicode=True, sort_keys=False)
+            filepath.write_text(yaml_content, encoding="utf-8")
+            YAML_CACHE.pop(filename, None)
+        except Exception as exc:
+            flash(f"Fehler beim Speichern: {exc}", "danger")
+            return redirect(url_for("admin_doc", filename=filename))
+        if upload_error:
+            flash(f"Gespeichert, aber: {upload_error}", "warning")
+        else:
+            flash("Gespeichert", "success")
         return redirect(url_for("admin_doc", filename=filename))
 
     return render_template(
@@ -986,6 +1008,7 @@ def admin_item(filename, index=None):
             effective_index = int(form_index) if form_index not in (None, "") else index
         except ValueError:
             effective_index = index
+        upload_error = None
         if schema:
             new_item = {}
             for field in schema:
@@ -997,20 +1020,34 @@ def admin_item(filename, index=None):
                     if ftype == "image_list":
                         for f in request.files.getlist(f"{key}_upload"):
                             if f and f.filename:
-                                upload_dir = BASE_DIR / "static" / "images"
-                                upload_dir.mkdir(parents=True, exist_ok=True)
                                 fname = secure_filename(f.filename)
-                                f.save(upload_dir / fname)
-                                entries.append(f"images/{fname}")
+                                if not fname:
+                                    upload_error = f"Ungültiger Dateiname: {f.filename}"
+                                    continue
+                                try:
+                                    upload_dir = BASE_DIR / "static" / "images"
+                                    upload_dir.mkdir(parents=True, exist_ok=True)
+                                    f.save(upload_dir / fname)
+                                    entries.append(f"images/{fname}")
+                                except Exception as exc:
+                                    upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
                     new_item[key] = entries
                 elif ftype == "image":
                     file = request.files.get(f"{key}_upload")
                     if file and file.filename:
-                        upload_dir = BASE_DIR / "static" / "images"
-                        upload_dir.mkdir(parents=True, exist_ok=True)
                         fname = secure_filename(file.filename)
-                        file.save(upload_dir / fname)
-                        new_item[key] = f"images/{fname}"
+                        if not fname:
+                            upload_error = f"Ungültiger Dateiname: {file.filename}"
+                            new_item[key] = request.form.get(key, "").strip()
+                        else:
+                            try:
+                                upload_dir = BASE_DIR / "static" / "images"
+                                upload_dir.mkdir(parents=True, exist_ok=True)
+                                file.save(upload_dir / fname)
+                                new_item[key] = f"images/{fname}"
+                            except Exception as exc:
+                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                                new_item[key] = request.form.get(key, "").strip()
                     else:
                         new_item[key] = request.form.get(key, "").strip()
                 elif ftype == "bool":
@@ -1035,34 +1072,48 @@ def admin_item(filename, index=None):
                     if "image" in key:
                         for f in request.files.getlist(f"{key}_upload"):
                             if f and f.filename:
-                                upload_dir = BASE_DIR / "static" / "images"
-                                upload_dir.mkdir(parents=True, exist_ok=True)
                                 fname = secure_filename(f.filename)
-                                f.save(upload_dir / fname)
-                                new_list.append(f"images/{fname}")
+                                if fname:
+                                    try:
+                                        upload_dir = BASE_DIR / "static" / "images"
+                                        upload_dir.mkdir(parents=True, exist_ok=True)
+                                        f.save(upload_dir / fname)
+                                        new_list.append(f"images/{fname}")
+                                    except Exception as exc:
+                                        upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
                     new_item[key] = new_list
                 else:
                     file = request.files.get(f"{key}_upload") if "image" in key else None
                     if file and file.filename:
-                        upload_dir = BASE_DIR / "static" / "images"
-                        upload_dir.mkdir(parents=True, exist_ok=True)
                         fname = secure_filename(file.filename)
-                        file.save(upload_dir / fname)
-                        new_item[key] = f"images/{fname}"
+                        if fname:
+                            try:
+                                upload_dir = BASE_DIR / "static" / "images"
+                                upload_dir.mkdir(parents=True, exist_ok=True)
+                                file.save(upload_dir / fname)
+                                new_item[key] = f"images/{fname}"
+                            except Exception as exc:
+                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                                new_item[key] = request.form.get(key, "")
+                        else:
+                            new_item[key] = request.form.get(key, "")
                     else:
                         new_item[key] = request.form.get(key, "")
         if effective_index is None or effective_index < 0 or effective_index >= len(data):
             data.append(new_item)
         else:
             data[effective_index] = new_item
-        yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
-        filepath.write_text(yaml_content, encoding="utf-8")
-        # Invalidate YAML cache for this file; next read will reload from disk
         try:
+            yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+            filepath.write_text(yaml_content, encoding="utf-8")
             YAML_CACHE.pop(filename, None)
-        except Exception:
-            pass
-        flash("Gespeichert", "success")
+        except Exception as exc:
+            flash(f"Fehler beim Speichern: {exc}", "danger")
+            return redirect(url_for("admin_manage", filename=filename))
+        if upload_error:
+            flash(f"Gespeichert, aber: {upload_error}", "warning")
+        else:
+            flash("Gespeichert", "success")
         return redirect(url_for("admin_manage", filename=filename))
     return render_template(
         "admin_item.html",
