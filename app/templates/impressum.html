@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block title %}Impressum & Datenschutz – Aixtraball e.V.{% endblock %}
+{% block meta_description %}Impressum und Datenschutzerklärung des Aixtraball e.V., Merzbrück 210, 52146 Würselen.{% endblock %}
+{% block robots %}noindex,follow{% endblock %}
+
 {% block head_extra %}{% endblock %}
 
 {% block content %}
@@ -89,7 +93,7 @@
       ] %}
 
       {% for sec in sections %}
-      <div class="accordion-item">
+      <div class="accordion-item"{% if 'Datenschutz' in sec[0] %} id="datenschutz"{% endif %}>
         <h2 class="accordion-header" id="h{{ loop.index0 }}">
           <button class="accordion-button accordion-toggle {{ '' if loop.first else 'collapsed' }}"
                   type="button"

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Kiosk Mode – Aixtraball e.V.{% endblock %}
 {% block meta_description %}Kiosk Mode mit News, Flipper-Highlights und Öffnungstagen von Aixtraball e.V.{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% set slides_count = slides|length %}
 {% set bg_primary = slides[0].image if slides_count > 0 else "images/slides/hall.jpg" %}
 {% set bg_secondary = slides[1].image if slides_count > 1 else bg_primary %}

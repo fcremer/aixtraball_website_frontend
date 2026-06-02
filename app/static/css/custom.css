@@ -83,7 +83,7 @@
 
 /* ── 4. BASE ───────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; overflow-x: hidden; }
+html, body { margin: 0; overflow-x: clip; }
 html { scroll-behavior: smooth; }
 
 body {
@@ -908,6 +908,25 @@ a:hover { color: var(--red-dark); }
 /* ── 20. SECTION REVEAL ────────────────────────────── */
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
 .reveal-visible { opacity: 1; transform: none; }
+
+/* ── 20b. SPONSOR LOGOS ────────────────────────────── */
+.sponsor-row {
+  display: flex; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  gap: 20px;
+}
+.sponsor-chip {
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px 24px; min-width: 150px; min-height: 88px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--r-md); box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base);
+}
+.sponsor-chip:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.sponsor-chip img {
+  max-height: 56px; width: auto; max-width: 160px;
+  object-fit: contain; display: block;
+}
 
 /* ── 21. MISC / LEGAL ──────────────────────────────── */
 .heading-primary { color: var(--red) !important; }

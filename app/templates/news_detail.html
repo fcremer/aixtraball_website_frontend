@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}{{ article.title }} – News – Aixtraball{% endblock %}
 {% block meta_description %}{{ article.excerpt or "Neuigkeiten vom Aixtraball e.V." }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}{{ (article.preview_image | asset) if article.preview_image else (article.images[0] | asset) if article.images else url_for('static', filename='images/slides/hall.jpg', _external=True) }}{% endblock %}
 {% block head_extra %}
-<meta property="og:image" content="{{ (article.preview_image | asset) if article.preview_image else (article.images[0] | asset) if article.images else url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
-<meta name="twitter:image" content="{{ (article.preview_image | asset) if article.preview_image else (article.images[0] | asset) if article.images else url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
+<meta property="article:published_time" content="{{ article.date }}">
+{% if article.category %}<meta property="article:section" content="{{ article.category }}">{% endif %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

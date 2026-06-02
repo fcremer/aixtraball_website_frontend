@@ -1624,23 +1624,34 @@ def impressum():
 
 @app.route("/robots.txt")
 def robots():
-    txt = "User-agent: *\nAllow: /\nSitemap: https://aixtraball.de/sitemap.xml"
+    txt = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /admin\n"
+        "Disallow: /login\n"
+        "Disallow: /logout\n"
+        "Disallow: /kiosk\n"
+        "\n"
+        "Sitemap: https://aixtraball.de/sitemap.xml\n"
+    )
     return Response(txt, mimetype="text/plain")
 
 @app.route("/sitemap.xml")
 def sitemap():
     pages = [
-        {"loc": url_for('index',      _external=True)},
-        {"loc": url_for('flipper_all',_external=True)},
-        {"loc": url_for('verein',     _external=True)},
-        {"loc": url_for('team',       _external=True)},
-        {"loc": url_for('news_list',  _external=True)}
+        {"loc": url_for('index',      _external=True), "changefreq": "weekly",  "priority": "1.0"},
+        {"loc": url_for('flipper_all',_external=True), "changefreq": "monthly", "priority": "0.8"},
+        {"loc": url_for('verein',     _external=True), "changefreq": "yearly",  "priority": "0.7"},
+        {"loc": url_for('team',       _external=True), "changefreq": "yearly",  "priority": "0.5"},
+        {"loc": url_for('preise',     _external=True), "changefreq": "monthly", "priority": "0.7"},
+        {"loc": url_for('kontakt',    _external=True), "changefreq": "yearly",  "priority": "0.5"},
+        {"loc": url_for('news_list',  _external=True), "changefreq": "weekly",  "priority": "0.8"},
     ]
     # alle News‑Artikel
     for n in load_news_items():
         dt = n.get("_dt")
         lastmod = dt.date().isoformat() if dt and dt != datetime.min else None
-        entry = {"loc": url_for('news_detail', slug=n["slug"], _external=True)}
+        entry = {"loc": url_for('news_detail', slug=n["slug"], _external=True), "changefreq": "monthly", "priority": "0.6"}
         if lastmod:
             entry["lastmod"] = lastmod
         pages.append(entry)
