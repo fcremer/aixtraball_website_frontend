@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Kiosk Mode – Aixtraball e.V.{% endblock %}
 {% block meta_description %}Kiosk Mode mit News, Flipper-Highlights und Öffnungstagen von Aixtraball e.V.{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% set slides_count = slides|length %}
 {% set bg_primary = slides[0].image if slides_count > 0 else "images/slides/hall.jpg" %}
 {% set bg_secondary = slides[1].image if slides_count > 1 else bg_primary %}
@@ -8,11 +9,12 @@
 {% set bg_quaternary = slides[3].image if slides_count > 3 else bg_secondary %}
 {% set flipper_bg = kiosk_flippers[0].image if kiosk_flippers else bg_primary %}
 {% set history_bg = "images/timeline/background_X2.jpg" %}
-{% set logo_url = url_for("static", filename="images/logo.png") %}
+{% set logo_url = url_for("static", filename="images/logo_Inv.png") %}
 {% set duration_intro = 18000 %}
 {% set duration_section = 20000 %}
 {% set duration_spotlight = 45000 %}
 {% block head_extra %}
+  <script>document.documentElement.setAttribute('data-theme','dark');</script>
   <link href="{{ url_for('static', filename='css/kiosk.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
 {% endblock %}
 {% block content %}

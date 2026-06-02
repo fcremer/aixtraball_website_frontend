@@ -27,37 +27,61 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Flipperverein Aixtraball e.V.{% endblock %}</title>
-  <link rel="canonical" href="{{ request.base_url }}"/>
+  <link rel="canonical" href="{% block canonical %}{{ request.base_url }}{% endblock %}"/>
 
   <meta name="description" content="{% block meta_description %}Aixtraball – Die Flipperhalle in Aachen. Öffnungstage, Vermietung, über 45 Flipperautomaten &amp; aktuelle Turniere.{% endblock %}"/>
-  <meta name="robots" content="index,follow" />
+  <meta name="robots" content="{% block robots %}index,follow,max-image-preview:large{% endblock %}" />
+  <meta name="theme-color" content="#0b0b0f">
+  <meta name="geo.region" content="DE-NW">
+  <meta name="geo.placename" content="Würselen, Städteregion Aachen">
+  <meta property="og:site_name"   content="Aixtraball e.V.">
   <meta property="og:title"       content="{% block og_title %}{{ self.title() }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
   <meta property="og:url"         content="{{ request.base_url }}">
-  <meta property="og:type"        content="website">
-  <meta property="og:image"       content="{{ url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
+  <meta property="og:type"        content="{% block og_type %}website{% endblock %}">
+  <meta property="og:image"       content="{% block og_image %}{{ url_for('static', filename='images/slides/hall.jpg', _external=True) }}{% endblock %}">
+  <meta property="og:image:alt"   content="Flipperhalle des Aixtraball e.V.">
   <meta property="og:locale"      content="de_DE">
   <meta name="twitter:card"       content="summary_large_image">
   <meta name="twitter:title"      content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
   <meta name="twitter:description"content="{% block twitter_desc %}{{ self.meta_description() }}{% endblock %}">
-  <meta name="twitter:image"      content="{{ url_for('static', filename='images/slides/hall.jpg', _external=True) }}">
+  <meta name="twitter:image"      content="{{ self.og_image() }}">
   <link rel="alternate" href="{{ request.base_url }}" hreflang="de-DE" />
+  <link rel="alternate" href="{{ request.base_url }}" hreflang="x-default" />
 
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
-    "@type":"Organization",
+    "@type":["SportsActivityLocation","NGO"],
+    "@id":"https://aixtraball.de/#organization",
     "name":"Aixtraball e.V.",
+    "alternateName":"Flipperverein Aixtraball",
+    "description":"Flipperverein und öffentliche Flipperhalle in Würselen in der Städteregion Aachen mit über 45 Flipperautomaten.",
     "url":"https://aixtraball.de",
     "logo":"{{ url_for('static', filename='images/Logo.png', _external=True) }}",
+    "image":"{{ url_for('static', filename='images/slides/hall.jpg', _external=True) }}",
     "email":"info@aixtraball.de",
+    "foundingDate":"2015",
+    "priceRange":"Eintritt frei",
+    "areaServed":"Städteregion Aachen",
     "address":{
       "@type":"PostalAddress",
       "streetAddress":"Merzbrück 210",
       "postalCode":"52146",
       "addressLocality":"Würselen",
+      "addressRegion":"Nordrhein-Westfalen",
       "addressCountry":"DE"
-    }
+    },
+    "geo":{
+      "@type":"GeoCoordinates",
+      "latitude":"50.8225",
+      "longitude":"6.1864"
+    },
+    "sameAs":[
+      "https://www.facebook.com/100063739775945",
+      "https://www.instagram.com/aixtraball/",
+      "https://www.youtube.com/@aixtraballflippervereinaac2208"
+    ]
   }
   </script>
   <script type="application/ld+json">

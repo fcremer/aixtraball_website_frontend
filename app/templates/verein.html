@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block title %}Der Verein – Flipperverein Aixtraball e.V. in Würselen bei Aachen{% endblock %}
+{% block meta_description %}Lerne den Flipperverein Aixtraball e.V. kennen: Geschichte seit 2015, Vereinsmeilensteine und das Team hinter der Flipperhalle in Würselen, Städteregion Aachen.{% endblock %}
 {% block head_extra %}
   <style>
     .timeline-item {
@@ -214,7 +216,7 @@
     <h2 class="mb-3">Mitglied werden?</h2>
     <p class="lead col-lg-8 mx-auto">
       Ab 15 € monatlich (Jugendliche 10 €)
-      hilfst du beim </br>Restaurieren und Reparieren und erhältst Zugang zu Events.
+      hilfst du beim <br>Restaurieren und Reparieren und erhältst Zugang zu Events.
     </p>
     <a class="btn btn-light btn-lg" href="{{ url_for('kontakt') }}">Jetzt anfragen</a>
   </div>
@@ -224,13 +226,13 @@
 <section class="py-5">
   <div class="container text-center">
     <h2 class="mb-4">Unsere Förderer</h2>
-    <div class="d-flex flex-wrap justify-content-center gap-4">
-      <img src="{{ url_for('static', filename='images/foerderer/flippermarkt.png') }}" height="60" alt="Flippermarkt Forum">
-      <img src="{{ url_for('static', filename='images/foerderer/auto_koch.png') }}" height="60" alt="Auto Koch">
-      <img src="{{ url_for('static', filename='images/foerderer/avo_pinball-klein.png') }}" height="60" alt="Avo Pinball">
-      <img src="{{ url_for('static', filename='images/foerderer/krings.png') }}" height="60" alt="Krings & Krings Anwälte">
-      <img src="{{ url_for('static', filename='images/foerderer/pinwitch.png') }}" height="60" alt="PinWitch">
-      <img src="{{ url_for('static', filename='images/foerderer/skydisc.png') }}" height="60" alt="Skydisc">
+    <div class="sponsor-row">
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/flippermarkt.png') }}" alt="Flippermarkt Forum" loading="lazy"></div>
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/auto_koch.png') }}" alt="Auto Koch" loading="lazy"></div>
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/avo_pinball-klein.png') }}" alt="Avo Pinball" loading="lazy"></div>
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/krings.png') }}" alt="Krings & Krings Anwälte" loading="lazy"></div>
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/pinwitch.png') }}" alt="PinWitch" loading="lazy"></div>
+      <div class="sponsor-chip"><img src="{{ url_for('static', filename='images/foerderer/skydisc.png') }}" alt="Skydisc" loading="lazy"></div>
     </div>
   </div>
 </section>

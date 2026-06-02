@@ -18,14 +18,7 @@
 
 <!-- ─── HERO ─── -->
 <section class="hero">
-  <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-    <div class="carousel-indicators">
-      {% for slide in slides %}
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ loop.index0 }}"
-                {% if loop.first %}class="active" aria-current="true"{% endif %}
-                aria-label="Slide {{ loop.index }}"></button>
-      {% endfor %}
-    </div>
+  <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-pause="false">
     <div class="carousel-inner">
       {% for slide in slides %}
         {% set slide_has_text = slide.headline or slide.subline %}
@@ -33,7 +26,7 @@
              data-headline="{{ slide.headline or '' }}"
              data-subline="{{ slide.subline or '' }}"
              data-logo="{{ 'true' if slide.logo else 'false' }}"
-             data-bs-interval="{{ 10000 if slide_has_text else 5000 }}">
+             data-bs-interval="{{ 9000 if slide_has_text else 6000 }}">
           <div class="hero-slide">
             <img src="{{ slide.image | asset }}" class="d-block w-100" alt="{{ slide.alt or '' }}"
                  {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
@@ -41,36 +34,34 @@
         </div>
       {% endfor %}
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon"></span>
-      <span class="visually-hidden">Zurück</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-      <span class="carousel-control-next-icon"></span>
-      <span class="visually-hidden">Vor</span>
-    </button>
   </div>
+
+  <!-- Cinematic overlays -->
+  <div class="hero-vignette" aria-hidden="true"></div>
+  <div class="hero-grain" aria-hidden="true"></div>
 
   <!-- Content overlay (bottom-left) -->
   <div class="hero-overlay {% if initial_logo %}show-logo{% endif %}"
        id="heroOverlay"
        data-default-headline="{{ default_headline }}"
        data-default-subline="{{ default_subline }}">
-    <div class="hero-badge">
-      <i class="bi bi-pin-map-fill"></i> Forschungsflugplatz Würselen-Aachen
-    </div>
     <img src="{{ logo_url }}" alt="Aixtraball Logo" id="heroLogo" class="hero-logo">
     <h1 id="heroHeadline">{{ initial_headline }}</h1>
     <p id="heroSubline">{{ initial_subline }}</p>
-    <div class="hero-actions">
-      <a href="#next-opening-section" class="btn btn-primary">
-        weitere Informationen <i class="bi bi-arrow-down"></i>
-      </a>
-      <a href="{{ url_for('flipper_all') }}" class="btn btn-ghost">
-        Flipper entdecken
-      </a>
-    </div>
   </div>
+
+  <!-- Story-style progress indicators -->
+  {% if slides|length > 1 %}
+  <div class="hero-progress" id="heroProgress">
+    {% for slide in slides %}
+      <button type="button" class="hero-progress-bar {% if loop.first %}active{% endif %}"
+              data-bs-target="#heroCarousel" data-bs-slide-to="{{ loop.index0 }}"
+              aria-label="Slide {{ loop.index }}">
+        <span class="hero-progress-fill"></span>
+      </button>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <a class="hero-scroll-hint" href="#next-opening-section" aria-label="Zum Inhalt scrollen">
     <i class="bi bi-chevron-down"></i>
@@ -261,6 +252,8 @@
     var heroOverlay  = document.getElementById('heroOverlay');
     var headlineEl   = document.getElementById('heroHeadline');
     var sublineEl    = document.getElementById('heroSubline');
+    var progressBars = Array.prototype.slice.call(
+      document.querySelectorAll('#heroProgress .hero-progress-bar'));
 
     function updateOverlay(slideEl, forceAnimate) {
       if (!slideEl || !heroOverlay || !headlineEl || !sublineEl) return;
@@ -285,10 +278,42 @@
       }
     }
 
+    // Sync the story-style progress bars with each slide's interval.
+    function updateProgress(index, intervalMs) {
+      progressBars.forEach(function(bar, i) {
+        var fill = bar.querySelector('.hero-progress-fill');
+        bar.classList.remove('active');
+        bar.classList.toggle('is-seen', i < index);
+        if (fill) { fill.style.animation = 'none'; }
+      });
+      var activeBar = progressBars[index];
+      if (!activeBar) return;
+      activeBar.classList.add('active');
+      activeBar.classList.remove('is-seen');
+      var fill = activeBar.querySelector('.hero-progress-fill');
+      if (fill) {
+        void fill.offsetWidth; // restart the fill animation
+        fill.style.animation = 'progressFill ' + intervalMs + 'ms linear forwards';
+      }
+    }
+
+    function slideIndexOf(el) {
+      if (!el) return 0;
+      var items = heroCarousel.querySelectorAll('.carousel-item');
+      return Array.prototype.indexOf.call(items, el);
+    }
+
     if (heroCarousel) {
-      updateOverlay(heroCarousel.querySelector('.carousel-item.active'), true);
+      var firstActive = heroCarousel.querySelector('.carousel-item.active');
+      updateOverlay(firstActive, true);
+      updateProgress(slideIndexOf(firstActive),
+        parseInt((firstActive && firstActive.dataset.bsInterval) || 6000, 10));
+
       heroCarousel.addEventListener('slid.bs.carousel', function(e) {
-        updateOverlay(e.relatedTarget || heroCarousel.querySelector('.carousel-item.active'));
+        var active = e.relatedTarget || heroCarousel.querySelector('.carousel-item.active');
+        updateOverlay(active);
+        updateProgress(typeof e.to === 'number' ? e.to : slideIndexOf(active),
+          parseInt((active && active.dataset.bsInterval) || 6000, 10));
       });
     }
 
