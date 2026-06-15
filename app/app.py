@@ -239,18 +239,22 @@ def _resolve_smtp_recipients():
     return [addr.strip() for addr in normalized.split(",") if addr.strip()]
 
 
-def send_contact_email(payload: dict):
+def send_contact_email(payload: dict, recipient_override: str | None = None):
     """Send contact form payload via SMTP."""
     if app.config.get("TESTING"):
         return
     if not (SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD):
         raise SMTPConfigurationError("SMTP credentials are incomplete.")
-    recipients = _resolve_smtp_recipients()
+    if recipient_override:
+        recipients = [recipient_override]
+    else:
+        recipients = _resolve_smtp_recipients()
     if not recipients:
         raise SMTPConfigurationError("No SMTP recipients configured.")
     sender = SMTP_SENDER or SMTP_USERNAME
     msg = EmailMessage()
-    msg["Subject"] = f"Neue Kontaktanfrage von {payload.get('name') or 'Unbekannt'}"
+    subject_prefix = "Anmietungsanfrage" if recipient_override else "Kontaktanfrage"
+    msg["Subject"] = f"Neue {subject_prefix} von {payload.get('name') or 'Unbekannt'}"
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
     reply_to = payload.get("email")
@@ -1568,11 +1572,12 @@ def kontakt():
             return redirect(url_for("kontakt"))
         _register_attempt()
 
-        name    = request.form.get("name", "").strip()
-        email   = request.form.get("email", "").strip()
-        message = request.form.get("message", "").strip()
-        consent = request.form.get("consent") == "on"
-        captcha = request.form.get("captcha", "").strip()
+        name         = request.form.get("name", "").strip()
+        email        = request.form.get("email", "").strip()
+        message      = request.form.get("message", "").strip()
+        consent      = request.form.get("consent") == "on"
+        captcha      = request.form.get("captcha", "").strip()
+        inquiry_type = request.form.get("inquiry_type", "allgemein").strip()
 
         if not (name and email and message and consent and captcha):
             flash("Bitte alle Pflichtfelder ausfüllen und zustimmen.", "warning")
@@ -1585,16 +1590,19 @@ def kontakt():
             )
             return redirect(url_for("kontakt"))
 
+        rental_recipient = "vermietung@aixtraball.de" if inquiry_type == "anmietung" else None
+
         payload = {
             "name": name,
             "email": email,
             "message": message,
+            "inquiry_type": inquiry_type,
             "timestamp": datetime.now(tz=tz.gettz("Europe/Berlin")).isoformat(),
             "ip": request.remote_addr,
             "ua": request.headers.get("User-Agent", "")
         }
         try:
-            send_contact_email(payload)
+            send_contact_email(payload, recipient_override=rental_recipient)
         except SMTPConfigurationError as exc:
             app.logger.error("Kontaktformular: SMTP-Konfiguration fehlt: %s", exc)
             flash("Der Mail-Versand ist derzeit nicht konfiguriert. Bitte versuchen Sie es später erneut.", "danger")
