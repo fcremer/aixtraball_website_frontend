@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Kontakt – Aixtraball e.V.{% endblock %}
+{% block title %}Kontakt und Anmietung – Aixtraball e.V.{% endblock %}
 {% block meta_description %}Kontakt zum Aixtraball e.V.: Adresse Merzbrück 210, 52146 Würselen, E‑Mail und Öffnungstage. Jetzt anfragen.{% endblock %}
 {% block head_extra %}
 <style>
@@ -12,7 +12,7 @@
 <header class="page-hero" style="background-image:url('{{ url_for("static", filename="images/else/background_contact.png") }}')">
   <div class="page-hero-content">
     <div class="eyebrow">Schreib uns</div>
-    <h1>Kontakt</h1>
+    <h1>Kontakt und Anmietung</h1>
     <p class="lead">Frag uns alles rund um Verein, Besuch &amp; Events</p>
   </div>
 </header>
@@ -29,6 +29,20 @@
               <div class="form-honeypot">
                 <label>Website</label>
                 <input type="text" name="website" tabindex="-1" autocomplete="off">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Art der Anfrage</label>
+                <div class="d-flex gap-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="inquiry_type" id="inquiry_general" value="allgemein" checked>
+                    <label class="form-check-label" for="inquiry_general">Allgemeine Anfrage</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="inquiry_type" id="inquiry_rental" value="anmietung">
+                    <label class="form-check-label" for="inquiry_rental">Anmietung</label>
+                  </div>
+                </div>
               </div>
 
               <div class="row g-3">
