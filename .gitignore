@@ -6,3 +6,5 @@ build.sh
 .env
 .DS_Store
 app/.DS_Store
+.claude/*
+/.claude/*
