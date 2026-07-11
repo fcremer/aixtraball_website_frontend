@@ -1504,6 +1504,25 @@ def news_list():
         opening=get_next_opening()
     )
 
+# --------------------------------------------------
+# Alte WordPress-Kategorie-Links (von Google indexiert)
+# leiten dauerhaft auf die passenden neuen Seiten um.
+# --------------------------------------------------
+CATEGORY_REDIRECTS = {
+    "allgemein":                lambda: url_for("news_list", category="Allgemein"),
+    "flipperverein-aachen":     lambda: url_for("index"),
+    "kontakt-und-anmietung":    lambda: url_for("kontakt"),
+    "verein":                   lambda: url_for("verein"),
+    "unser-team":               lambda: url_for("team"),
+}
+
+@app.route("/category/<slug>")
+def category_redirect(slug):
+    target = CATEGORY_REDIRECTS.get(slug.lower())
+    if target is None:
+        return redirect(url_for("news_list"), code=301)
+    return redirect(target(), code=301)
+
 @app.route("/news/<slug>")
 def news_detail(slug):
     news = load_news_items(include_hidden=True)
