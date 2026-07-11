@@ -42,6 +42,18 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me")
 
+@app.before_request
+def _strip_trailing_slash():
+    """Alte/von Google indexierte Links haben oft einen trailing slash
+    (z. B. /verein/, /category/allgemein/). Unsere Routen sind ohne
+    trailing slash definiert, daher hier auf die kanonische Form
+    umleiten statt 404 zu liefern."""
+    path = request.path
+    if len(path) > 1 and path.endswith("/") and request.method in ("GET", "HEAD"):
+        new_path = path.rstrip("/") or "/"
+        query = request.query_string.decode()
+        return redirect(f"{new_path}?{query}" if query else new_path, code=301)
+
 # Performance: cache static files long and enable simple cache-busting
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365  # 1 year
 try:
@@ -1510,6 +1522,7 @@ def news_list():
 # --------------------------------------------------
 CATEGORY_REDIRECTS = {
     "allgemein":                lambda: url_for("news_list", category="Allgemein"),
+    "aixtraball":               lambda: url_for("index"),
     "flipperverein-aachen":     lambda: url_for("index"),
     "kontakt-und-anmietung":    lambda: url_for("kontakt"),
     "verein":                   lambda: url_for("verein"),
