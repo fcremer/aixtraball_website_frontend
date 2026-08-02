@@ -632,6 +632,9 @@ def asset(path: str):
        sonst einen /static/‑URL‑Pfad."""
     if path.startswith(("http://", "https://", "//")):
         return path
+    path = path.lstrip("/")
+    if path.startswith("static/"):
+        path = path[len("static/"):]
     return url_for("static", filename=path)
 
 @app.template_filter("stat_number_html")

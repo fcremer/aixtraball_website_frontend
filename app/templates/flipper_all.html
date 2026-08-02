@@ -666,7 +666,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function resolveImg(p) {
     if (!p) return '';
     if (/^https?:\/\//i.test(p)) return p;
-    return STATIC + p.replace(/^\/+/, '');
+    p = p.replace(/^\/+/, '');
+    if (p.startsWith('static/')) p = p.slice('static/'.length);
+    return STATIC + p;
   }
 
   function setImg(idx) {
