@@ -4,6 +4,7 @@ Member authentication helpers for the intern portal.
 
 from __future__ import annotations
 
+import hmac
 import secrets
 from functools import wraps
 
@@ -47,7 +48,10 @@ def generate_csrf_token() -> str:
 
 def check_csrf() -> bool:
     token = session.get("csrf_token")
-    return token and request.form.get("csrf_token") == token
+    supplied = request.form.get("csrf_token")
+    if not token or not supplied:
+        return False
+    return hmac.compare_digest(token, supplied)
 
 
 # Import here to avoid circular at module load

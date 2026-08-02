@@ -9,3 +9,5 @@ app/.DS_Store
 .claude/*
 /.claude/*
 app/config/.secret_key
+/k6-lernen
+k6-lernen/

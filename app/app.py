@@ -15,6 +15,7 @@ from functools import wraps
 from flask import Response, session, flash, jsonify
 
 import random
+import secrets
 import yaml
 import os
 import json
@@ -33,6 +34,7 @@ except Exception:
     Compress = None
 import hmac
 import pyotp
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -40,7 +42,82 @@ from werkzeug.utils import secure_filename
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+
+def _env_bool(value, default=False):
+    if value in (None, ""):
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(value, default):
+    if value in (None, ""):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+BASE_DIR   = Path(__file__).resolve().parent
+CONFIG_DIR = BASE_DIR / "config"
+LOCAL_TZ   = tz.gettz("Europe/Berlin")
+STATIC_DIR = BASE_DIR / "static"
+
+
+def _load_or_create_secret_key():
+    """Return a stable secret key: env var wins; otherwise persist a random
+    key to CONFIG_DIR/.secret_key so sessions survive restarts without ever
+    falling back to a publicly-known default (which would let anyone forge
+    signed session cookies, e.g. logged_in=True)."""
+    env_key = os.environ.get("SECRET_KEY")
+    if env_key:
+        return env_key
+    key_path = CONFIG_DIR / ".secret_key"
+    try:
+        if key_path.exists():
+            existing = key_path.read_text(encoding="utf-8").strip()
+            if existing:
+                return existing
+        key_path.parent.mkdir(parents=True, exist_ok=True)
+        new_key = secrets.token_hex(32)
+        key_path.write_text(new_key, encoding="utf-8")
+        try:
+            key_path.chmod(0o600)
+        except OSError:
+            pass
+        return new_key
+    except OSError as exc:
+        app.logger.error(
+            "Could not persist SECRET_KEY to %s (%s); using an ephemeral key "
+            "for this process only - sessions will not survive a restart.",
+            key_path, exc
+        )
+        return secrets.token_hex(32)
+
+
+app.secret_key = _load_or_create_secret_key()
+
+# Cookie hardening. SESSION_COOKIE_SECURE defaults to True (cookies require
+# HTTPS) - for local HTTP-only development, set SESSION_COOKIE_SECURE=false
+# in a local .env.
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = _env_bool(os.environ.get("SESSION_COOKIE_SECURE"), True)
+
+# Requests only get their real client IP through X-Forwarded-* headers when
+# TRUSTED_PROXY_COUNT reverse proxy hops are configured; without this, every
+# visitor behind the same reverse proxy shares one IP as far as Flask is
+# concerned, which breaks per-IP rate limiting (login/contact form) and the
+# IP address recorded on contact submissions.
+_trusted_proxy_count = _env_int(os.environ.get("TRUSTED_PROXY_COUNT"), 0)
+if _trusted_proxy_count > 0:
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=_trusted_proxy_count,
+        x_proto=_trusted_proxy_count,
+        x_host=_trusted_proxy_count,
+    )
 
 @app.before_request
 def _strip_trailing_slash():
@@ -72,27 +149,6 @@ ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")  # e.g. set via docker-compose/.env
 ADMIN_PW_HASH = os.environ.get("ADMIN_PASSWORD_HASH")  # legacy support
 ADMIN_MFA_SECRET = os.environ.get("ADMIN_MFA_SECRET")
-
-
-def _env_bool(value, default=False):
-    if value in (None, ""):
-        return default
-    return str(value).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _env_int(value, default):
-    if value in (None, ""):
-        return default
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-BASE_DIR   = Path(__file__).resolve().parent
-CONFIG_DIR = BASE_DIR / "config"
-LOCAL_TZ   = tz.gettz("Europe/Berlin")
-STATIC_DIR = BASE_DIR / "static"
 
 SMTP_HOST       = os.environ.get("SMTP_HOST")
 SMTP_PORT       = _env_int(os.environ.get("SMTP_PORT"), 587)
@@ -307,11 +363,64 @@ def save_news_settings(new_settings: dict):
 # --------------------------------------------------
 YAML_CACHE = {}
 
+
+def _resolve_config_path(filename: str) -> Path:
+    """Resolve filename to a path inside CONFIG_DIR, refusing to leave it.
+    filename ultimately comes from <path:filename> URL segments in the admin
+    routes, so without this a request like /admin/edit/../app.py could read
+    or overwrite files outside the config directory."""
+    config_root = CONFIG_DIR.resolve()
+    candidate = (CONFIG_DIR / filename).resolve()
+    if candidate != config_root and config_root not in candidate.parents:
+        abort(404)
+    return candidate
+
+
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}
+
+
+def _save_upload_image(file_storage):
+    """Validate and save an uploaded image below static/images.
+    Returns (relative_path, None) on success or (None, error_message) on
+    failure. Rejects extensions outside an allowlist (an uploaded .html/.svg
+    with script content would otherwise be served same-origin as the site -
+    stored XSS) and never silently overwrites an existing file of the same
+    name (adds a short random suffix on collision instead)."""
+    filename = secure_filename(file_storage.filename)
+    if not filename:
+        return None, f"Ungültiger Dateiname: {file_storage.filename}"
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        return None, f"Dateityp nicht erlaubt ({ext or 'ohne Endung'}): {filename}"
+    upload_dir = BASE_DIR / "static" / "images"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    target = upload_dir / filename
+    if target.exists():
+        stem = Path(filename).stem
+        filename = f"{stem}-{secrets.token_hex(4)}{ext}"
+        target = upload_dir / filename
+    try:
+        file_storage.save(target)
+    except Exception as exc:
+        return None, f"Upload fehlgeschlagen ({filename}): {exc}"
+    return f"images/{filename}", None
+
+
+def _resolve_static_path(rel_path: str) -> Path:
+    """Same guard as _resolve_config_path, but rooted at STATIC_DIR - used
+    when deleting media files whose path comes from stored YAML data."""
+    static_root = STATIC_DIR.resolve()
+    candidate = (STATIC_DIR / rel_path).resolve()
+    if candidate != static_root and static_root not in candidate.parents:
+        return None
+    return candidate
+
+
 def load_yaml(filename: str):
     """Beliebige YAML‑Datei aus dem config‑Ordner laden (mtime‑Cache).
     Returns a deep copy to prevent accidental mutation of cached data.
     """
-    path = CONFIG_DIR / filename
+    path = _resolve_config_path(filename)
     try:
         mtime = path.stat().st_mtime
     except FileNotFoundError:
@@ -596,6 +705,33 @@ def login_required(view):
     return wrapped
 
 
+def get_csrf_token():
+    """Return this session's CSRF token, creating one if needed."""
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_hex(16)
+        session["csrf_token"] = token
+    return token
+
+
+CSRF_SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
+
+
+@app.before_request
+def _enforce_csrf():
+    """Reject state-changing requests without a valid CSRF token.
+    The intern blueprint (member portal) validates its own CSRF token
+    (see app/intern/auth.py) via its own before_request hook."""
+    if request.method in CSRF_SAFE_METHODS:
+        return
+    if request.blueprint and request.blueprint.split(".")[0] == "intern":
+        return
+    token = session.get("csrf_token")
+    supplied = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+    if not token or not supplied or not hmac.compare_digest(token, supplied):
+        abort(400, description="CSRF-Token fehlt oder ist ungültig. Bitte Seite neu laden und erneut versuchen.")
+
+
 def _cookie_banner_required():
     """Return True if the current request depends on cookie-backed session data."""
     if getattr(g, "force_cookie_banner", False):
@@ -615,6 +751,7 @@ def inject_globals():
     return {
         "cookie_banner_required": _cookie_banner_required,
         "now": datetime.now(tz=tz.gettz("Europe/Berlin")),
+        "csrf_token": get_csrf_token,
     }
 
 # --------------------------------------------------
@@ -777,6 +914,8 @@ def login():
                     "Login failed (captcha): ip=%s user=%s ua=%s",
                     ip, username, request.headers.get("User-Agent", "")
                 )
+                question = _generate_captcha()
+                return render_template("login.html", captcha_question=question, mfa_enabled=mfa_available, mfa_stage=False)
             admin_obj = _find_admin(username)
             if admin_obj:
                 valid_pw = _password_valid(admin_obj, password)
@@ -850,7 +989,7 @@ def admin():
 @app.route("/admin/edit/<path:filename>", methods=["GET", "POST"])
 @login_required
 def admin_edit(filename):
-    filepath = CONFIG_DIR / filename
+    filepath = _resolve_config_path(filename)
     if request.method == "POST":
         json_data = request.form.get("content", "")
         try:
@@ -913,7 +1052,7 @@ def admin_doc(filename):
     section = get_admin_section(filename)
     schema = [f for f in (section.get("schema") or []) if f.get("type") != "heading"]
     full_schema = section.get("schema") or []
-    filepath = CONFIG_DIR / filename
+    filepath = _resolve_config_path(filename)
 
     raw = load_yaml(filename)
     if not isinstance(raw, dict):
@@ -935,34 +1074,21 @@ def admin_doc(filename):
                 if ftype == "image_list":
                     for f in request.files.getlist(f"{key}_upload"):
                         if f and f.filename:
-                            fname = secure_filename(f.filename)
-                            if not fname:
-                                upload_error = f"Ungültiger Dateiname: {f.filename}"
-                                continue
-                            try:
-                                upload_dir = BASE_DIR / "static" / "images"
-                                upload_dir.mkdir(parents=True, exist_ok=True)
-                                f.save(upload_dir / fname)
-                                entries.append(f"images/{fname}")
-                            except Exception as exc:
-                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                            rel_path, err = _save_upload_image(f)
+                            if err:
+                                upload_error = err
+                            else:
+                                entries.append(rel_path)
                 new_doc[key] = entries
             elif ftype == "image":
                 file = request.files.get(f"{key}_upload")
                 if file and file.filename:
-                    fname = secure_filename(file.filename)
-                    if not fname:
-                        upload_error = f"Ungültiger Dateiname: {file.filename}"
+                    rel_path, err = _save_upload_image(file)
+                    if err:
+                        upload_error = err
                         new_doc[key] = request.form.get(key, "").strip()
                     else:
-                        try:
-                            upload_dir = BASE_DIR / "static" / "images"
-                            upload_dir.mkdir(parents=True, exist_ok=True)
-                            file.save(upload_dir / fname)
-                            new_doc[key] = f"images/{fname}"
-                        except Exception as exc:
-                            upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
-                            new_doc[key] = request.form.get(key, "").strip()
+                        new_doc[key] = rel_path
                 else:
                     new_doc[key] = request.form.get(key, "").strip()
             elif ftype == "bool":
@@ -999,7 +1125,7 @@ def admin_item(filename, index=None):
     if section.get("read_only"):
         abort(403)
     schema = section.get("schema")
-    filepath = CONFIG_DIR / filename
+    filepath = _resolve_config_path(filename)
     data = load_yaml(filename)
     base_item = {}
     if index is not None and index < len(data):
@@ -1039,34 +1165,21 @@ def admin_item(filename, index=None):
                     if ftype == "image_list":
                         for f in request.files.getlist(f"{key}_upload"):
                             if f and f.filename:
-                                fname = secure_filename(f.filename)
-                                if not fname:
-                                    upload_error = f"Ungültiger Dateiname: {f.filename}"
-                                    continue
-                                try:
-                                    upload_dir = BASE_DIR / "static" / "images"
-                                    upload_dir.mkdir(parents=True, exist_ok=True)
-                                    f.save(upload_dir / fname)
-                                    entries.append(f"images/{fname}")
-                                except Exception as exc:
-                                    upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                                rel_path, err = _save_upload_image(f)
+                                if err:
+                                    upload_error = err
+                                else:
+                                    entries.append(rel_path)
                     new_item[key] = entries
                 elif ftype == "image":
                     file = request.files.get(f"{key}_upload")
                     if file and file.filename:
-                        fname = secure_filename(file.filename)
-                        if not fname:
-                            upload_error = f"Ungültiger Dateiname: {file.filename}"
+                        rel_path, err = _save_upload_image(file)
+                        if err:
+                            upload_error = err
                             new_item[key] = request.form.get(key, "").strip()
                         else:
-                            try:
-                                upload_dir = BASE_DIR / "static" / "images"
-                                upload_dir.mkdir(parents=True, exist_ok=True)
-                                file.save(upload_dir / fname)
-                                new_item[key] = f"images/{fname}"
-                            except Exception as exc:
-                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
-                                new_item[key] = request.form.get(key, "").strip()
+                            new_item[key] = rel_path
                     else:
                         new_item[key] = request.form.get(key, "").strip()
                 elif ftype == "bool":
@@ -1091,31 +1204,21 @@ def admin_item(filename, index=None):
                     if "image" in key:
                         for f in request.files.getlist(f"{key}_upload"):
                             if f and f.filename:
-                                fname = secure_filename(f.filename)
-                                if fname:
-                                    try:
-                                        upload_dir = BASE_DIR / "static" / "images"
-                                        upload_dir.mkdir(parents=True, exist_ok=True)
-                                        f.save(upload_dir / fname)
-                                        new_list.append(f"images/{fname}")
-                                    except Exception as exc:
-                                        upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
+                                rel_path, err = _save_upload_image(f)
+                                if err:
+                                    upload_error = err
+                                else:
+                                    new_list.append(rel_path)
                     new_item[key] = new_list
                 else:
                     file = request.files.get(f"{key}_upload") if "image" in key else None
                     if file and file.filename:
-                        fname = secure_filename(file.filename)
-                        if fname:
-                            try:
-                                upload_dir = BASE_DIR / "static" / "images"
-                                upload_dir.mkdir(parents=True, exist_ok=True)
-                                file.save(upload_dir / fname)
-                                new_item[key] = f"images/{fname}"
-                            except Exception as exc:
-                                upload_error = f"Upload fehlgeschlagen ({fname}): {exc}"
-                                new_item[key] = request.form.get(key, "")
-                        else:
+                        rel_path, err = _save_upload_image(file)
+                        if err:
+                            upload_error = err
                             new_item[key] = request.form.get(key, "")
+                        else:
+                            new_item[key] = rel_path
                     else:
                         new_item[key] = request.form.get(key, "")
         if effective_index is None or effective_index < 0 or effective_index >= len(data):
@@ -1157,7 +1260,7 @@ def admin_delete(filename, index):
     removed = data.pop(index)
     schema = section.get("schema")
     cleanup_entry_media(removed, schema)
-    filepath = CONFIG_DIR / filename
+    filepath = _resolve_config_path(filename)
     yaml_content = yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
     filepath.write_text(yaml_content, encoding="utf-8")
     try:
@@ -1173,11 +1276,11 @@ def admin_delete(filename, index):
 def admin_upload():
     file = request.files.get("image")
     if file and file.filename:
-        upload_dir = BASE_DIR / "static" / "images"
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        filename = secure_filename(file.filename)
-        file.save(upload_dir / filename)
-        flash("Bild hochgeladen", "success")
+        _rel_path, err = _save_upload_image(file)
+        if err:
+            flash(err, "danger")
+        else:
+            flash("Bild hochgeladen", "success")
     else:
         flash("Keine Datei ausgewählt", "warning")
     return redirect(url_for("admin"))
@@ -1721,7 +1824,10 @@ def _remove_static_file(path_value):
     if path_value.startswith(("http://", "https://", "//")):
         return
     rel = path_value.lstrip("/")
-    target = STATIC_DIR / rel
+    target = _resolve_static_path(rel)
+    if target is None:
+        app.logger.warning("Refused to delete media outside static dir: %s", path_value)
+        return
     try:
         if target.is_file():
             target.unlink()

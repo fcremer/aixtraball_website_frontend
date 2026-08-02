@@ -130,21 +130,31 @@ def _captcha_answer(html: str) -> str:
     return str(int(m.group(1)) + int(m.group(2)))
 
 
+def _csrf_token(html: str) -> str:
+    m = re.search(r'name="csrf_token" value="([^"]+)"', html)
+    assert m, "CSRF-Token nicht gefunden"
+    return m.group(1)
+
+
 def test_login_rate_limit(client):
     """Nach 5 falschen Logins wird die weitere Anmeldung blockiert."""
     for _ in range(5):
-        answer = _captcha_answer(client.get("/login").data.decode())
+        html = client.get("/login").data.decode()
+        answer = _captcha_answer(html)
+        csrf = _csrf_token(html)
         resp = client.post(
             "/login",
-            data={"username": "admin", "password": "wrong", "captcha": answer},
+            data={"username": "admin", "password": "wrong", "captcha": answer, "csrf_token": csrf},
         )
         assert b"Zugangsdaten" in resp.data
 
     # sechster Versuch → blockiert
-    answer = _captcha_answer(client.get("/login").data.decode())
+    html = client.get("/login").data.decode()
+    answer = _captcha_answer(html)
+    csrf = _csrf_token(html)
     resp = client.post(
         "/login",
-        data={"username": "admin", "password": "wrong", "captcha": answer},
+        data={"username": "admin", "password": "wrong", "captcha": answer, "csrf_token": csrf},
     )
     assert b"Zu viele Fehlversuche" in resp.data
 
@@ -154,14 +164,19 @@ def test_admin_add_entry_via_form(client):
     LOGIN_ATTEMPTS.clear()
     html = client.get("/login").data.decode()
     answer = _captcha_answer(html)
-    client.post("/login", data={"username": "admin", "password": "admin", "captcha": answer})
+    csrf = _csrf_token(html)
+    client.post(
+        "/login",
+        data={"username": "admin", "password": "admin", "captcha": answer, "csrf_token": csrf},
+    )
 
     resp = client.get("/admin/manage/flippers.yaml")
     assert resp.status_code == 200
 
+    csrf = _csrf_token(resp.data.decode())
     client.post(
         "/admin/manage/flippers.yaml/new",
-        data={"name": "Neu", "image": "images/x.jpg", "link": "https://ex"},
+        data={"name": "Neu", "image": "images/x.jpg", "link": "https://ex", "csrf_token": csrf},
         follow_redirects=True,
     )
     data = yaml.safe_load((CONFIG / "flippers.yaml").read_text())

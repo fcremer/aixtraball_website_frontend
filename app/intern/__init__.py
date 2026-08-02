@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 
 import yaml
-from flask import Blueprint, Flask, Request, g
+from flask import Blueprint, Flask, Request, abort, g, request
 
 import re
 import unicodedata
@@ -41,6 +41,20 @@ def close_db(exc):
             except Exception:
                 pass
         db.close()
+
+
+@intern_bp.before_request
+def _enforce_csrf():
+    """Every intern template already renders a csrf_token hidden field
+    (see auth.generate_csrf_token), but nothing validated it on submit -
+    every mutating POST route in the portal was forgeable cross-site.
+    This applies to intern's own routes and all its nested blueprints
+    (Flask cascades before_request hooks down the blueprint-name hierarchy)."""
+    if request.method in ("GET", "HEAD", "OPTIONS", "TRACE"):
+        return
+    from .auth import check_csrf
+    if not check_csrf():
+        abort(400, description="CSRF-Token fehlt oder ist ungültig. Bitte Seite neu laden und erneut versuchen.")
 
 
 @intern_bp.after_request
@@ -126,16 +140,22 @@ def _sync_machines_from_yaml(app: Flask) -> None:
         db.close()
 
 
-class _UnlimitedRequest(Request):
-    """Werkzeug limits form-body parsing to 500 KB (max_form_memory_size) by default.
-    The intern portal handles large HTML content with embedded media, so we remove that limit."""
-    max_form_memory_size = None
+MAX_FORM_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB, up from Werkzeug's 500 KB default
+
+
+class _LargeFormRequest(Request):
+    """Werkzeug limits form-body parsing to 500 KB (max_form_memory_size) by
+    default. The intern portal handles rich-text content with embedded
+    media, so that limit is raised - but NOT removed entirely (max_form_memory_size
+    = None previously disabled body-size protection site-wide, letting any
+    client, on any route, send an unbounded request body as a trivial DoS)."""
+    max_form_memory_size = MAX_FORM_MEMORY_SIZE
 
 
 def create_intern_blueprint(app: Flask) -> None:
     from datetime import timedelta
-    app.request_class = _UnlimitedRequest
-    app.config["MAX_CONTENT_LENGTH"] = None
+    app.request_class = _LargeFormRequest
+    app.config["MAX_CONTENT_LENGTH"] = MAX_FORM_MEMORY_SIZE
     app.config.setdefault("PERMANENT_SESSION_LIFETIME", timedelta(days=30))
 
     # Create all tables (idempotent)

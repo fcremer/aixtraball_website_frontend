@@ -25,6 +25,7 @@
   </div>
 
   <form method="post" enctype="multipart/form-data" class="card shadow-sm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card-body">
       {% for field in schema %}
         {% if field.type == 'heading' %}

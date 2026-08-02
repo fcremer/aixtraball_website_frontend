@@ -8,6 +8,7 @@ from flask import (
     Blueprint, flash, g, jsonify, redirect,
     render_template, request, url_for,
 )
+from sqlalchemy.orm import selectinload
 
 from .auth import member_required, generate_csrf_token
 from .models import Manufacturer, Part, PartManufacturer, PartSynonym
@@ -18,8 +19,19 @@ parts_bp = Blueprint("parts", __name__)
 
 
 def _load_parts(db) -> list[dict]:
-    """Load all parts with synonyms + manufacturers as plain dicts."""
-    parts = db.query(Part).order_by(Part.name).all()
+    """Load all parts with synonyms + manufacturers as plain dicts.
+    Eager-loads both relationships in two extra queries total (selectinload)
+    instead of the N+1 lazy-loaded queries that to_dict()'s attribute access
+    would otherwise trigger per part."""
+    parts = (
+        db.query(Part)
+        .options(
+            selectinload(Part.synonyms),
+            selectinload(Part.part_manufacturers).selectinload(PartManufacturer.manufacturer),
+        )
+        .order_by(Part.name)
+        .all()
+    )
     return [p.to_dict() for p in parts]
 
 
@@ -41,7 +53,7 @@ def _get_or_create_manufacturer(db, name: str) -> Manufacturer:
 def list_parts():
     db = get_db()
     q = request.args.get("q", "").strip()
-    all_parts = _load_parts(db)
+    all_parts = get_cached_parts(_loader(db))
 
     if q:
         results = search_parts(all_parts, q, limit=60)
@@ -68,8 +80,9 @@ def search():
     """JSON search endpoint for live search."""
     db = get_db()
     q = request.args.get("q", "").strip()
-    limit = min(int(request.args.get("limit", 40)), 100)
-    all_parts = _load_parts(db)
+    limit_raw = request.args.get("limit", "40")
+    limit = min(int(limit_raw), 100) if limit_raw.isdigit() else 40
+    all_parts = get_cached_parts(_loader(db))
     results = search_parts(all_parts, q, limit=limit) if q else all_parts[:limit]
     return jsonify(results)
 
@@ -101,11 +114,12 @@ def new_part():
         if not name:
             flash("Name ist ein Pflichtfeld.", "error")
         else:
+            stock_raw = request.form.get("stock", "").strip()
             part = Part(
                 name=name,
                 article_number=request.form.get("article_number", "").strip() or None,
                 supplier=request.form.get("supplier", "").strip() or None,
-                stock=int(request.form.get("stock", 0) or 0),
+                stock=int(stock_raw) if stock_raw.isdigit() else 0,
                 shelf=request.form.get("shelf", "").strip() or None,
                 bin=request.form.get("bin", "").strip() or None,
             )
@@ -144,7 +158,8 @@ def edit_part(part_id: int):
             part.name = name
             part.article_number = request.form.get("article_number", "").strip() or None
             part.supplier = request.form.get("supplier", "").strip() or None
-            part.stock = int(request.form.get("stock", 0) or 0)
+            stock_raw = request.form.get("stock", "").strip()
+            part.stock = int(stock_raw) if stock_raw.isdigit() else 0
             part.shelf = request.form.get("shelf", "").strip() or None
             part.bin = request.form.get("bin", "").strip() or None
             _save_synonyms(db, part, request.form.get("synonyms", ""))

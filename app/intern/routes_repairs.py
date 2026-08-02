@@ -33,6 +33,7 @@ REPAIR_PRIORITIES = [
     ("critical", "Kritisch"),
 ]
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/quicktime"}
+ALLOWED_MEDIA_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov"}
 UPLOAD_DIR = Path(__file__).parent.parent / "static" / "intern" / "uploads"
 
 
@@ -119,7 +120,8 @@ def new_repair(machine_id: int):
         description = request.form.get("description", "").strip()
         category = request.form.get("category", "Sonstiges")
         priority = request.form.get("priority", "normal")
-        assigned_to = request.form.get("assigned_to") or None
+        assigned_to_raw = request.form.get("assigned_to") or ""
+        assigned_to = int(assigned_to_raw) if assigned_to_raw.isdigit() else None
 
         if not title:
             flash("Titel ist ein Pflichtfeld.", "error")
@@ -130,7 +132,7 @@ def new_repair(machine_id: int):
                 description=description or None,
                 category=category,
                 priority=priority,
-                assigned_to=int(assigned_to) if assigned_to else None,
+                assigned_to=assigned_to,
                 created_by=g.current_member.id,
             )
             db.add(repair)
@@ -183,8 +185,8 @@ def edit_repair(repair_id: int):
         repair.category = request.form.get("category", repair.category)
         repair.priority = request.form.get("priority", repair.priority)
         repair.status = request.form.get("status", repair.status)
-        assigned_to = request.form.get("assigned_to") or None
-        repair.assigned_to = int(assigned_to) if assigned_to else None
+        assigned_to_raw = request.form.get("assigned_to") or ""
+        repair.assigned_to = int(assigned_to_raw) if assigned_to_raw.isdigit() else None
         repair.updated_at = now_utc()
         db.commit()
         flash("Ticket aktualisiert.", "success")
@@ -216,19 +218,21 @@ def update_status(repair_id: int):
 @repairs_bp.route("/reparaturen/ticket/<int:repair_id>/kommentar", methods=["POST"])
 @member_required
 def add_comment(repair_id: int):
+    db = get_db()
+    repair = db.get(Repair, repair_id)
+    if not repair:
+        flash("Ticket nicht gefunden.", "error")
+        return redirect(url_for("intern.repairs.list_repairs"))
     body = request.form.get("body", "").strip()
     if not body:
         flash("Kommentar darf nicht leer sein.", "error")
         return redirect(url_for("intern.repairs.repair_detail", repair_id=repair_id))
-    db = get_db()
     db.add(RepairComment(
         repair_id=repair_id,
         member_id=g.current_member.id,
         body=body,
     ))
-    repair = db.get(Repair, repair_id)
-    if repair:
-        repair.updated_at = now_utc()
+    repair.updated_at = now_utc()
     db.commit()
     flash("Kommentar hinzugefügt.", "success")
     return redirect(url_for("intern.repairs.repair_detail", repair_id=repair_id))
@@ -237,6 +241,11 @@ def add_comment(repair_id: int):
 @repairs_bp.route("/reparaturen/ticket/<int:repair_id>/media", methods=["POST"])
 @member_required
 def upload_media(repair_id: int):
+    db = get_db()
+    repair = db.get(Repair, repair_id)
+    if not repair:
+        flash("Ticket nicht gefunden.", "error")
+        return redirect(url_for("intern.repairs.list_repairs"))
     file = request.files.get("media_file")
     if not file or not file.filename:
         flash("Keine Datei ausgewählt.", "error")
@@ -246,6 +255,14 @@ def upload_media(repair_id: int):
         flash("Dateityp nicht erlaubt (nur Bilder und MP4-Videos).", "error")
         return redirect(url_for("intern.repairs.repair_detail", repair_id=repair_id))
     safe_name = secure_filename(file.filename)
+    # The Content-Type header is client-supplied and trivially spoofed, so the
+    # actual file extension must also be checked - otherwise an .html/.svg
+    # file with embedded script, uploaded with a fake image/* header, would be
+    # saved and later served same-origin as stored XSS.
+    ext = Path(safe_name).suffix.lower()
+    if ext not in ALLOWED_MEDIA_EXTENSIONS:
+        flash("Dateiendung nicht erlaubt (nur Bilder und MP4/MOV-Videos).", "error")
+        return redirect(url_for("intern.repairs.repair_detail", repair_id=repair_id))
     dest_dir = UPLOAD_DIR / str(repair_id)
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / safe_name
@@ -256,7 +273,6 @@ def upload_media(repair_id: int):
         dest_path = dest_dir / safe_name
     file.save(str(dest_path))
     relative_filename = f"{repair_id}/{safe_name}"
-    db = get_db()
     db.add(RepairMedia(
         repair_id=repair_id,
         filename=relative_filename,

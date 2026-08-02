@@ -71,10 +71,16 @@ def login():
             flash("Zu viele Versuche. Bitte warte 15 Minuten.", "error")
             return render_template("intern/login.html", step="email", csrf_token=csrf_token)
 
+        # Record every attempt here, not just invalid-format ones - this is
+        # the only gate before an email gets sent, so it must apply to every
+        # request that reaches it or the limiter never actually engages
+        # (previously a script could send unlimited magic-link emails to any
+        # @aixtraball.de address, exhausting SMTP quota / mailbombing).
+        _record_attempt(ip)
+
         email = (request.form.get("email") or "").strip().lower()
 
         if not VALID_EMAIL_RE.match(email):
-            _record_attempt(ip)
             flash("Nur @aixtraball.de-Adressen sind gültig.", "error")
             return render_template("intern/login.html", step="email", csrf_token=csrf_token)
 

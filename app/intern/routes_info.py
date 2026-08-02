@@ -8,6 +8,7 @@ import re
 import uuid
 from pathlib import Path
 
+import bleach
 from flask import (
     Blueprint, flash, g, jsonify, redirect, render_template, request, url_for,
 )
@@ -22,6 +23,37 @@ INFO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "avif"}
 
 info_bp = Blueprint("info", __name__)
+
+# Matches the Quill toolbar configured in info_form.html (headers, bold/
+# italic/underline/strike, lists/indent, links, images) - nothing else is
+# allowed through, since content_html is rendered with |safe.
+_ALLOWED_TAGS = {
+    "p", "br", "strong", "em", "u", "s", "a", "img",
+    "h1", "h2", "h3", "ol", "ul", "li", "blockquote", "span",
+}
+_ALLOWED_ATTRS = {
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt"],
+    "li": ["data-list"],
+    "span": ["class"],
+    "ol": ["class"],
+}
+_ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
+
+
+def _sanitize_content_html(raw: str) -> str:
+    """Strip anything outside the WYSIWYG editor's own tag/attribute set
+    before persisting. content_html is rendered with |safe, so without this
+    any member could store <script>/onerror payloads in a page every other
+    member views - stored XSS across the whole portal."""
+    cleaned = bleach.clean(
+        raw or "",
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRS,
+        protocols=_ALLOWED_PROTOCOLS,
+        strip=True,
+    )
+    return cleaned
 
 
 def _slugify(text: str) -> str:
@@ -90,7 +122,7 @@ def new_page():
     db = get_db()
     if request.method == "POST":
         title = request.form.get("title", "").strip()
-        content_html = request.form.get("content_html", "").strip()
+        content_html = _sanitize_content_html(request.form.get("content_html", "").strip())
         section = request.form.get("section", "").strip() or None
         if not title:
             flash("Titel ist ein Pflichtfeld.", "error")
@@ -137,7 +169,7 @@ def edit_page(slug: str):
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
-        content_html = request.form.get("content_html", "").strip()
+        content_html = _sanitize_content_html(request.form.get("content_html", "").strip())
         if not title:
             flash("Titel ist ein Pflichtfeld.", "error")
         else:
