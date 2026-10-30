@@ -320,8 +320,10 @@ a:hover { color: var(--red-dark); }
 .hero { position: relative; overflow: hidden; }
 
 #heroCarousel .carousel-item {
-  height: calc(100vh - 64px);
-  min-height: 500px; max-height: 920px; overflow: hidden;
+  /* Leave the opening banner and the start of the page visible on desktop,
+     using the same viewport-based sizing as the tablet layout. */
+  height: 65vh;
+  min-height: 300px; max-height: 920px; overflow: hidden;
 }
 
 /* Crossfade: slow, eased dissolve between slides */
@@ -471,9 +473,7 @@ a:hover { color: var(--red-dark); }
 
 /* ── 9. OPENING BANNER ─────────────────────────────── */
 #next-opening-section {
-  /* Pinned just below the fixed 64px navbar so the next opening day stays
-     visible while scrolling (the bar otherwise sits below the full-height
-     hero and scrolls out of view). */
+  /* Keep the opening day visible below the fixed 64px navbar while scrolling. */
   position: sticky;
   top: 64px;
   z-index: 1020;
@@ -1100,7 +1100,6 @@ a:hover { color: var(--red-dark); }
 
 /* ── 23. RESPONSIVE ────────────────────────────────── */
 @media (max-width: 991.98px) {
-  #heroCarousel .carousel-item { height: 65vh; min-height: 300px; }
   .hero-overlay { padding: 0 24px; bottom: 72px; }
   #heroHeadline { font-size: clamp(28px, 7vw, 42px); }
   .hero-progress { left: 24px; bottom: 26px; }
