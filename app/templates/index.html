@@ -188,7 +188,7 @@
     {% if latest_news | length == 1 %}
       {# Single article: show as featured full-width #}
       {% set article = latest_news[0] %}
-      <a href="{{ url_for('news_detail', slug=article.slug) }}" class="news-featured">
+      <a href="{{ url_for('news_detail', slug=article.slug) }}" class="news-featured news-featured--single">
         <div class="news-featured-visual">
           <img src="{{ article.preview_image | asset }}" alt="{{ article.title }}" loading="lazy">
         </div>
@@ -198,7 +198,7 @@
           {% if article.excerpt %}<p class="news-excerpt">{{ article.excerpt }}</p>{% endif %}
           <div class="news-meta">
             {% if article._dt %}<span>{{ article._dt | datetimeformat('%d. %B %Y') }}</span>{% endif %}
-            <span><a href="{{ url_for('news_detail', slug=article.slug) }}">Weiterlesen →</a></span>
+            <span class="news-more">Weiterlesen →</span>
           </div>
         </div>
       </a>
@@ -218,7 +218,7 @@
             {% if featured.excerpt %}<p class="news-excerpt">{{ featured.excerpt }}</p>{% endif %}
             <div class="news-meta">
               {% if featured._dt %}<span>{{ featured._dt | datetimeformat('%d. %B %Y') }}</span>{% endif %}
-              <span><a href="{{ url_for('news_detail', slug=featured.slug) }}">Weiterlesen →</a></span>
+              <span class="news-more">Weiterlesen →</span>
             </div>
           </div>
         </a>
@@ -230,7 +230,7 @@
             </div>
             <div class="news-card-body">
               {% if article.category %}<span class="news-tag-sm">{{ article.category }}</span>{% endif %}
-              <div class="news-card-title">{{ article.title }}</div>
+              <h3 class="news-card-title">{{ article.title }}</h3>
               {% if article._dt %}<div class="news-card-date">{{ article._dt | datetimeformat('%d. %m. %Y') }}</div>{% endif %}
             </div>
           </a>
