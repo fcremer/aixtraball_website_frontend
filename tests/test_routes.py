@@ -4,7 +4,9 @@ Die YAML‑Dateien werden zur Laufzeit minimal erzeugt, damit die
 Flask‑App auch in der CI ohne Volumes funktioniert.
 """
 import pathlib, yaml, pytest, re
+import importlib
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 # ------------------------------------------------------------------
 # 1  Dummy‑YAMLs anlegen
@@ -100,10 +102,18 @@ def test_timeline_visible_on_verein(client):
 # ------------------------------------------------------------------
 # 5  Aktueller Öffnungstag bleibt sichtbar
 # ------------------------------------------------------------------
-def test_current_opening_visible(client):
+@pytest.mark.parametrize("hour", [0, 12, 23])
+def test_current_opening_visible(client, monkeypatch, hour):
     """Wenn gerade ein Öffnungstag läuft, soll er auf der Startseite erscheinen."""
-    now = datetime.now()
-    t_from = now - timedelta(hours=1)
+    now = datetime(2026, 10, 30, hour, 30, tzinfo=ZoneInfo("Europe/Berlin"))
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now.astimezone(tz) if tz else now.replace(tzinfo=None)
+
+    monkeypatch.setattr(importlib.import_module("app.app"), "datetime", FixedDatetime)
+    t_from = now.replace(hour=0, minute=0)
     t_to = now + timedelta(hours=1)
     next_from = now + timedelta(days=1)
     next_to = next_from + timedelta(hours=4)

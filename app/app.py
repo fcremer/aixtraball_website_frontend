@@ -555,8 +555,11 @@ def get_next_opening():
     openings = load_yaml("opening_days.yaml")
     now = datetime.now(tz=tz.gettz("Europe/Berlin"))
     for o in openings:
-        o["from_dt"] = parser.parse(o["from"]).astimezone(tz.gettz("Europe/Berlin"))
-        o["to_dt"] = parser.parse(o["to"]).astimezone(tz.gettz("Europe/Berlin"))
+        for field in ("from", "to"):
+            dt = parser.parse(o[field])
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=LOCAL_TZ)
+            o[f"{field}_dt"] = dt.astimezone(LOCAL_TZ)
 
     future = [o for o in openings if o["to_dt"] > now]
     future.sort(key=lambda x: x["from_dt"])
