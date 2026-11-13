@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Gutscheinkauf | Aixtraball{% endblock %}
+{% block content %}
+<section class="container py-5" style="max-width:720px" aria-live="polite">
+{% if not order %}<h1>Gutscheinkauf</h1><p>In diesem Browser ist keine Bestellung gespeichert. Nach erfolgreicher Zahlung erhältst du deinen Gutschein per E-Mail.</p><a href="{{ url_for('online_vouchers.page') }}">Zu den Gutscheinen</a>
+{% elif result and result.status == 'completed' %}
+<h1>Zahlung erfolgreich</h1>
+{% if result.delivery == 'sent' %}<p>Dein Gutschein wurde per E-Mail versendet. Bitte prüfe auch deinen Spam-Ordner.</p>
+{% elif result.delivery == 'failed' %}<p>Dein Gutschein ist erstellt, aber der Versand ist fehlgeschlagen. Bitte kontaktiere unser Team. Du musst nicht erneut bezahlen.</p>
+{% else %}<p>Dein Gutschein ist erstellt. Der E-Mail-Versand läuft.</p>{% endif %}
+{% elif result and result.payment_status == 'EXPIRED' %}<h1>Zahlung abgelaufen</h1><p>Dieser Zahlungslink ist nicht mehr gültig.</p>
+{% elif result and result.payment_status == 'FAILED' %}<h1>Zahlung nicht abgeschlossen</h1><p>Der letzte Zahlungsversuch war nicht erfolgreich. Du kannst den Zahlungslink erneut öffnen.</p>
+{% else %}<h1>Zahlung wird geprüft</h1><p>Wir warten auf die Zahlungsbestätigung. Du kannst diese Seite auch schließen: Nach erfolgreicher Zahlung wird dein Gutschein automatisch versendet.</p>{% endif %}
+{% if order %}
+<p><a class="btn btn-outline-secondary" href="{{ url_for('online_vouchers.status') }}">Status aktualisieren</a></p>
+{% if not result and session.get('voucher_pending') %}<a href="{{ url_for('online_vouchers.start') }}">Verbindung erneut versuchen</a>{% endif %}
+{% if result and result.checkout_url and result.status != 'completed' and result.payment_status != 'EXPIRED' %}<a class="btn btn-primary" href="{{ result.checkout_url }}">Zur Zahlung bei SumUp</a>{% endif %}
+{% if result and (result.status == 'completed' or result.payment_status == 'EXPIRED') %}<form action="{{ url_for('online_vouchers.new') }}" method="post" class="mt-3"><input type="hidden" name="csrf" value="{{ session.voucher_csrf }}"><button class="btn btn-outline-secondary" type="submit">Weiteren Gutschein kaufen</button></form>{% endif %}
+<p class="mt-4">Fragen zu deiner Bestellung? <a href="{{ url_for('kontakt') }}">Kontaktiere unser Team.</a></p>
+{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}{% if order and (not result or result.status != 'completed' or result.delivery in ('pending', 'sending')) %}<script>setTimeout(function () { window.location.reload(); }, 15000);</script>{% endif %}{% endblock %}

@@ -240,3 +240,18 @@ pytest
 Voraussetzung ist, dass ein virtuelles Environment mit den Requirements existiert und – falls Tests Inhalte benötigen – die YAML-Dateien wie im Repo vorhanden sind.
 
 ---
+
+### Online-Gutscheine
+
+Die Seite `/gutscheine` verwendet die zentrale Gutscheinverwaltung des POS über eine
+interne Service-Schnittstelle. Einrichtung, Sicherheitsgrenzen und Freischaltung:
+[Online-Gutscheine](docs/online-gutscheine.md). Der Verkauf ist standardmäßig deaktiviert.
+
+Für lokale Testkäufe ohne echte Zahlung oder E-Mail-Versand:
+
+```sh
+docker compose -f docker-compose.simulation.yml up -d --build --wait
+```
+
+Website: http://127.0.0.1:5087/gutscheine · Testpostfach: http://127.0.0.1:5088/simulation.
+Weitere Szenarien und Stoppen/Zurücksetzen: [Docker-Simulation](docs/lokale-gutschein-simulation.md).

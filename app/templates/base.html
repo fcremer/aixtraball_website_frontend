@@ -13,6 +13,7 @@
   <!-- Analytics by Plausible (loaded after consent) -->
   <script>
     window.enableAnalytics = function() {
+      if (window.location.pathname.startsWith('/gutscheine')) return;
       if (window.analyticsLoaded) return;
       window.analyticsLoaded = true;
       window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments); };
@@ -139,6 +140,7 @@
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'preise' %} active{% endif %}" href="{{ url_for('preise') }}">Preise &amp; Besuch</a></li>
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'kontakt' %} active{% endif %}" href="{{ url_for('kontakt') }}">Kontakt und Anmietung</a></li>
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'impressum' %} active{% endif %}" href="{{ url_for('impressum') }}">Impressum</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.blueprint == 'online_vouchers' %} active{% endif %}" href="{{ url_for('online_vouchers.page') }}">Gutscheine</a></li>
           {% if session.get('logged_in') %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('admin') }}">Admin</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>

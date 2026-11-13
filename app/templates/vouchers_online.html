@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Gutscheine | Aixtraball{% endblock %}
+{% block content %}
+<section class="container py-5" style="max-width:720px">
+  <p class="text-uppercase small">Freude am Flippern verschenken</p>
+  <h1>Gutscheine</h1>
+  <p class="lead">Betrag auswählen, sicher mit SumUp bezahlen und den Gutschein per E-Mail erhalten.</p>
+  <p>Der Wertgutschein ist an der Aixtraball Kasse in Teilbeträgen einlösbar. Behandle den Gutscheincode wie Bargeld.</p>
+  {% if not enabled %}<div class="alert alert-info">Der Onlineverkauf ist noch nicht verfügbar. Bei Fragen wende dich an <a href="{{ url_for('kontakt') }}">unser Team</a>.</div>
+  {% elif review %}
+  <h2 class="h4 mt-4">Deine Auswahl prüfen</h2>
+  <dl><dt>Gutscheinwert</dt><dd>{{ review.amount }} Euro</dd><dt>Versand an</dt><dd>{{ review.email }}</dd></dl>
+  <p>Nach bestätigter Zahlung senden wir den Gutschein an diese Adresse.</p>
+  <form action="{{ url_for('online_vouchers.pay') }}" method="post">
+    <input type="hidden" name="csrf" value="{{ session.voucher_csrf }}">
+    <button class="btn btn-primary" type="submit">{{ review.amount }} Euro bezahlen</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('online_vouchers.page') }}">Angaben ändern</a>
+  </form>
+  {% else %}
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" class="mt-4">
+    <input type="hidden" name="csrf" value="{{ session.voucher_csrf }}">
+    <fieldset><legend class="h4">1. Gutscheinwert auswählen</legend>
+      <div class="d-flex flex-wrap gap-3 my-3">{% for amount in amounts %}
+      <label class="border rounded p-3"><input type="radio" name="amount" value="{{ amount }}" required {% if request.form.get('amount') == amount|string %}checked{% endif %}> {{ amount }} Euro</label>
+      {% endfor %}</div>
+    </fieldset>
+    <label class="form-label mt-3" for="voucher-email">2. E-Mail-Adresse für den Gutschein</label>
+    <input class="form-control" id="voucher-email" type="email" name="email" maxlength="254" autocomplete="email" required value="{{ request.form.get('email', '') }}" aria-describedby="email-help">
+    <p id="email-help" class="small mt-2">Bitte prüfe die Adresse sorgfältig. Hierhin wird dein Gutschein gesendet.</p>
+    <p class="small">Die Zahlungsdaten gibst du direkt bei SumUp ein. Informationen zur Verarbeitung deiner Daten findest du im <a href="{{ url_for('impressum') }}">Datenschutz</a>.</p>
+    <button type="submit" class="btn btn-primary mt-2">Auswahl prüfen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

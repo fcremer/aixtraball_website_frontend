@@ -9,3 +9,4 @@ app/.DS_Store
 .claude/*
 /.claude/*
 app/config/.secret_key
+/.local/

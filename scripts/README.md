@@ -57,3 +57,7 @@ python scripts/planka_import.py \
 - Der Export läuft idempotent — ein zweiter Import erstellt doppelte Listen
 - Kommentare werden in der Export-JSON gespeichert, aber noch nicht importiert
   (die Intern-Portal-Datenbank hat kein generisches Kommentar-Modell für Todo-Items)
+
+## Gutschein-Simulation
+
+Aus dem Projektverzeichnis mit `docker compose -f docker-compose.simulation.yml up -d --build --wait` starten. Anleitung: [Lokale Gutschein-Simulation](../docs/lokale-gutschein-simulation.md).

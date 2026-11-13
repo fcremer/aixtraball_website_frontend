@@ -40,7 +40,17 @@ from werkzeug.utils import secure_filename
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
+try:
+    from .online_vouchers import bp as online_vouchers_bp
+except ImportError:
+    from online_vouchers import bp as online_vouchers_bp
+app.register_blueprint(online_vouchers_bp)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true",
+)
 
 @app.before_request
 def _strip_trailing_slash():

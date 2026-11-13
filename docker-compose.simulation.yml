@@ -1,0 +1,67 @@
+# Standalone test stack; never merge with the production compose files.
+name: aixtraball-voucher-simulation
+x-simulation: &simulation
+  VOUCHER_LOCAL_SIMULATION: explicit-local-only
+  VOUCHER_SIM_DOCKER: 'true'
+  VOUCHER_SIM_DATA: /simulation-data
+  POS_ENV: development
+  POS_AUTH_DISABLED: 'true'
+  POS_DATA_DIR: /simulation-data/pos
+  ONLINE_SALES_ENABLED: 'true'
+  ONLINE_SERVICE_TOKEN: local-simulation-service-key-not-for-production-0001
+  ONLINE_PUBLIC_ORIGIN: https://local.invalid
+  SUMUP_ONLINE_API_KEY: SIMULATION-NOT-A-REAL-KEY
+  SUMUP_ONLINE_MERCHANT_CODE: LOCAL-SIMULATION
+  SUMUP_SIMULATE: 'true'
+  POS_VOUCHER_SECRET: local-simulation-voucher-key-not-for-production-0001
+  POS_MAIL_MODE: smtp
+  POS_SMTP_HOST: invalid.local
+  POS_MAIL_FROM: Aixtraball Test <test@example.invalid>
+  POS_SMTP_VERIFY_TLS: 'true'
+  SECRET_KEY: local-simulation-session-key-not-for-production-0001
+  SESSION_COOKIE_SECURE: 'false'
+  VOUCHER_SALES_ENABLED: 'true'
+  POS_INTERNAL_URL: http://sim-pos:5088
+  VOUCHER_RATE_DIR: /tmp/voucher-simulation-limits
+services:
+  sim-pos:
+    build: ../POS
+    command: [python, /workspace/website/scripts/voucher_simulation/server.py, pos]
+    environment: *simulation
+    volumes:
+      - ./scripts/voucher_simulation:/workspace/website/scripts/voucher_simulation:ro
+      - ../POS/app:/workspace/POS/app:ro
+      - simulation-data:/simulation-data
+    ports:
+      - '127.0.0.1:5088:5088'
+    networks: [simulation, preview]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5088/simulation')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  sim-website:
+    build: .
+    command: [python, /workspace/website/scripts/voucher_simulation/server.py, website]
+    environment: *simulation
+    volumes:
+      - ./scripts/voucher_simulation:/workspace/website/scripts/voucher_simulation:ro
+      - ./app:/workspace/website/app:ro
+      - ./shared:/workspace/website/shared:ro
+    ports:
+      - '127.0.0.1:5087:5087'
+    networks: [simulation, preview]
+    depends_on:
+      sim-pos:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5087/gutscheine')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+networks:
+  preview: {}
+  simulation:
+    internal: true
+volumes:
+  simulation-data:

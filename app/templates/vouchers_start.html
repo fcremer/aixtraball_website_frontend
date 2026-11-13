@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block title %}Sicher bezahlen | Aixtraball{% endblock %}
+{% block content %}<section class="container py-5" style="max-width:720px"><h1>Weiter zur Zahlung</h1><p>Du wirst zur sicheren Zahlungsseite von SumUp weitergeleitet.</p><form method="post" id="payment-start"><input type="hidden" name="csrf" value="{{ session.voucher_csrf }}"><button class="btn btn-primary" type="submit">SumUp öffnen</button></form></section>{% endblock %}
+{% block scripts %}<script>document.getElementById('payment-start').requestSubmit();</script>{% endblock %}
