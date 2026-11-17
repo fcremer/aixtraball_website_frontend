@@ -94,14 +94,20 @@
       <div class="text-muted">{{ data|length }} {{ data|length == 1 and 'Eintrag' or 'Einträge' }}</div>
     </div>
 
+    {% if filename == 'slides.yaml' %}
+    <p class="text-muted">Der feste Teil erscheint zuerst in der hier angezeigten Reihenfolge. Mit den Pfeilen kannst du ihn umsortieren. Die übrigen Slides folgen zufällig. Über „Bearbeiten“ → „Bevorzugt anzeigen“ nimmst du weitere Slides in den festen Teil auf.</p>
+    {% endif %}
     <div id="cardsGrid" class="row g-3">
-      {% for item in data %}
-      {% set default_title = item.get('title') or item.get('name') or item.get('slug') or ('Eintrag ' ~ loop.index) %}
+      {% for item_index, item in entries %}
+      {% set default_title = item.get('title') or item.get('name') or item.get('slug') or (filename == 'slides.yaml' and (item.get('headline') or item.get('image'))) or ('Eintrag ' ~ loop.index) %}
       <div class="col-12">
         <div class="admin-entry-card card h-100" data-title="{{ default_title|lower }}">
           <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             <div>
               <h2 class="h6 mb-1">{{ default_title }}</h2>
+              {% if filename == 'slides.yaml' %}
+              <p class="small text-muted mb-1">{% if item_index in fixed_indices %}Feste Position {{ fixed_indices.index(item_index) + 1 }}{% else %}Zufällige Reihenfolge{% endif %}</p>
+              {% endif %}
               <ul class="entry-meta list-unstyled mb-0 text-muted small">
                 {% for field in preview_fields %}
                   {% set value = item.get(field.name) %}
@@ -120,12 +126,18 @@
               </ul>
             </div>
             <div class="d-flex flex-wrap gap-2">
-              <a class="btn btn-outline-secondary" href="{{ url_for('admin_item', filename=filename, index=loop.index0) }}">
+              {% if filename == 'slides.yaml' and item_index in fixed_indices %}
+              <form method="post" action="{{ url_for('admin_move_slide', index=item_index) }}" class="d-inline m-0">
+                <button class="btn btn-outline-secondary" name="direction" value="up" aria-label="Slide nach oben verschieben" {% if item_index == fixed_indices[0] %}disabled{% endif %}>↑ Nach oben</button>
+                <button class="btn btn-outline-secondary" name="direction" value="down" aria-label="Slide nach unten verschieben" {% if item_index == fixed_indices[-1] %}disabled{% endif %}>↓ Nach unten</button>
+              </form>
+              {% endif %}
+              <a class="btn btn-outline-secondary" href="{{ url_for('admin_item', filename=filename, index=item_index) }}">
                 <i class="bi bi-pencil-square me-1"></i> Bearbeiten
               </a>
               <form method="post"
                     class="d-inline m-0"
-                    action="{{ url_for('admin_delete', filename=filename, index=loop.index0) }}"
+                    action="{{ url_for('admin_delete', filename=filename, index=item_index) }}"
                     onsubmit="return confirm('Diesen Eintrag wirklich löschen?');">
                 <button class="btn btn-outline-danger" type="submit">
                   <i class="bi bi-trash me-1"></i> Löschen

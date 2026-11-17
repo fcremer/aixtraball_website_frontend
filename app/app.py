@@ -50,6 +50,15 @@ def _load_secret_key(key_file):
         return configured
 
     key_file = Path(key_file)
+    try:
+        key = key_file.read_text(encoding="ascii").strip()
+    except FileNotFoundError:
+        pass
+    else:
+        if not key:
+            raise RuntimeError(f"Session secret file is empty: {key_file}")
+        return key
+
     key_file.parent.mkdir(parents=True, exist_ok=True)
     # Publish a complete file atomically so concurrent Gunicorn workers share
     # the same key, including on the first startup. Temporary files use 0600.
@@ -610,8 +619,8 @@ def prepare_slides():
 
     first = normalized[0]
     rest = normalized[1:]
-    pinned = [s for s in rest if s.get("pinned")]
-    other = [s for s in rest if not s.get("pinned")]
+    pinned = [s for s in rest if _env_bool(s.get("pinned"))]
+    other = [s for s in rest if not _env_bool(s.get("pinned"))]
     random.shuffle(other)
     return [first, *pinned, *other]
 
@@ -907,6 +916,12 @@ def admin_manage(filename):
     preview_fields = [f for f in (schema or []) if f.get("preview")]
     schema_map = {f["name"]: f for f in (schema or [])}
     news_settings = load_news_settings() if filename == "news.yaml" else None
+    fixed_indices = [i for i, item in enumerate(data)
+                     if i == 0 or (isinstance(item, dict) and _env_bool(item.get("pinned")))] if filename == "slides.yaml" else []
+    entries = list(enumerate(data))
+    if filename == "slides.yaml":
+        entries = [(i, data[i]) for i in fixed_indices] + [(i, item) for i, item in entries if i not in fixed_indices]
+        entries = [(i, item if isinstance(item, dict) else {"image": item}) for i, item in entries]
     return render_template(
         "admin_manage.html",
         filename=filename,
@@ -916,8 +931,38 @@ def admin_manage(filename):
         schema=schema,
         preview_fields=preview_fields,
         schema_map=schema_map,
-        news_settings=news_settings
+        news_settings=news_settings,
+        entries=entries,
+        fixed_indices=fixed_indices
     )
+
+
+@app.route("/admin/slides/<int:index>/move", methods=["POST"])
+@login_required
+def admin_move_slide(index):
+    data = load_yaml("slides.yaml")
+    if not isinstance(data, list) or index >= len(data):
+        abort(404)
+    fixed = [i for i, item in enumerate(data)
+             if i == 0 or (isinstance(item, dict) and _env_bool(item.get("pinned")))]
+    direction = request.form.get("direction")
+    if index not in fixed or direction not in {"up", "down"}:
+        abort(400)
+    target = fixed.index(index) + (-1 if direction == "up" else 1)
+    if target < 0 or target >= len(fixed):
+        abort(400)
+    other = fixed[target]
+    data[index], data[other] = data[other], data[index]
+    # The original first slide stays in the fixed group when moved down.
+    for i in (index, other):
+        if not isinstance(data[i], dict):
+            data[i] = {"image": data[i]}
+        data[i]["pinned"] = True
+    (CONFIG_DIR / "slides.yaml").write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    YAML_CACHE.pop("slides.yaml", None)
+    flash("Slider-Reihenfolge gespeichert.", "success")
+    return redirect(url_for("admin_manage", filename="slides.yaml"))
 
 
 @app.route("/admin/manage/news/settings", methods=["POST"])

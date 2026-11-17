@@ -60,6 +60,20 @@ Der Compose-Stack stellt die App auf Port `8081` bereit (siehe `docker-compose.y
 
 Dadurch können dieselben Dateien lokal mit Git versioniert und im Container live bearbeitet werden.
 
+Der Container läuft als UID/GID `10001:10001`. Auf dem Linux-Server müssen die
+eingebundenen Verzeichnisse für diesen Benutzer beschreibbar sein. Die
+Eigentümer aus dem Docker-Image gelten nicht für Bind-Mounts. Bei
+`PermissionError` unter `/app/config` im Projektverzeichnis auf dem Server:
+
+```bash
+sudo chown -R 10001:10001 shared/config shared/images
+docker compose up -d --force-recreate frontend
+docker compose logs --tail=80 frontend
+```
+
+Ein vorhandener `shared/config/.secret_key` muss ebenfalls für UID `10001`
+lesbar sein. Den Key beibehalten, damit bestehende Sitzungen gültig bleiben.
+
 Alle geheimen Variablen (Admin-Zugang, SMTP etc.) lassen sich bequem über eine `.env`-Datei steuern. Eine Vorlage liegt als `.env.example` bei – einfach kopieren (`cp .env.example .env`), die Werte anpassen und `docker compose` übernimmt sie automatisch.
 
 ---
