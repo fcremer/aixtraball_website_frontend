@@ -40,3 +40,15 @@ def test_empty_persisted_key_fails_at_startup(monkeypatch, tmp_path):
     key_file.touch()
     with pytest.raises(RuntimeError, match="Session secret file is empty"):
         backend._load_secret_key(key_file)
+
+
+def test_existing_key_needs_no_directory_write(monkeypatch, tmp_path):
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    key_file = tmp_path / ".secret_key"
+    key_file.write_text("persisted-secret", encoding="ascii")
+
+    def unexpected_write(*args, **kwargs):
+        pytest.fail("Reading an existing key must not create a temporary file")
+
+    monkeypatch.setattr(backend.tempfile, "NamedTemporaryFile", unexpected_write)
+    assert backend._load_secret_key(key_file) == "persisted-secret"
