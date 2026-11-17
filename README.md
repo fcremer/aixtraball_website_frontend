@@ -67,7 +67,7 @@ Alle geheimen Variablen (Admin-Zugang, SMTP etc.) lassen sich bequem über eine 
 ### Konfiguration per Umgebungsvariablen
 | Variable | Beschreibung |
 |----------|--------------|
-| `SECRET_KEY` | Flask-Session-Key (für Produktion unbedingt setzen). |
+| `SECRET_KEY` | Flask-Session-Key. Wenn leer oder nicht gesetzt, wird ein zufälliger Key in `config/.secret_key` erzeugt (Docker: `shared/config/.secret_key`) und über Neustarts hinweg wiederverwendet. |
 | `ADMIN_USER` | Benutzername für den internen Admin-Login. |
 | `ADMIN_PASSWORD` | Klartextpasswort (oder `ADMIN_PASSWORD_HASH` für gehashte Variante). |
 | `ADMIN_PASSWORD_HASH` | Legacy-Unterstützung für gehashte Passwörter via `werkzeug.security`. |

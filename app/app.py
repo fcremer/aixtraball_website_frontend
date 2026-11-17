@@ -19,6 +19,8 @@ import yaml
 import os
 import json
 import smtplib
+import secrets
+import tempfile
 from email.message import EmailMessage
 from time import time
 
@@ -40,7 +42,31 @@ from werkzeug.utils import secure_filename
 # Grundkonfiguration
 # --------------------------------------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-me")
+
+
+def _load_secret_key(key_file):
+    configured = os.environ.get("SECRET_KEY", "")
+    if configured.strip():
+        return configured
+
+    key_file = Path(key_file)
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    # Publish a complete file atomically so concurrent Gunicorn workers share
+    # the same key, including on the first startup. Temporary files use 0600.
+    with tempfile.NamedTemporaryFile(dir=key_file.parent) as temporary:
+        temporary.write(secrets.token_hex(32).encode("ascii"))
+        temporary.flush()
+        try:
+            os.link(temporary.name, key_file)
+        except FileExistsError:
+            pass
+    key = key_file.read_text(encoding="ascii").strip()
+    if not key:
+        raise RuntimeError(f"Session secret file is empty: {key_file}")
+    return key
+
+
+app.secret_key = _load_secret_key(Path(__file__).resolve().parent / "config" / ".secret_key")
 
 @app.before_request
 def _strip_trailing_slash():
