@@ -1,0 +1,12 @@
+{% extends "admin_base.html" %}
+{% block title %}Medien · Aixtraball Studio{% endblock %}
+{% block content %}
+<div class="studio-page">
+  <div class="page-heading"><div><p class="page-eyebrow">BIBLIOTHEK</p><h1>Medien</h1><p>Bilder durchsuchen, hochladen und in Inhalten verwenden.</p></div><span class="library-count" id="mediaCount" aria-live="polite"></span></div>
+  <form class="media-upload" action="{{ url_for('admin_upload') }}" method="post" enctype="multipart/form-data"><span class="upload-icon"><i class="bi bi-cloud-arrow-up"></i></span><div><strong>Neue Bilder hinzufügen</strong><p>PNG, JPG, GIF, WebP oder SVG. Gleiche Dateinamen ersetzen vorhandene Bilder.</p><label class="visually-hidden" for="mediaFile">Bilddatei auswählen</label><input class="form-control" type="file" id="mediaFile" name="image" accept=".png,.jpg,.jpeg,.gif,.webp,.svg" required></div><button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg"></i> Bild hochladen</button></form>
+  <div class="section-heading"><h2>Medienbibliothek</h2><div class="studio-filter"><i class="bi bi-search"></i><input id="mediaSearch" type="search" placeholder="Dateiname oder Ordner …" aria-label="Medien durchsuchen"></div></div>
+  <p class="text-muted small">Klicke auf ein Bild, um es in voller Größe zu öffnen. Mit „Pfad kopieren“ kannst du es in einem Inhalt verwenden.</p>
+  <div id="mediaLibrary" class="media-library" data-url="{{ url_for('admin_images') }}" aria-live="polite"><p class="text-muted">Bilder werden geladen …</p></div>
+  <p id="mediaStatus" class="media-status" role="status"></p>
+</div>
+{% endblock %}

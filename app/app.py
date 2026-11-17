@@ -556,6 +556,25 @@ def get_admin_schema(filename):
     return section.get("schema")
 
 
+@app.context_processor
+def admin_workspace_navigation():
+    groups = [
+        ("Website gestalten", ["homepage_content.yaml", "slides.yaml"]),
+        ("Inhalte pflegen", ["news.yaml", "opening_days.yaml", "flippers.yaml", "members.yaml", "timeline.yaml"]),
+        ("Organisation", ["contact_submissions.yaml", "admins.yaml"]),
+    ]
+    navigation = []
+    for label, filenames in groups:
+        links = []
+        for filename in filenames:
+            section = ADMIN_SECTIONS[filename]
+            links.append({"filename": filename, "title": section["title"],
+                          "icon": section["icon"],
+                          "url": url_for("admin_doc" if section.get("kind") == "doc" else "admin_manage", filename=filename)})
+        navigation.append({"label": label, "links": links})
+    return {"admin_navigation": navigation}
+
+
 def default_for_field(field):
     field_type = field.get("type", "text")
     if "default" in field:
@@ -904,7 +923,8 @@ def admin_edit(filename):
             data = yaml.safe_load(f) or []
     else:
         data = []
-    return render_template("admin_edit.html", filename=filename, data=data)
+    return render_template("admin_edit.html", filename=filename, data=data,
+                           section=get_admin_section(filename))
 
 
 @app.route("/admin/manage/<path:filename>")
@@ -1248,13 +1268,27 @@ def admin_upload():
     file = request.files.get("image")
     if file and file.filename:
         upload_dir = BASE_DIR / "static" / "images"
-        upload_dir.mkdir(parents=True, exist_ok=True)
         filename = secure_filename(file.filename)
-        file.save(upload_dir / filename)
-        flash("Bild hochgeladen", "success")
+        if not filename or Path(filename).suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}:
+            flash("Bitte eine Bilddatei (PNG, JPG, GIF, WebP oder SVG) auswählen.", "warning")
+        else:
+            try:
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                file.save(upload_dir / filename)
+            except OSError:
+                app.logger.exception("Media upload failed")
+                flash("Das Bild konnte nicht gespeichert werden. Bitte erneut versuchen oder die Serverrechte prüfen lassen.", "danger")
+            else:
+                flash("Bild hochgeladen und in der Medienbibliothek verfügbar.", "success")
     else:
         flash("Keine Datei ausgewählt", "warning")
-    return redirect(url_for("admin"))
+    return redirect(url_for("admin_media"))
+
+
+@app.route("/admin/media")
+@login_required
+def admin_media():
+    return render_template("admin_media.html")
 
 
 @app.route("/admin/images.json")
