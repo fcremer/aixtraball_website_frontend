@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
 {% block head_extra %}
 <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
@@ -22,11 +22,11 @@
       <h1 class="h4 mb-1">{{ section.title }} – {% if index is not none %}Eintrag bearbeiten{% else %}neu anlegen{% endif %}</h1>
       <p class="text-muted mb-0">{{ section.description }}</p>
     </div>
-    <span class="badge rounded-pill text-bg-light">Datei: {{ filename }}</span>
+    <span class="badge rounded-pill text-bg-light">Änderungen sind nach dem Speichern live</span>
   </div>
 
-  <form method="post" enctype="multipart/form-data" class="card shadow-sm">
-    <div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="card shadow-sm studio-editor" data-content-editor>
+    <div class="editor-intro"><span><i class="bi bi-pencil-square"></i> Inhalt bearbeiten</span><span data-save-state>{{ 'Neuer Inhalt · noch nicht gespeichert' if index is none else 'Gespeicherter Stand' }}</span></div><div class="card-body editor-fields">
       <input type="hidden" name="__index" value="{% if index is not none %}{{ index }}{% endif %}">
       {% set field_defs = schema if schema else [] %}
       {% if field_defs %}
@@ -138,7 +138,7 @@
       </div>
       {% endif %}
     </div>
-    <div class="card-footer bg-light d-flex justify-content-end gap-2">
+    <div class="card-footer bg-light d-flex justify-content-end align-items-center gap-2">
       <a class="btn btn-outline-secondary" href="{{ url_for('admin_manage', filename=filename) }}">Abbrechen</a>
       <button class="btn btn-success" type="submit"><i class="bi bi-check-lg me-1"></i> Speichern</button>
     </div>
@@ -221,6 +221,7 @@
     async function loadImages() {
       if (imagesCache) return imagesCache;
       const resp = await fetch('{{ url_for('admin_images') }}');
+      if (!resp.ok) throw new Error('Image library unavailable');
       imagesCache = await resp.json();
       return imagesCache;
     }
@@ -230,16 +231,13 @@
       const grid = document.getElementById('imageGrid');
       const search = document.getElementById('imageSearch');
       grid.innerHTML = '<div class="text-muted">Lade Bilder…</div>';
-      const items = await loadImages();
+      ensureModal().show();
+      let items;
+      try { items = await loadImages(); } catch { grid.textContent = 'Bilder konnten nicht geladen werden. Bitte erneut versuchen.'; return; }
       const render = (q='') => {
         const needle = q.trim().toLowerCase();
         const sel = items.filter(it => !needle || it.name.toLowerCase().includes(needle) || it.path.toLowerCase().includes(needle));
-        grid.innerHTML = sel.map(it => `
-          <div class="image-tile" data-path="${it.path}">
-            <img src="${it.url}" alt="${it.name}">
-            <div class="caption" title="${it.path}">${it.name}</div>
-          </div>
-        `).join('');
+        window.studioRenderImages(grid, sel);
       };
       render('');
       search.value = '';
@@ -253,13 +251,14 @@
           const type = target.type;
           if (type === 'single') {
             const input = document.querySelector(`[name="${name}"]`);
-            if (input) input.value = path;
+            if (input) { input.value = path; input.dispatchEvent(new Event('input', {bubbles: true})); }
           } else if (type === 'list') {
             const ta = document.querySelector(`textarea[name="${name}"]`);
             if (ta) {
               const lines = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
               if (!lines.includes(path)) lines.push(path);
               ta.value = lines.join('\n');
+              ta.dispatchEvent(new Event('input', {bubbles: true}));
             }
           }
         } else if (navigator.clipboard) {
@@ -284,7 +283,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="bi bi-images me-2"></i>Bild auswählen</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
       </div>
       <div class="modal-body">
         <div class="input-group mb-3">

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
 {% block head_extra %}
 <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
@@ -16,9 +16,7 @@
       <p class="text-muted mb-0">{{ section.description or filename }}</p>
     </div>
     <div class="d-flex gap-2 align-items-center">
-      <a class="btn btn-outline-secondary" href="{{ url_for('admin_edit', filename=filename) }}">
-        <i class="bi bi-code-slash me-1"></i> RAW-Ansicht
-      </a>
+      <details class="studio-more"><summary class="btn btn-outline-secondary">Weitere Optionen <i class="bi bi-three-dots"></i></summary><a href="{{ url_for('admin_edit', filename=filename) }}">Strukturierte Daten bearbeiten</a></details>
       {% if not read_only and section.allow_new %}
       <a class="btn btn-primary" href="{{ url_for('admin_item', filename=filename) }}">
         <i class="bi bi-plus-lg me-1"></i> Neuer Eintrag
@@ -74,7 +72,7 @@
               <tr>
                 <td>{{ item.name or '-' }}</td>
                 <td><a href="mailto:{{ item.email }}">{{ item.email }}</a></td>
-                <td class="text-truncate" style="max-width:260px;">{{ item.message }}</td>
+                <td class="inbox-message"><details><summary>{{ (item.message or '')[:95] }}{% if (item.message or '')|length > 95 %} …{% endif %}</summary><p>{{ item.message }}</p></details></td>
                 <td class="text-muted small">{{ item.timestamp }}</td>
               </tr>
             {% else %}
@@ -99,11 +97,13 @@
     {% endif %}
     <div id="cardsGrid" class="row g-3">
       {% for item_index, item in entries %}
-      {% set default_title = item.get('title') or item.get('name') or item.get('slug') or (filename == 'slides.yaml' and (item.get('headline') or item.get('image'))) or ('Eintrag ' ~ loop.index) %}
+      {% set default_title = item.get('title') or item.get('name') or item.get('username') or item.get('slug') or (filename == 'slides.yaml' and (item.get('headline') or item.get('image'))) or item.get('from') or ('Eintrag ' ~ loop.index) %}
       <div class="col-12">
-        <div class="admin-entry-card card h-100" data-title="{{ default_title|lower }}">
+        <div class="admin-entry-card card h-100" data-title="{{ (default_title ~ ' ' ~ item.get('year', '') ~ ' ' ~ item.get('category', '') ~ ' ' ~ item.get('manufacturer', ''))|lower }}">
           <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-            <div>
+            {% set preview_image = item.get('preview_image') or item.get('image') %}
+            {% if preview_image and preview_image is string %}<img class="entry-thumbnail" src="{{ preview_image if preview_image.startswith('http') else url_for('static', filename=preview_image.lstrip('/')) }}" alt="" loading="lazy">{% else %}<span class="entry-placeholder"><i class="bi bi-{{ section.icon }}"></i></span>{% endif %}
+            <div class="entry-copy">
               <h2 class="h6 mb-1">{{ default_title }}</h2>
               {% if filename == 'slides.yaml' %}
               <p class="small text-muted mb-1">{% if item_index in fixed_indices %}Feste Position {{ fixed_indices.index(item_index) + 1 }}{% else %}Zufällige Reihenfolge{% endif %}</p>
@@ -140,7 +140,7 @@
                     action="{{ url_for('admin_delete', filename=filename, index=item_index) }}"
                     onsubmit="return confirm('Diesen Eintrag wirklich löschen?');">
                 <button class="btn btn-outline-danger" type="submit">
-                  <i class="bi bi-trash me-1"></i> Löschen
+                  <i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">{{ default_title }} löschen</span>
                 </button>
               </form>
             </div>
@@ -157,6 +157,7 @@
       </div>
       {% endfor %}
     </div>
+    {% if data %}<p id="listEmpty" class="empty-search" hidden>Keine passenden Inhalte gefunden. Versuche einen anderen Suchbegriff.</p>{% endif %}
   {% endif %}
 </div>
 {% endblock %}
@@ -170,9 +171,14 @@
     if (!input) return;
     const filter = () => {
       const q = input.value.trim().toLowerCase();
+      let matches = 0;
       cards.forEach(card => {
-        card.closest('.col-12').style.display = card.dataset.title.includes(q) ? '' : 'none';
+        const visible = card.dataset.title.includes(q);
+        card.closest('.col-12').hidden = !visible;
+        if (visible) matches++;
       });
+      const empty = document.getElementById('listEmpty');
+      if (empty) empty.hidden = matches > 0;
     };
     input.addEventListener('input', filter);
   });

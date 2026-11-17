@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{{ section.title if section is defined else 'Übersicht' }} · Aixtraball Studio{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/admin.css') }}?v={{ config['ASSET_VERSION'] }}" rel="stylesheet">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="admin">
+<a class="admin-skip" href="#workspace">Zum Inhalt springen</a>
+<div class="studio-shell">
+  <aside class="studio-sidebar" id="studioSidebar" aria-label="Verwaltung">
+    <a class="studio-brand" href="{{ url_for('admin') }}"><img class="studio-brand-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="Aixtraball" width="174" height="42"><small>CONTENT STUDIO</small></a>
+    <div class="workspace-label"><span class="workspace-avatar">A</span><span>Vereinswebsite<small>aixtraball.de</small></span><span class="online-dot" title="Öffentliche Website"></span></div>
+    <nav aria-label="Hauptnavigation">
+      <a class="studio-nav-link {{ 'active' if request.endpoint == 'admin' }}" href="{{ url_for('admin') }}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}><i class="bi bi-grid-1x2"></i> Übersicht</a>
+      {% for group in admin_navigation %}
+      <p class="nav-group-label">{{ group.label }}</p>
+      {% for link in group.links %}
+      <a class="studio-nav-link {{ 'active' if filename is defined and filename == link.filename }}" href="{{ link.url }}" {% if filename is defined and filename == link.filename %}aria-current="page"{% endif %}><i class="bi bi-{{ link.icon }}"></i>{{ link.title }}</a>
+      {% endfor %}
+      {% endfor %}
+      <p class="nav-group-label">Bibliothek</p>
+      <a class="studio-nav-link {{ 'active' if request.endpoint == 'admin_media' }}" href="{{ url_for('admin_media') }}" {% if request.endpoint == 'admin_media' %}aria-current="page"{% endif %}><i class="bi bi-images"></i> Medien</a>
+    </nav>
+    <div class="sidebar-bottom"><a href="{{ url_for('index') }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Website öffnen</a><a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Abmelden</a><div class="studio-user"><span class="user-avatar"><i class="bi bi-person"></i></span><span>Administration<small>Aixtraball e. V.</small></span></div></div>
+  </aside>
+  <div class="studio-main">
+    <header class="studio-topbar"><div class="d-flex align-items-center gap-3"><button class="btn sidebar-toggle" type="button" aria-label="Navigation öffnen" aria-controls="studioSidebar" aria-expanded="false"><i class="bi bi-list"></i></button><span class="topbar-breadcrumb">Workspace <i class="bi bi-chevron-right"></i> <strong>{{ section.title if section is defined else ('Medien' if request.endpoint == 'admin_media' else 'Übersicht') }}</strong></span></div><a href="{{ url_for('index') }}" target="_blank" rel="noopener" class="topbar-site">Website ansehen <i class="bi bi-arrow-up-right"></i></a></header>
+    <main id="workspace" tabindex="-1">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show studio-flash" role="status">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Meldung schließen"></button></div>{% endfor %}{% endwith %}
+    {% block content %}{% endblock %}
+    </main>
+    <footer class="studio-footer"><span>Aixtraball Studio</span><span>Website-Verwaltung</span></footer>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}?v={{ config['ASSET_VERSION'] }}" defer></script>
+{% block scripts %}{% endblock %}
+</body></html>
